@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Дарибри</title>
+    <link rel="icon" type="image/png" href="images/icons/icon.PNG?v=3">
+    <link rel="apple-touch-icon" href="images/icons/icon.PNG?v=3">
+    <link rel="shortcut icon" href="images/icons/icon.PNG?v=3">
+    <link rel="stylesheet" href="css/styles.css?v=5">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">Дарибри</h1>
+                <div class="header-actions">
+                    <button class="icon-btn" id="searchBtn" aria-label="Поиск">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="favoritesBtn" aria-label="Избранное">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <span class="badge" id="favoritesBadge" hidden>0</span>
+                    </button>
+                    <button class="icon-btn" id="cartBtn" aria-label="Корзина">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"/>
+                            <circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                        </svg>
+                        <span class="badge" id="cartBadge" hidden>0</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Modal -->
+        <div class="modal" id="searchModal" hidden>
+            <div class="modal-content search-modal">
+                <div class="search-input-wrapper">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Поиск товаров..." autofocus>
+                    <button class="close-search" id="closeSearch">✕</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </div>
+
+        <!-- Filter Modal -->
+        <div class="modal" id="filterModal" hidden>
+            <div class="modal-content filter-modal">
+                <div class="modal-header">
+                    <h2>Фильтры</h2>
+                    <button class="close-modal" id="closeFilterModal">✕</button>
+                </div>
+                <div class="modal-body filter-body">
+                    <!-- Цена -->
+                    <div class="filter-section">
+                        <h3>💰 Цена</h3>
+                        <div class="price-range">
+                            <div class="input-group">
+                                <label>От</label>
+                                <input type="number" id="filterMinPrice" placeholder="0" min="0" step="100">
+                            </div>
+                            <div class="input-group">
+                                <label>До</label>
+                                <input type="number" id="filterMaxPrice" placeholder="∞" min="0" step="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Опции -->
+                    <div class="filter-section">
+                        <h3>✨ Опции</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterDiscounted">
+                            <span class="checkmark"></span>
+                            <span>Только со скидками</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterInStock" checked>
+                            <span class="checkmark"></span>
+                            <span>Только в наличии</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterTrending">
+                            <span class="checkmark"></span>
+                            <span>Только трендовые</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="resetFilters">Сбросить</button>
+                    <button class="btn-primary" id="applyFilters">Применить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Categories Slider -->
+            <section class="categories-section">
+                <div class="categories-slider" id="categoriesSlider">
+                    <button class="category-chip active" data-category="all">
+                        <span class="chip-icon">
+                            <img src="images/icons/Все товары.png?v=3" alt="Все" class="category-icon-img" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
+                                 loading="lazy" style="display:block;">
+                            <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">📦</span>
+                        </span>
+                        <span>Все</span>
+                    </button>
+                    <button class="category-chip" data-category="trending">
+                        <span class="chip-icon">
+                            <img src="images/icons/Тренды хиты.png?v=3" alt="Тренды" class="category-icon-img" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
+                                 loading="lazy" style="display:block;">
+                            <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">🔥</span>
+                        </span>
+                        <span>Тренды</span>
+                    </button>
+                    <button class="category-chip" data-category="discounts">
+                        <span class="chip-icon">
+                            <img src="images/icons/скидки.png?v=3" alt="Скидки" class="category-icon-img" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
+                                 loading="lazy" style="display:block;">
+                            <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">🏷</span>
+                        </span>
+                        <span>Скидки</span>
+                    </button>
+                    <!-- Категории загружаются динамически -->
+                </div>
+            </section>
+
+
+            <!-- Subcategories (показываются при выборе категории) -->
+            <section class="subcategories-section" id="subcategoriesSection" hidden>
+                <div class="subcategories-grid" id="subcategoriesGrid">
+                    <!-- Подкатегории загружаются динамически -->
+                </div>
+            </section>
+
+            <!-- Products Grid -->
+            <section class="products-section">
+                <div class="section-header">
+                    <h2 id="productsTitle">Все товары</h2>
+                    <div class="filter-sort">
+                        <button class="filter-btn" id="filterBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                            </svg>
+                            Фильтры
+                        </button>
+                    </div>
+                </div>
+                <div class="products-grid" id="productsGrid">
+                    <!-- Товары загружаются динамически -->
+                </div>
+                <div class="loading" id="loadingIndicator" hidden>
+                    <div class="spinner"></div>
+                    <p>Загрузка...</p>
+                </div>
+                <div class="empty-state" id="emptyState" hidden>
+                    <span class="empty-icon">🔍</span>
+                    <h3>Ничего не найдено</h3>
+                    <p>Попробуйте изменить параметры поиска</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="catalog">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span>Каталог</span>
+            </button>
+            <button class="nav-item" data-page="favorites">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                <span>Избранное</span>
+            </button>
+            <button class="nav-item" data-page="cart">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="9" cy="21" r="1"/>
+                    <circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <span>Корзина</span>
+                <span class="nav-badge" id="cartNavBadge" hidden>0</span>
+            </button>
+            <button class="nav-item" data-page="profile">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Профиль</span>
+            </button>
+        </nav>
+
+        <!-- Product Detail Page -->
+        <div class="page" id="productPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" id="productBackBtn" data-back="catalog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1 id="productPageTitle">Товар</h1>
+                <button class="favorite-btn header-favorite-btn" id="productFavoriteBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="product-page-content">
+                <div class="product-gallery" id="productGallery">
+                    <!-- Галерея изображений -->
+                </div>
+                <div class="product-info">
+                    <div class="product-header">
+                        <h2 id="productName"></h2>
+                    </div>
+                    <div class="product-price-block">
+                        <span class="product-price" id="productPrice"></span>
+                        <span class="product-old-price" id="productOldPrice"></span>
+                        <span class="product-discount" id="productDiscount"></span>
+                    </div>
+                    <p class="product-description" id="productDescription"></p>
+                    
+                    <!-- Количество в наличии -->
+                    <div class="product-stock" id="productStock">
+                        <span class="stock-label">В наличии:</span>
+                        <span class="stock-value" id="productStockValue"></span>
+                    </div>
+                    
+                    <div class="product-quantity">
+                        <span>Количество:</span>
+                        <div class="quantity-control">
+                            <button class="qty-btn" id="qtyMinus">−</button>
+                            <span id="qtyValue">1</span>
+                            <button class="qty-btn" id="qtyPlus">+</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart-btn" id="addToCartBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"/>
+                            <circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                        </svg>
+                        Добавить в корзину
+                    </button>
+                    
+                    <!-- Информация о продавце -->
+                    <div class="product-seller-card" id="productSellerCard">
+                        <div class="seller-card-header">
+                            <div class="seller-avatar" id="sellerAvatar">🏪</div>
+                            <div class="seller-info">
+                                <div class="seller-name" id="sellerName"></div>
+                                <div class="seller-rating" id="sellerRating"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Товары продавца -->
+                    <div class="seller-products-section" id="sellerProductsSection" hidden>
+                        <h3 class="seller-products-title">Товары продавца</h3>
+                        <div class="seller-products-grid" id="sellerProductsGrid">
+                            <!-- Товары загружаются динамически -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shop Page -->
+        <div class="page" id="shopPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" id="shopBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1 id="shopPageTitle">Магазин</h1>
+            </div>
+            <div class="shop-page-content">
+                <!-- Информация о магазине -->
+                <div class="shop-header-section">
+                    <div class="shop-header-avatar" id="shopPageAvatar">🏪</div>
+                    <div class="shop-header-info">
+                        <h2 id="shopPageName">Название магазина</h2>
+                        <div class="shop-header-meta">
+                            <span id="shopPageSinceDate">Работает с</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Рейтинг и статистика -->
+                <div class="shop-stats-section">
+                    <div class="shop-stat-card">
+                        <div class="shop-stat-icon">⭐</div>
+                        <div class="shop-stat-info">
+                            <div class="shop-stat-value" id="shopPageRating">0.0</div>
+                            <div class="shop-stat-label">Рейтинг</div>
+                        </div>
+                    </div>
+                    <div class="shop-stat-card">
+                        <div class="shop-stat-icon">📦</div>
+                        <div class="shop-stat-info">
+                            <div class="shop-stat-value" id="shopPageOrdersCount">0</div>
+                            <div class="shop-stat-label">Заказов</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Местоположение (Карта) -->
+                <div class="shop-location-section" id="shopLocationSection" hidden>
+                    <h3 class="section-title">Местоположение</h3>
+                    <div class="shop-map-container" id="shopMapContainer">
+                        <!-- Карта будет загружена через iframe -->
+                    </div>
+                    <div class="shop-address" id="shopPageAddress"></div>
+                </div>
+
+                <!-- Отзывы -->
+                <div class="shop-reviews-section">
+                    <div class="section-header-with-count">
+                        <h3 class="section-title">Отзывы</h3>
+                        <span class="section-count" id="shopReviewsCount">(0)</span>
+                    </div>
+                    <div class="shop-reviews-list" id="shopReviewsList">
+                        <!-- Отзывы загружаются динамически -->
+                    </div>
+                    <div class="shop-reviews-empty" id="shopReviewsEmpty" hidden>
+                        <p>Пока нет отзывов</p>
+                    </div>
+                </div>
+
+                <!-- Товары магазина -->
+                <div class="shop-products-section">
+                    <h3 class="section-title">Товары магазина</h3>
+                    <div class="shop-products-grid" id="shopProductsGrid">
+                        <!-- Товары загружаются динамически -->
+                    </div>
+                    <div class="shop-products-empty" id="shopProductsEmpty" hidden>
+                        <p>В магазине пока нет товаров</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Modal -->
+        <div class="modal checkout-modal" id="checkoutModal" hidden>
+            <div class="modal-content checkout-modal-content">
+                <!-- Шаг 1: Номер телефона -->
+                <div class="checkout-step" id="checkoutStep1" data-step="1">
+                    <div class="modal-header">
+                        <h2>Оформление заказа</h2>
+                        <button class="modal-close" id="closeCheckoutModal">✕</button>
+                    </div>
+                    <div class="checkout-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 25%"></div>
+                        </div>
+                        <span class="progress-text">Шаг 1 из 4</span>
+                    </div>
+                    <div class="checkout-step-content">
+                        <h3>Номер телефона</h3>
+                        <p class="step-description">Для связи с вами по поводу заказа</p>
+                        <div class="phone-input-section">
+                            <button class="telegram-phone-btn" id="requestPhoneBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                                </svg>
+                                Отправить номер через Telegram
+                            </button>
+                            <div class="phone-display" id="phoneDisplay" hidden>
+                                <span class="phone-icon">📱</span>
+                                <span id="phoneNumber"></span>
+                                <button class="change-phone-btn" id="changePhoneBtn">Изменить</button>
+                            </div>
+                        </div>
+                        <button class="checkout-next-btn" id="checkoutNext1" disabled>
+                            Далее
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Шаг 2: Адрес доставки -->
+                <div class="checkout-step" id="checkoutStep2" data-step="2" hidden>
+                    <div class="modal-header">
+                        <button class="back-to-step" data-step="1">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                        </button>
+                        <h2>Адрес доставки</h2>
+                        <button class="modal-close" id="closeCheckoutModal2">✕</button>
+                    </div>
+                    <div class="checkout-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 66%"></div>
+                        </div>
+                        <span class="progress-text">Шаг 2 из 3</span>
+                    </div>
+                    <div class="checkout-step-content">
+                        <h3>Выберите адрес на карте</h3>
+                        <p class="step-description">Нажмите на карту, чтобы указать адрес доставки</p>
+                        <div class="delivery-map-container" id="deliveryMapContainer">
+                            <!-- Карта будет загружена динамически -->
+                        </div>
+                        <div class="address-input-section">
+                            <label for="deliveryAddress">Адрес доставки</label>
+                            <div class="address-input-wrapper">
+                                <input type="text" id="deliveryAddress" placeholder="Начните вводить адрес..." autocomplete="off" autofill="off">
+                                <div class="address-suggestions" id="addressSuggestions" hidden></div>
+                            </div>
+                            <button class="use-current-location-btn" id="useCurrentLocationBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                Использовать текущее местоположение
+                            </button>
+                        </div>
+                        <div class="address-details-section">
+                            <label for="recipientName">Имя получателя</label>
+                            <input type="text" id="recipientName" placeholder="Введите имя">
+                            <label for="deliveryComment">Комментарий к адресу (опционально)</label>
+                            <textarea id="deliveryComment" rows="2" placeholder="Подъезд, этаж, домофон и т.д."></textarea>
+                        </div>
+                        <button class="checkout-next-btn" id="checkoutNext2" disabled>
+                            Далее
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Шаг 3: Подтверждение -->
+                <div class="checkout-step" id="checkoutStep3" data-step="3" hidden>
+                    <div class="modal-header">
+                        <button class="back-to-step" data-step="2">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                        </button>
+                        <h2>Дата и время доставки</h2>
+                        <button class="modal-close" id="closeCheckoutModal3">✕</button>
+                    </div>
+                    <div class="checkout-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%"></div>
+                        </div>
+                        <span class="progress-text">Шаг 3 из 4</span>
+                    </div>
+                    <div class="checkout-step-content">
+                        <h3>Выберите дату и время доставки</h3>
+                        <p class="step-description">Укажите удобную дату и время для доставки заказа</p>
+                        
+                        <div class="delivery-datetime-section">
+                            <div class="form-group">
+                                <label for="deliveryDate">Дата доставки</label>
+                                <input type="date" id="deliveryDate" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="deliveryTime">Время доставки</label>
+                                <select id="deliveryTime" class="form-input" required>
+                                    <option value="">Выберите время</option>
+                                    <option value="09:00-12:00">09:00 - 12:00</option>
+                                    <option value="12:00-15:00">12:00 - 15:00</option>
+                                    <option value="15:00-18:00">15:00 - 18:00</option>
+                                    <option value="18:00-21:00">18:00 - 21:00</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="checkout-next-btn" id="checkoutNext3">
+                            Далее
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="checkout-step" id="checkoutStep4" data-step="4" hidden>
+                    <div class="modal-header">
+                        <button class="back-to-step" data-step="3">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                        </button>
+                        <h2>Подтверждение заказа</h2>
+                        <button class="modal-close" id="closeCheckoutModal4">✕</button>
+                    </div>
+                    <div class="checkout-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%"></div>
+                        </div>
+                        <span class="progress-text">Шаг 4 из 4</span>
+                    </div>
+                    <div class="checkout-step-content">
+                        <h3>Проверьте данные заказа</h3>
+                        
+                        <!-- Товары в заказе -->
+                        <div class="order-items-summary" id="orderItemsSummary">
+                            <!-- Товары загружаются динамически -->
+                        </div>
+
+                        <!-- Контактная информация -->
+                        <div class="order-info-section">
+                            <h4>Контактная информация</h4>
+                            <div class="info-row">
+                                <span class="info-label">Телефон:</span>
+                                <span id="confirmPhone"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Получатель:</span>
+                                <span id="confirmRecipient"></span>
+                            </div>
+                        </div>
+
+                        <!-- Адрес доставки -->
+                        <div class="order-info-section">
+                            <h4>Адрес доставки</h4>
+                            <div class="info-row">
+                                <span id="confirmAddress"></span>
+                            </div>
+                            <div class="info-row" id="confirmCommentRow" hidden>
+                                <span class="info-label">Комментарий:</span>
+                                <span id="confirmComment"></span>
+                            </div>
+                        </div>
+
+                        <!-- Промокод -->
+                        <div class="promo-code-section">
+                            <div class="promo-code-input-group">
+                                <input type="text" 
+                                       id="promoCodeInput" 
+                                       class="promo-code-input" 
+                                       placeholder="Введите промокод"
+                                       maxlength="50">
+                                <button type="button" 
+                                        class="promo-code-btn" 
+                                        id="applyPromoBtn">
+                                    Применить
+                                </button>
+                            </div>
+                            <div class="promo-code-message" id="promoCodeMessage" hidden></div>
+                            <div class="promo-code-applied" id="promoCodeApplied" hidden>
+                                <span id="promoCodeText"></span>
+                                <button type="button" class="promo-code-remove" id="removePromoBtn">✕</button>
+                            </div>
+                        </div>
+
+                        <!-- Итоговая сумма -->
+                        <div class="order-total-section">
+                            <div class="total-row">
+                                <span>Товары (<span id="confirmItemsCount">0</span>)</span>
+                                <span id="confirmSubtotal">0 ₽</span>
+                            </div>
+                            <div class="total-row discount" id="confirmDiscountRow" hidden>
+                                <span>Скидка на товары</span>
+                                <span id="confirmDiscount">-0 ₽</span>
+                            </div>
+                            <div class="total-row promo-discount" id="confirmPromoDiscountRow" hidden>
+                                <span>Промокод</span>
+                                <span id="confirmPromoDiscount">-0 ₽</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Доставка</span>
+                                <span id="confirmDeliveryFee">500 ₽</span>
+                            </div>
+                            <div class="total-row final">
+                                <span>Итого</span>
+                                <span id="confirmTotal">0 ₽</span>
+                            </div>
+                        </div>
+
+                        <button class="checkout-submit-btn" id="submitOrderBtn">
+                            <span id="submitOrderBtnText">Подтвердить заказ</span>
+                            <span id="submitOrderBtnLoading" hidden>⏳ Обработка...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Page -->
+        <div class="page" id="cartPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="catalog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Корзина</h1>
+                <button class="clear-cart-btn" id="clearCartBtn">Очистить</button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Товары корзины -->
+            </div>
+            <div class="cart-empty" id="cartEmpty" hidden>
+                <span class="empty-icon">🛒</span>
+                <h3>Корзина пуста</h3>
+                <p>Добавьте товары из каталога</p>
+                <button class="primary-btn" data-back="catalog">Перейти в каталог</button>
+            </div>
+            <div class="cart-summary" id="cartSummary" hidden>
+                <div class="summary-row">
+                    <span>Товары (<span id="summaryCount">0</span>)</span>
+                    <span id="summarySubtotal">0 ₽</span>
+                </div>
+                <div class="summary-row discount" id="summaryDiscountRow" hidden>
+                    <span>Скидка</span>
+                    <span id="summaryDiscount">-0 ₽</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Итого</span>
+                    <span id="summaryTotal">0 ₽</span>
+                </div>
+                <button class="checkout-btn" id="checkoutBtn">Оформить заказ</button>
+            </div>
+        </div>
+
+        <!-- Favorites Page -->
+        <div class="page" id="favoritesPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="catalog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Избранное</h1>
+            </div>
+            <div class="products-grid" id="favoritesGrid">
+                <!-- Избранные товары -->
+            </div>
+            <div class="empty-state" id="favoritesEmpty" hidden>
+                <span class="empty-icon">❤️</span>
+                <h3>Пока пусто</h3>
+                <p>Добавляйте понравившиеся товары в избранное</p>
+            </div>
+        </div>
+
+
+        <!-- Profile Page -->
+        <div class="page" id="profilePage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="catalog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Профиль</h1>
+            </div>
+            <div class="profile-content">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar">👤</div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Пользователь</h2>
+                        <p id="profileUsername">@username</p>
+                    </div>
+                </div>
+                <div class="profile-menu">
+                    <button class="menu-item" id="myOrdersBtn">
+                        <span class="menu-icon">📦</span>
+                        <span>Мои заказы</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                    <button class="menu-item" id="myShopBtn">
+                        <span class="menu-icon">🏪</span>
+                        <span>Мой магазин</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                    <button class="menu-item" id="settingsBtn">
+                        <span class="menu-icon">⚙️</span>
+                        <span>Настройки</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                    <button class="menu-item" id="helpBtn">
+                        <span class="menu-icon">❓</span>
+                        <span>Помощь</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Shop Page -->
+        <div class="page" id="myShopPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="profile">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Мой магазин</h1>
+            </div>
+            
+            <!-- Если магазина нет - показываем форму создания -->
+            <div class="shop-create-section" id="shopCreateSection">
+                <div class="shop-promo">
+                    <div class="promo-icon">🏪</div>
+                    <h2>Станьте продавцом!</h2>
+                    <p>Создайте свой магазин и начните продавать товары тысячам покупателей</p>
+                    <div class="promo-features">
+                        <div class="promo-feature">
+                            <span>📱</span>
+                            <span>Удобное управление</span>
+                        </div>
+                        <div class="promo-feature">
+                            <span>📊</span>
+                            <span>Аналитика продаж</span>
+                        </div>
+                        <div class="promo-feature">
+                            <span>💰</span>
+                            <span>Низкая комиссия</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form class="shop-form" id="shopCreateForm">
+                    <h3>Создание магазина</h3>
+                    
+                    <div class="form-group">
+                        <label for="shopPhoto">Фото магазина</label>
+                        <div class="photo-upload" id="shopPhotoUpload">
+                            <div class="photo-preview" id="shopPhotoPreview">
+                                <span>📷</span>
+                                <p>Нажмите для загрузки</p>
+                            </div>
+                            <input type="file" id="shopPhoto" accept="image/*" hidden>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="shopName">Название магазина *</label>
+                        <input type="text" id="shopName" placeholder="Например: FlowerLove" required maxlength="100">
+                        <span class="input-hint">Уникальное название вашего магазина</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="shopDescription">Описание</label>
+                        <textarea id="shopDescription" placeholder="Расскажите о вашем магазине, что вы продаёте..." rows="4" maxlength="500"></textarea>
+                        <span class="input-hint char-count"><span id="descCharCount">0</span>/500</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="shopAddress">Адрес (город)</label>
+                        <input type="text" id="shopAddress" placeholder="Москва">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="shopPhone">Телефон</label>
+                            <input type="tel" id="shopPhone" placeholder="+7 (999) 123-45-67">
+                        </div>
+                        <div class="form-group">
+                            <label for="shopEmail">Email</label>
+                            <input type="email" id="shopEmail" placeholder="shop@email.com">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn" id="createShopBtn">
+                        <span>Создать магазин</span>
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Если магазин есть - показываем панель управления -->
+            <div class="shop-dashboard" id="shopDashboard" hidden>
+                <!-- Информация о магазине -->
+                <div class="shop-info-card" id="shopInfoCard">
+                    <div class="shop-photo" id="dashboardShopPhoto">🏪</div>
+                    <div class="shop-details">
+                        <h2 id="dashboardShopName">Название магазина</h2>
+                        <div class="shop-rating">
+                            <span class="stars">⭐</span>
+                            <span id="dashboardShopRating">0.0</span>
+                            <span class="reviews-count">(<span id="dashboardReviewsCount">0</span> отзывов)</span>
+                        </div>
+                        <div class="shop-stats-row">
+                            <div class="stat">
+                                <span class="stat-value" id="dashboardProductsCount">0</span>
+                                <span class="stat-label">товаров</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value" id="dashboardOrdersCount">0</span>
+                                <span class="stat-label">заказов</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value" id="dashboardRedemptionRate">0%</span>
+                                <span class="stat-label">выкуп</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="edit-shop-btn" id="editShopBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Подписка -->
+                <div class="subscription-card" id="subscriptionCard">
+                    <div class="subscription-header">
+                        <h3>Подписка</h3>
+                        <span class="subscription-status active" id="subscriptionStatus">Активна</span>
+                    </div>
+                    <div class="subscription-info" id="subscriptionInfo">
+                        <div class="plan-name" id="currentPlanName">Бизнес</div>
+                        <div class="plan-expires">Осталось: <span id="daysRemaining">25</span> дней</div>
+                    </div>
+                    <div class="subscription-no-active" id="noSubscription" hidden>
+                        <p>У вас нет активной подписки</p>
+                        <p class="hint">Оформите подписку, чтобы добавлять товары</p>
+                    </div>
+                    <button class="subscription-btn" id="manageSubscriptionBtn">Управление подпиской</button>
+                </div>
+                
+                <!-- Быстрые действия -->
+                <div class="quick-actions">
+                    <button class="action-card" id="addProductBtn">
+                        <div class="action-icon">➕</div>
+                        <span>Добавить товар</span>
+                    </button>
+                    <button class="action-card" id="myProductsBtn">
+                        <div class="action-icon">📦</div>
+                        <span>Мои товары</span>
+                    </button>
+                    <button class="action-card" id="shopOrdersBtn">
+                        <div class="action-icon">📋</div>
+                        <span>Заказы</span>
+                    </button>
+                    <button class="action-card" id="shopReviewsBtn">
+                        <div class="action-icon">⭐</div>
+                        <span>Отзывы</span>
+                    </button>
+                    <button class="action-card" id="shopStatisticsBtn">
+                        <div class="action-icon">📊</div>
+                        <span>Статистика</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shop Statistics Dashboard Page -->
+        <div class="page" id="shopStatisticsPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="myshop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Статистика магазина</h1>
+            </div>
+            <div class="page-content">
+                <!-- Выбор периода -->
+                <div class="statistics-period-selector">
+                    <div class="period-inputs">
+                        <div class="form-group">
+                            <label for="statisticsStartDate">От</label>
+                            <input type="date" id="statisticsStartDate" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="statisticsEndDate">До</label>
+                            <input type="date" id="statisticsEndDate" class="form-input">
+                        </div>
+                        <button class="btn-primary" id="loadStatisticsBtn">Применить</button>
+                    </div>
+                    <div class="period-quick-select">
+                        <button class="period-btn" data-period="7">7 дней</button>
+                        <button class="period-btn" data-period="30">30 дней</button>
+                        <button class="period-btn" data-period="90">90 дней</button>
+                        <button class="period-btn" data-period="month">Этот месяц</button>
+                    </div>
+                </div>
+
+                <!-- Основные метрики -->
+                <div class="statistics-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="statTotalOrders">0</div>
+                            <div class="stat-label">Всего заказов</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="statTotalRevenue">0 ₽</div>
+                            <div class="stat-label">Общая выручка</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="statAvgOrderValue">0 ₽</div>
+                            <div class="stat-label">Средний чек</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Графики -->
+                <div class="statistics-charts">
+                    <div class="chart-container">
+                        <h3>Выручка по дням</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Заказы по дням</h3>
+                        <canvas id="ordersChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Заказы по статусам</h3>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Топ товаров</h3>
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Состояние загрузки -->
+                <div class="statistics-loading" id="statisticsLoading" hidden>
+                    <div class="loading-spinner"></div>
+                    <p>Загрузка статистики...</p>
+                </div>
+
+                <!-- Пустое состояние -->
+                <div class="statistics-empty" id="statisticsEmpty" hidden>
+                    <span class="empty-icon">📊</span>
+                    <h3>Нет данных</h3>
+                    <p>За выбранный период нет данных о заказах</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shop Orders Page -->
+        <div class="page" id="shopOrdersPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="myshop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Заказы магазина</h1>
+            </div>
+            <div class="page-content">
+                <!-- Фильтры статусов -->
+                <div class="orders-filter-tabs">
+                    <button class="filter-tab active" data-status="">Все</button>
+                    <button class="filter-tab" data-status="pending">Ожидают</button>
+                    <button class="filter-tab" data-status="processing">В обработке</button>
+                    <button class="filter-tab" data-status="delivered">Доставлены</button>
+                    <button class="filter-tab" data-status="cancelled">Отменены</button>
+                </div>
+
+                <!-- Список заказов -->
+                <div class="shop-orders-list" id="shopOrdersList">
+                    <!-- Заказы загружаются динамически -->
+                </div>
+                <div class="empty-state" id="shopOrdersEmpty" hidden>
+                    <span class="empty-icon">📋</span>
+                    <h3>Нет заказов</h3>
+                    <p>Заказы появятся здесь, когда клиенты будут оформлять заказы</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shop Reviews Page -->
+        <div class="page" id="shopReviewsPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="myshop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Отзывы о магазине</h1>
+            </div>
+            <div class="page-content">
+                <!-- Статистика отзывов -->
+                <div class="reviews-stats-card" id="reviewsStatsCard">
+                    <div class="reviews-stats-main">
+                        <div class="reviews-average-rating" id="reviewsAverageRating">0.0</div>
+                        <div class="reviews-stars-display" id="reviewsStarsDisplay">⭐⭐⭐⭐⭐</div>
+                        <div class="reviews-total-count" id="reviewsTotalCount">0 отзывов</div>
+                    </div>
+                    <div class="reviews-rating-breakdown" id="reviewsRatingBreakdown">
+                        <!-- Распределение по звездам -->
+                    </div>
+                </div>
+
+                <!-- Список отзывов -->
+                <div class="shop-reviews-list-full" id="shopReviewsListFull">
+                    <!-- Отзывы загружаются динамически -->
+                </div>
+                <div class="empty-state" id="shopReviewsEmptyFull" hidden>
+                    <span class="empty-icon">⭐</span>
+                    <h3>Пока нет отзывов</h3>
+                    <p>Отзывы появятся после того, как клиенты оставят их о вашем магазине</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Shop Modal -->
+        <div class="modal" id="editShopModal" hidden>
+            <div class="modal-content edit-shop-modal">
+                <div class="modal-header">
+                    <h2>Редактировать магазин</h2>
+                    <button class="modal-close" id="closeEditShopModal">✕</button>
+                </div>
+                <form class="shop-form" id="shopEditForm">
+                    <div class="form-group">
+                        <label for="editShopPhoto">Фото магазина</label>
+                        <div class="photo-upload" id="editShopPhotoUpload">
+                            <div class="photo-preview" id="editShopPhotoPreview">
+                                <span>📷</span>
+                            </div>
+                            <input type="file" id="editShopPhoto" accept="image/*" hidden>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editShopName">Название магазина *</label>
+                        <input type="text" id="editShopName" required maxlength="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editShopDescription">Описание</label>
+                        <textarea id="editShopDescription" rows="4" maxlength="500"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editShopAddress">Адрес</label>
+                        <input type="text" id="editShopAddress">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editShopPhone">Телефон</label>
+                            <input type="tel" id="editShopPhone">
+                        </div>
+                        <div class="form-group">
+                            <label for="editShopEmail">Email</label>
+                            <input type="email" id="editShopEmail">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Subscription Management Page -->
+        <div class="page" id="subscriptionManagementPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="myshop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Управление подпиской</h1>
+            </div>
+            
+            <div class="subscription-management-content">
+                <!-- Текущая подписка -->
+                <div class="current-subscription-card" id="currentSubscriptionCard">
+                    <div class="subscription-status-badge" id="subscriptionStatusBadge">Активна</div>
+                    <h2 id="managementPlanName">Премиум</h2>
+                    <div class="subscription-dates">
+                        <div class="date-row">
+                            <span class="date-label">Начало:</span>
+                            <span class="date-value" id="subscriptionStartDate"></span>
+                        </div>
+                        <div class="date-row">
+                            <span class="date-label">Окончание:</span>
+                            <span class="date-value" id="subscriptionEndDate"></span>
+                        </div>
+                        <div class="date-row highlight">
+                            <span class="date-label">Осталось:</span>
+                            <span class="date-value" id="subscriptionDaysRemaining"></span>
+                        </div>
+                    </div>
+                    <div class="subscription-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="subscriptionProgressFill"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Лимиты и использование -->
+                <div class="subscription-limits-card" id="subscriptionLimitsCard">
+                    <h3>Лимиты плана</h3>
+                    <div class="limit-item">
+                        <div class="limit-header">
+                            <span class="limit-name">Товары</span>
+                            <span class="limit-usage" id="productsUsage">0 / 100</span>
+                        </div>
+                        <div class="limit-bar">
+                            <div class="limit-fill" id="productsLimitFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="limit-item">
+                        <div class="limit-header">
+                            <span class="limit-name">Промо-размещения</span>
+                            <span class="limit-usage" id="promotionsUsage">0 / 20</span>
+                        </div>
+                        <div class="limit-bar">
+                            <div class="limit-fill" id="promotionsLimitFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- История подписок -->
+                <div class="subscription-history-card">
+                    <div class="card-header">
+                        <h3>История подписок</h3>
+                        <button class="show-all-btn" id="showAllHistoryBtn">Показать все</button>
+                    </div>
+                    <div class="history-list" id="subscriptionHistoryList">
+                        <!-- История загружается динамически -->
+                    </div>
+                    <div class="empty-state" id="subscriptionHistoryEmpty" hidden>
+                        <span class="empty-icon">📋</span>
+                        <p>История подписок пуста</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Plans Page -->
+        <div class="page" id="subscriptionPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="myshop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Тарифные планы</h1>
+            </div>
+            
+            <div class="subscription-page-content" style="padding: 16px; overflow-y: auto; flex: 1;">
+                <!-- Тестовый режим -->
+                <div class="test-mode-banner" style="margin-bottom: 16px;">
+                    <span class="test-mode-icon">🧪</span>
+                    <span class="test-mode-text">Тестовый режим: подписка активируется без оплаты</span>
+                </div>
+                
+                <!-- Текущая подписка -->
+                <div class="current-subscription-info" id="subscriptionPageCurrentInfo" hidden style="margin-bottom: 24px; padding: 16px; background: var(--bg-secondary); border-radius: var(--border-radius);">
+                    <div class="current-subscription-header">
+                        <span class="current-badge">Текущая подписка</span>
+                    </div>
+                    <div class="current-subscription-details">
+                        <div class="current-plan-name" id="subscriptionPageCurrentPlanName"></div>
+                        <div class="current-plan-expires" id="subscriptionPageCurrentExpires"></div>
+                    </div>
+                </div>
+                
+                <div class="plans-list" id="subscriptionPagePlansList">
+                    <!-- Планы загружаются динамически -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Подтверждение подписки (вынесено на уровень приложения) -->
+        <div class="modal" id="subscriptionPageConfirmModal" hidden>
+            <div class="modal-content subscription-modal">
+                <div class="modal-header">
+                    <div>
+                        <h2>Подтверждение подписки</h2>
+                        <p class="modal-subtitle">Выбранный тарифный план</p>
+                    </div>
+                    <button class="modal-close" onclick="cancelSubscribeConfirm()">✕</button>
+                </div>
+                
+                <div class="extend-subscription-content" id="subscriptionPageConfirmInfo" style="padding: 16px;">
+                    <!-- Содержимое загружается динамически -->
+                </div>
+                
+                <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 12px;">
+                    <button class="btn-secondary" onclick="cancelSubscribeConfirm()" style="flex: 1;">Отмена</button>
+                    <button class="btn-primary" id="subscriptionPageConfirmBtn" onclick="confirmSubscribe()" style="flex: 1;">Подтвердить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extend Subscription Modal -->
+
+        <!-- Subscription Plans Modal (deprecated, kept for compatibility) -->
+        <div class="modal" id="subscriptionModal" hidden>
+            <div class="modal-content subscription-modal">
+                <div class="modal-header">
+                    <div>
+                        <h2>Тарифные планы</h2>
+                        <p class="modal-subtitle">Выберите подходящий план для вашего магазина</p>
+                    </div>
+                    <button class="modal-close" id="closeSubscriptionModal">✕</button>
+                </div>
+                
+                <!-- Тестовый режим -->
+                <div class="test-mode-banner">
+                    <span class="test-mode-icon">🧪</span>
+                    <span class="test-mode-text">Тестовый режим: подписка активируется без оплаты</span>
+                </div>
+                
+                <!-- Текущая подписка -->
+                <div class="current-subscription-info" id="currentSubscriptionInfo" hidden>
+                    <div class="current-subscription-header">
+                        <span class="current-badge">Текущая подписка</span>
+                    </div>
+                    <div class="current-subscription-details">
+                        <div class="current-plan-name" id="currentSubscriptionPlanName"></div>
+                        <div class="current-plan-expires" id="currentSubscriptionExpires"></div>
+                    </div>
+                </div>
+                
+                <div class="plans-list" id="plansList">
+                    <!-- Планы загружаются динамически -->
+                </div>
+                
+                <!-- Подтверждение подписки -->
+                <div class="subscription-confirm-modal" id="subscriptionConfirmModal" hidden>
+                    <div class="confirm-content">
+                        <h3>Подтверждение подписки</h3>
+                        <div class="confirm-plan-info" id="confirmPlanInfo"></div>
+                        <div class="confirm-note">
+                            <p>⚠️ В тестовом режиме оплата не требуется</p>
+                            <p>Подписка будет активирована немедленно</p>
+                        </div>
+                        <div class="confirm-actions">
+                            <button class="cancel-confirm-btn" id="cancelConfirmBtn">Отмена</button>
+                            <button class="confirm-subscribe-btn" id="confirmSubscribeBtn">Подтвердить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Product Modal -->
+        <div class="modal" id="addProductModal" hidden>
+            <div class="modal-content add-product-modal">
+                <div class="modal-header">
+                    <h2>Добавить товар</h2>
+                    <button class="modal-close" id="closeAddProductModal">✕</button>
+                </div>
+                <form class="product-form" id="addProductForm">
+                    <!-- Медиа секция -->
+                    <div class="media-upload-section">
+                        <div class="form-group">
+                            <label>📷 Фото товара *</label>
+                            <div class="photos-grid" id="photosGrid">
+                                <div class="photo-slot add-photo-btn" id="addPhotoBtn">
+                                    <div class="photo-slot-content">
+                                        <span class="photo-slot-icon">📷</span>
+                                        <span class="photo-slot-text">Добавить фото</span>
+                                    </div>
+                                </div>
+                                <!-- Превью фото добавляются динамически -->
+                            </div>
+                            <input type="file" id="productPhotos" accept="image/*" multiple hidden>
+                            <span class="input-hint">Первое фото будет главным. Максимум 5 фото.</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🎬 Видео товара (опционально)</label>
+                            <div class="video-upload-area" id="videoUploadArea">
+                                <div class="video-placeholder" id="videoPlaceholder">
+                                    <span class="video-icon">🎥</span>
+                                    <span class="video-text">Добавить видео</span>
+                                    <span class="video-hint">MP4, до 50 МБ</span>
+                                </div>
+                                <div class="video-preview" id="videoPreview" hidden>
+                                    <video id="videoElement" controls></video>
+                                    <button type="button" class="remove-video-btn" id="removeVideoBtn">✕</button>
+                                </div>
+                            </div>
+                            <input type="file" id="productVideo" accept="video/mp4,video/webm" hidden>
+                        </div>
+                    </div>
+                    
+                    <!-- Основная информация -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">📝 Основная информация</h3>
+                        
+                        <div class="form-group">
+                            <label for="productNameInput">Название товара *</label>
+                            <input type="text" id="productNameInput" placeholder="Букет 'Весенняя нежность'" required maxlength="255">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productDescInput">Описание</label>
+                            <textarea id="productDescInput" placeholder="Опишите ваш товар подробно: состав, размеры, особенности..." rows="4" maxlength="1000"></textarea>
+                            <span class="input-hint char-count"><span id="productDescCharCount">0</span>/1000</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productCategoryInput">Категория *</label>
+                            <select id="productCategoryInput" required>
+                                <option value="">Выберите категорию</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Цена и наличие -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">💰 Цена и наличие</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="productPriceInput">Цена (₽) *</label>
+                                <div class="input-with-icon">
+                                    <input type="number" id="productPriceInput" placeholder="3500" required min="1" step="1">
+                                    <span class="input-icon">₽</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="productDiscountInput">Скидка</label>
+                                <div class="input-with-icon">
+                                    <input type="number" id="productDiscountInput" placeholder="0" min="0" max="99">
+                                    <span class="input-icon">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="discount-preview" id="discountPreview" hidden>
+                            <span class="old-price" id="previewOldPrice"></span>
+                            <span class="arrow">→</span>
+                            <span class="new-price" id="previewNewPrice"></span>
+                            <span class="savings" id="previewSavings"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productQuantityInput">Количество в наличии *</label>
+                            <div class="quantity-input-wrapper">
+                                <button type="button" class="qty-adjust-btn" id="qtyDecBtn">−</button>
+                                <input type="number" id="productQuantityInput" placeholder="10" min="0" value="1" required>
+                                <button type="button" class="qty-adjust-btn" id="qtyIncBtn">+</button>
+                            </div>
+                            <span class="input-hint">Укажите сколько единиц товара есть в наличии</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Дополнительно -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">⚡ Дополнительно</h3>
+                        
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="productTrendingInput">
+                                <span class="checkmark"></span>
+                                <span>🔥 Отметить как тренд</span>
+                            </label>
+                            <span class="input-hint">Товар появится в разделе "Тренды"</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" id="cancelAddProduct">Отмена</button>
+                        <button type="submit" class="submit-btn" id="submitProductBtn">
+                            <span class="btn-text">Добавить товар</span>
+                            <span class="btn-loader" hidden>⏳</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- My Products Page -->
+        <div class="page" id="myProductsPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="myshop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Мои товары</h1>
+                <button class="add-btn" id="addProductFromListBtn">➕</button>
+            </div>
+            <div class="my-products-list" id="myProductsList">
+                <!-- Товары магазина -->
+            </div>
+            <div class="empty-state" id="myProductsEmpty" hidden>
+                <span class="empty-icon">📦</span>
+                <h3>Нет товаров</h3>
+                <p>Добавьте первый товар</p>
+                <button class="primary-btn" id="addFirstProductBtn">Добавить товар</button>
+            </div>
+        </div>
+
+        <!-- My Orders Page -->
+        <div class="page" id="myOrdersPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="profile">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Мои заказы</h1>
+            </div>
+            <div class="page-content">
+                <!-- Фильтры статусов -->
+                <div class="orders-filter-tabs">
+                    <button class="filter-tab active" data-status="">Все</button>
+                    <button class="filter-tab" data-status="pending">Ожидают</button>
+                    <button class="filter-tab" data-status="processing">В обработке</button>
+                    <button class="filter-tab" data-status="delivered">Доставлены</button>
+                    <button class="filter-tab" data-status="cancelled">Отменены</button>
+                </div>
+
+                <!-- Список заказов -->
+                <div class="user-orders-list" id="userOrdersList">
+                    <!-- Заказы загружаются динамически -->
+                </div>
+                <div class="empty-state" id="userOrdersEmpty" hidden>
+                    <span class="empty-icon">📦</span>
+                    <h3>Нет заказов</h3>
+                    <p>Вы еще не сделали ни одного заказа</p>
+                    <button class="primary-btn" data-back="catalog">Перейти в каталог</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="settingsPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="profile">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Настройки</h1>
+            </div>
+            <div class="settings-content">
+                <div class="settings-section">
+                    <h3 class="section-title">Приложение</h3>
+                    <div class="settings-item">
+                        <button class="settings-btn add-to-home-btn" id="addToHomeBtn">
+                            <span class="btn-icon">📱</span>
+                            <span>Добавить на главный экран</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                        <p class="settings-hint">Сохраните ярлык приложения на главный экран для быстрого доступа</p>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="section-title">О приложении</h3>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <span class="settings-label">Версия</span>
+                            <span class="settings-value" id="appVersion">1.0.0</span>
+                        </div>
+                    </div>
+                    <div class="settings-item">
+                        <button class="settings-btn" id="clearCacheBtn">
+                            <span>Очистить кэш</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <button class="btn-primary settings-save-btn" id="saveSettingsBtn">Сохранить настройки</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Page -->
+        <div class="page" id="helpPage" hidden>
+            <div class="page-header">
+                <button class="back-btn" data-back="profile">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1>Помощь</h1>
+            </div>
+            <div class="help-content">
+                <div class="help-section">
+                    <h3 class="section-title">📱 Как пользоваться приложением</h3>
+                    <div class="help-item">
+                        <h4>Как сделать заказ?</h4>
+                        <ol>
+                            <li>Откройте каталог и выберите товары</li>
+                            <li>Добавьте товары в корзину</li>
+                            <li>Перейдите в корзину и нажмите "Оформить заказ"</li>
+                            <li>Укажите адрес доставки на карте</li>
+                            <li>Подтвердите заказ</li>
+                        </ol>
+                    </div>
+                    <div class="help-item">
+                        <h4>Как добавить товар в избранное?</h4>
+                        <p>Нажмите на иконку ❤️ на карточке товара или в карточке товара.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4>Как отследить заказ?</h4>
+                        <p>Перейдите в раздел "Мои заказы" в профиле. Там вы увидите все ваши заказы и их статус.</p>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3 class="section-title">🏪 Для продавцов</h3>
+                    <div class="help-item">
+                        <h4>Как создать магазин?</h4>
+                        <ol>
+                            <li>Перейдите в "Профиль" → "Мой магазин"</li>
+                            <li>Нажмите "Создать магазин"</li>
+                            <li>Заполните информацию о магазине</li>
+                            <li>Оформите подписку</li>
+                            <li>Начните добавлять товары</li>
+                        </ol>
+                    </div>
+                    <div class="help-item">
+                        <h4>Как добавить товар?</h4>
+                        <ol>
+                            <li>Откройте "Мой магазин" → "Мои товары"</li>
+                            <li>Нажмите "Добавить товар"</li>
+                            <li>Заполните информацию о товаре</li>
+                            <li>Загрузите фото и/или видео</li>
+                            <li>Сохраните товар</li>
+                        </ol>
+                    </div>
+                    <div class="help-item">
+                        <h4>Как редактировать товар?</h4>
+                        <p>Перейдите в "Мой магазин" → "Мои товары", нажмите на кнопку редактирования ✏️ на карточке товара.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4>Как обработать заказ?</h4>
+                        <ol>
+                            <li>Перейдите в "Мой магазин" → "Заказы"</li>
+                            <li>Выберите заказ</li>
+                            <li>Измените статус заказа (В обработке → Отправлен → Доставлен)</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3 class="section-title">❓ Часто задаваемые вопросы</h3>
+                    <div class="help-item">
+                        <h4>Какие способы оплаты доступны?</h4>
+                        <p>Оплата производится при получении заказа наличными или картой.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4>Сколько стоит доставка?</h4>
+                        <p>Стоимость доставки составляет 500 рублей и добавляется к сумме заказа.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4>В какие города осуществляется доставка?</h4>
+                        <p>Доставка осуществляется только в город, где находится магазин продавца.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4>Как вернуть товар?</h4>
+                        <p>Свяжитесь с продавцом через Telegram или напишите в поддержку.</p>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3 class="section-title">📞 Контакты</h3>
+                    <div class="help-item">
+                        <p>По всем вопросам обращайтесь в поддержку:</p>
+                        <p><strong>Telegram:</strong> <a href="https://t.me/support" target="_blank">@support</a></p>
+                        <p><strong>Email:</strong> support@дарибри.ru</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="js/api.js?v=5"></script>
+    <script src="js/subscription.js?v=7"></script>
+    <!-- Modules -->
+    <script src="js/modules/utils.js?v=1"></script>
+    <script src="js/modules/state.js?v=1"></script>
+    <script src="js/modules/catalog.js?v=5"></script>
+    <script src="js/modules/cart.js?v=3"></script>
+    <script src="js/modules/favorites.js?v=1"></script>
+    <script src="js/modules/navigation.js?v=1"></script>
+    <script src="js/modules/product.js?v=3"></script>
+    <script src="js/modules/profile.js?v=1"></script>
+    <script src="js/modules/shop.js?v=2"></script>
+    <script src="js/modules/checkout.js?v=10"></script>
+    <script src="js/modules/orders.js?v=1"></script>
+    <script src="js/modules/myshop.js?v=2"></script>
+    <script src="js/app.js?v=30"></script>
+</body>
+</html>
+

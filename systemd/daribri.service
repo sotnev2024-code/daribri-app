@@ -1,0 +1,22 @@
+[Unit]
+Description=Дарибри - Telegram Mini App API + Bot
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/daribri
+Environment="PATH=/var/www/daribri/venv/bin"
+EnvironmentFile=/var/www/daribri/.env
+ExecStart=/var/www/daribri/venv/bin/python /var/www/daribri/run_api.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+
+

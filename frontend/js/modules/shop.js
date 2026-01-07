@@ -1,0 +1,339 @@
+/**
+ * Shop Module - страница магазина
+ */
+
+(function() {
+    'use strict';
+    
+    const getState = () => window.App?.state;
+    const getElements = () => window.App?.elements;
+    const getUtils = () => window.App?.utils || {};
+    const getApi = () => window.api;
+    
+    // Открытие страницы магазина
+    async function openShopPage(shopId) {
+        const state = getState();
+        if (!shopId || !state) return;
+        
+        state.currentShopId = shopId;
+        
+        if (window.navigateTo) {
+            window.navigateTo('shop');
+        }
+        
+        await loadShopData(shopId);
+    }
+    
+    // Загрузка данных магазина
+    async function loadShopData(shopId) {
+        const state = getState();
+        const elements = getElements();
+        const utils = getUtils();
+        const api = getApi();
+        if (!state || !elements || !api) return;
+        
+        console.log('[SHOP] loadShopData called with shopId:', shopId);
+        
+        try {
+            const shop = await api.getShop(shopId);
+            
+            const shopPage = document.getElementById('shopPage');
+            if (!shopPage) {
+                console.error('[SHOP] shopPage element not found');
+                return;
+            }
+            
+            // Заполняем данные магазина
+            const shopNameEl = document.getElementById('shopPageName');
+            const shopAvatarEl = document.getElementById('shopPageAvatar');
+            const shopAddressEl = document.getElementById('shopPageAddress');
+            const shopRatingEl = document.getElementById('shopPageRating');
+            const shopOrdersCountEl = document.getElementById('shopPageOrdersCount');
+            const shopSinceDateEl = document.getElementById('shopPageSinceDate');
+            const shopTitleEl = document.getElementById('shopPageTitle');
+            const shopLocationSection = document.getElementById('shopLocationSection');
+            
+            console.log('[SHOP] Shop data loaded:', shop);
+            
+            if (shopNameEl) shopNameEl.textContent = shop.name || 'Магазин';
+            if (shopTitleEl) shopTitleEl.textContent = shop.name || 'Магазин';
+            
+            const getMediaUrl = utils.getMediaUrl || window.getMediaUrl || ((url) => url);
+            
+            if (shopAvatarEl) {
+                if (shop.photo_url) {
+                    const photoUrl = getMediaUrl(shop.photo_url);
+                    shopAvatarEl.innerHTML = `<img src="${photoUrl}" alt="${shop.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    shopAvatarEl.textContent = '🏪';
+                }
+            }
+            
+            // Показываем секцию локации, если есть адрес
+            if (shopLocationSection) {
+                if (shop.address) {
+                    shopLocationSection.hidden = false;
+                    if (shopAddressEl) shopAddressEl.textContent = shop.address;
+                } else {
+                    shopLocationSection.hidden = true;
+                }
+            }
+            
+            if (shopRatingEl) {
+                const rating = shop.average_rating || 0;
+                shopRatingEl.textContent = parseFloat(rating).toFixed(1);
+            }
+            
+            if (shopOrdersCountEl) {
+                shopOrdersCountEl.textContent = shop.orders_count || 0;
+            }
+            
+            if (shopSinceDateEl && shop.created_at) {
+                const createdDate = new Date(shop.created_at);
+                shopSinceDateEl.textContent = `Работает с ${createdDate.toLocaleDateString('ru-RU', {
+                    year: 'numeric',
+                    month: 'long'
+                })}`;
+            }
+            
+            // Загружаем карту
+            const mapContainer = document.getElementById('shopMapContainer');
+            if (mapContainer) {
+                await loadShopMap(mapContainer, shop);
+            }
+            
+            // Загружаем отзывы
+            await loadShopReviews(shopId);
+            
+            // Загружаем товары
+            await loadShopProducts(shopId);
+            
+        } catch (error) {
+            console.error('[SHOP] Error loading shop data:', error);
+            const utils = getUtils();
+            if (utils.showToast) utils.showToast('Ошибка загрузки магазина', 'error');
+        }
+    }
+    
+    // Загрузка карты магазина
+    async function loadShopMap(container, shop) {
+        if (!shop.address) {
+            container.innerHTML = '<p>Адрес не указан</p>';
+            return;
+        }
+        
+        const address = shop.address;
+        const city = shop.city || '';
+        
+        // Если есть координаты, используем их
+        // Yandex Maps Widget API параметр pt использует формат lon,lat (долгота, широта)
+        if (shop.latitude && shop.longitude) {
+            const lat = parseFloat(shop.latitude);
+            const lon = parseFloat(shop.longitude);
+            
+            // Проверяем, что координаты валидны (для России: lat ~50-80, lon ~20-180)
+            if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                // Yandex Maps Widget API: pt=lon,lat (долгота, широта)
+                const mapUrl = `https://yandex.ru/map-widget/v1/?z=15&pt=${lon},${lat}&l=map&lang=ru_RU`;
+                
+                container.innerHTML = `
+                    <iframe 
+                        src="${mapUrl}" 
+                        width="100%" 
+                        height="300" 
+                        frameborder="0" 
+                        style="border-radius: 12px;"
+                        allowfullscreen="true">
+                    </iframe>
+                `;
+                return;
+            }
+        }
+        
+        // Если координат нет или они невалидны, используем геокодирование адреса
+        try {
+            // Пытаемся получить координаты через API геокодирования
+            const geocodeUrl = `/api/geocode/geocode?address=${encodeURIComponent(address)}${city ? `&city=${encodeURIComponent(city)}` : ''}`;
+            const response = await fetch(geocodeUrl);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.coordinates && data.coordinates.lat && data.coordinates.lng) {
+                    const lat = parseFloat(data.coordinates.lat);
+                    const lon = parseFloat(data.coordinates.lng);
+                    
+                    // Yandex Maps Widget API: pt=lon,lat (долгота, широта)
+                    const mapUrl = `https://yandex.ru/map-widget/v1/?z=15&pt=${lon},${lat}&l=map&lang=ru_RU`;
+                    
+                    container.innerHTML = `
+                        <iframe 
+                            src="${mapUrl}" 
+                            width="100%" 
+                            height="300" 
+                            frameborder="0" 
+                            style="border-radius: 12px;"
+                            allowfullscreen="true">
+                        </iframe>
+                    `;
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('[SHOP] Error geocoding address:', error);
+        }
+        
+        // Fallback: используем поиск по адресу через Yandex Maps (параметр text)
+        const encodedAddress = encodeURIComponent(address + (city ? ` ${city}` : ''));
+        const mapUrl = `https://yandex.ru/map-widget/v1/?z=15&text=${encodedAddress}&l=map&lang=ru_RU`;
+        
+        container.innerHTML = `
+            <iframe 
+                src="${mapUrl}" 
+                width="100%" 
+                height="300" 
+                frameborder="0" 
+                style="border-radius: 12px;"
+                allowfullscreen="true">
+            </iframe>
+        `;
+    }
+    
+    // Загрузка отзывов магазина
+    async function loadShopReviews(shopId) {
+        const api = getApi();
+        if (!api) return;
+        
+        try {
+            const reviews = await api.getShopReviews(shopId);
+            const reviewsList = document.getElementById('shopReviewsList');
+            const reviewsEmpty = document.getElementById('shopReviewsEmpty');
+            const reviewsCount = document.getElementById('shopReviewsCount');
+            
+            console.log('[SHOP] Reviews loaded:', reviews?.length || 0);
+            
+            if (reviewsCount) {
+                reviewsCount.textContent = `(${reviews?.length || 0})`;
+            }
+            
+            if (!reviewsList) return;
+            
+            if (!reviews || reviews.length === 0) {
+                reviewsList.hidden = true;
+                if (reviewsEmpty) reviewsEmpty.hidden = false;
+                return;
+            }
+            
+            reviewsList.hidden = false;
+            if (reviewsEmpty) reviewsEmpty.hidden = true;
+            
+            reviewsList.innerHTML = reviews.map(review => {
+                const reviewDate = new Date(review.created_at);
+                return `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <div class="review-author">${review.user_name || 'Анонимный пользователь'}</div>
+                            <div class="review-date">${reviewDate.toLocaleDateString('ru-RU')}</div>
+                        </div>
+                        <div class="review-rating">
+                            ${'⭐'.repeat(review.rating || 0)}
+                        </div>
+                        <div class="review-text">${review.comment || ''}</div>
+                    </div>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error('[SHOP] Error loading reviews:', error);
+        }
+    }
+    
+    // Загрузка товаров магазина
+    async function loadShopProducts(shopId) {
+        const api = getApi();
+        const utils = getUtils();
+        if (!api) return;
+        
+        try {
+            const products = await api.getShopProducts(shopId);
+            const productsGrid = document.getElementById('shopProductsGrid');
+            const productsEmpty = document.getElementById('shopProductsEmpty');
+            
+            console.log('[SHOP] Products loaded:', products?.length || 0);
+            
+            if (!productsGrid) return;
+            
+            if (!products || products.length === 0) {
+                productsGrid.hidden = true;
+                if (productsEmpty) productsEmpty.hidden = false;
+                return;
+            }
+            
+            productsGrid.hidden = false;
+            if (productsEmpty) productsEmpty.hidden = true;
+            
+            const formatPrice = utils.formatPrice || window.formatPrice || ((p) => `${p} ₽`);
+            const getMediaUrl = utils.getMediaUrl || window.getMediaUrl || ((url) => url);
+            const catalogModule = window.App?.catalog;
+            
+            productsGrid.innerHTML = '';
+            
+            products.forEach(product => {
+                if (catalogModule?.createProductCard) {
+                    const card = catalogModule.createProductCard(product);
+                    if (card) productsGrid.appendChild(card);
+                } else {
+                    // Fallback, если модуль каталога не загружен
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.onclick = () => {
+                        if (window.openProductPage) window.openProductPage(product.id);
+                    };
+                    
+                    const hasDiscount = product.discount_price !== null && product.discount_price < product.price;
+                    const primaryImage = product.primary_image || product.media?.[0]?.url || '';
+                    const imageUrl = primaryImage ? getMediaUrl(primaryImage) : '';
+                    
+                    card.innerHTML = `
+                        <div class="product-image">
+                            ${imageUrl 
+                                ? `<img src="${imageUrl}" alt="${product.name}" loading="lazy">`
+                                : '<div class="product-image-placeholder">🌸</div>'
+                            }
+                        </div>
+                        <div class="product-content">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-price-row">
+                                <span class="product-current-price">${formatPrice(hasDiscount ? product.discount_price : product.price)}</span>
+                                ${hasDiscount ? `<span class="product-original-price">${formatPrice(product.price)}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    productsGrid.appendChild(card);
+                }
+            });
+            
+        } catch (error) {
+            console.error('[SHOP] Error loading products:', error);
+        }
+    }
+    
+    // Экспортируем функции
+    window.App = window.App || {};
+    window.App.shop = {
+        openShopPage,
+        loadShopData,
+        loadShopMap,
+        loadShopReviews,
+        loadShopProducts
+    };
+    
+    // Экспортируем как глобальные функции для обратной совместимости
+    window.openShopPage = openShopPage;
+    window.loadShopData = loadShopData;
+    window.loadShopMap = loadShopMap;
+    window.loadShopReviews = loadShopReviews;
+    window.loadShopProducts = loadShopProducts;
+})();
+
+
