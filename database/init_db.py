@@ -22,6 +22,39 @@ def execute_sql_file(cursor: sqlite3.Cursor, file_path: Path) -> None:
     cursor.executescript(sql_script)
 
 
+def create_basic_schema(cursor: sqlite3.Cursor) -> None:
+    """Создаёт базовую схему базы данных (минимальный набор таблиц для seed_data)."""
+    # Таблица subscription_plans
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS subscription_plans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            price DECIMAL(10, 2) NOT NULL,
+            duration_days INTEGER NOT NULL,
+            max_products INTEGER DEFAULT 50,
+            features TEXT DEFAULT '{}',
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Таблица categories
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            parent_id INTEGER,
+            name TEXT NOT NULL,
+            slug TEXT UNIQUE,
+            icon TEXT,
+            description TEXT,
+            sort_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
+        )
+    """)
+
+
 def init_database(reset: bool = False) -> None:
     """
     Инициализирует базу данных.
@@ -41,10 +74,40 @@ def init_database(reset: bool = False) -> None:
     cursor.execute("PRAGMA foreign_keys = ON")
     
     try:
-        # Применяем схему
-        print("[...] Создание схемы базы данных...")
-        execute_sql_file(cursor, SCHEMA_PATH)
-        print("[OK] Схема создана успешно")
+        # Проверяем, существует ли схема
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='categories'
+        """)
+        table_exists = cursor.fetchone() is not None
+        
+        if not table_exists:
+            # Применяем схему, если файл существует и не пустой
+            schema_applied = False
+            if SCHEMA_PATH.exists() and SCHEMA_PATH.stat().st_size > 0:
+                print("[...] Создание схемы базы данных...")
+                try:
+                    execute_sql_file(cursor, SCHEMA_PATH)
+                    print("[OK] Схема создана успешно")
+                    schema_applied = True
+                except Exception as e:
+                    print(f"[WARNING] Ошибка при выполнении schema.sql: {e}")
+            
+            # Проверяем, что таблица categories действительно создана
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='categories'
+            """)
+            table_exists_after = cursor.fetchone() is not None
+            
+            if not table_exists_after:
+                if not schema_applied:
+                    print("[WARNING] Файл schema.sql не найден или пуст")
+                else:
+                    print("[WARNING] Таблица categories не найдена после создания схемы")
+                print("[INFO] Создание базовой схемы...")
+                create_basic_schema(cursor)
+                print("[OK] Базовая схема создана")
         
         # Проверяем, есть ли уже данные
         cursor.execute("SELECT COUNT(*) FROM categories")
@@ -52,9 +115,12 @@ def init_database(reset: bool = False) -> None:
         
         if count == 0:
             # Наполняем начальными данными
-            print("[...] Наполнение начальными данными...")
-            execute_sql_file(cursor, SEED_DATA_PATH)
-            print("[OK] Начальные данные добавлены")
+            if SEED_DATA_PATH.exists():
+                print("[...] Наполнение начальными данными...")
+                execute_sql_file(cursor, SEED_DATA_PATH)
+                print("[OK] Начальные данные добавлены")
+            else:
+                print("[WARNING] Файл seed_data.sql не найден")
         else:
             print(f"[INFO] Данные уже существуют ({count} категорий)")
         
