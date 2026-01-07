@@ -91,9 +91,11 @@ def create_all_tables():
         CREATE TABLE IF NOT EXISTS product_media (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER NOT NULL,
-            file_path TEXT NOT NULL,
-            file_type TEXT NOT NULL,
-            display_order INTEGER DEFAULT 0,
+            media_type TEXT NOT NULL,
+            url TEXT NOT NULL,
+            thumbnail_url TEXT,
+            sort_order INTEGER DEFAULT 0,
+            is_primary INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         )
