@@ -30,82 +30,130 @@ def check_database():
     print(f"   Таблицы: {', '.join(tables)}")
     
     # Проверка категорий
-    cursor.execute("SELECT COUNT(*) FROM categories")
-    categories_count = cursor.fetchone()[0]
-    print(f"\n📁 Категории: {categories_count}")
-    if categories_count > 0:
-        cursor.execute("SELECT id, name, is_active FROM categories LIMIT 5")
-        for row in cursor.fetchall():
-            status = "✅" if row[2] else "❌"
-            print(f"   {status} ID={row[0]}: {row[1]}")
+    if 'categories' in tables:
+        cursor.execute("SELECT COUNT(*) FROM categories")
+        categories_count = cursor.fetchone()[0]
+        print(f"\n📁 Категории: {categories_count}")
+        if categories_count > 0:
+            # Проверяем, есть ли колонка is_active
+            cursor.execute("PRAGMA table_info(categories)")
+            columns = [col[1] for col in cursor.fetchall()]
+            has_is_active = 'is_active' in columns
+            
+            if has_is_active:
+                cursor.execute("SELECT id, name, is_active FROM categories LIMIT 5")
+                for row in cursor.fetchall():
+                    status = "✅" if row[2] else "❌"
+                    print(f"   {status} ID={row[0]}: {row[1]}")
+            else:
+                cursor.execute("SELECT id, name FROM categories LIMIT 5")
+                for row in cursor.fetchall():
+                    print(f"   ✅ ID={row[0]}: {row[1]}")
+    else:
+        categories_count = 0
+        print(f"\n📁 Категории: таблица не найдена")
     
     # Проверка магазинов
-    cursor.execute("SELECT COUNT(*) FROM shops")
-    shops_count = cursor.fetchone()[0]
-    print(f"\n🏪 Магазины: {shops_count}")
-    if shops_count > 0:
-        cursor.execute("SELECT id, name, is_active FROM shops LIMIT 5")
-        for row in cursor.fetchall():
-            status = "✅" if row[2] else "❌"
-            print(f"   {status} ID={row[0]}: {row[1]}")
+    if 'shops' in tables:
+        cursor.execute("SELECT COUNT(*) FROM shops")
+        shops_count = cursor.fetchone()[0]
+        print(f"\n🏪 Магазины: {shops_count}")
+        if shops_count > 0:
+            # Проверяем, есть ли колонка is_active
+            cursor.execute("PRAGMA table_info(shops)")
+            columns = [col[1] for col in cursor.fetchall()]
+            has_is_active = 'is_active' in columns
+            
+            if has_is_active:
+                cursor.execute("SELECT id, name, is_active FROM shops LIMIT 5")
+                for row in cursor.fetchall():
+                    status = "✅" if row[2] else "❌"
+                    print(f"   {status} ID={row[0]}: {row[1]}")
+            else:
+                cursor.execute("SELECT id, name FROM shops LIMIT 5")
+                for row in cursor.fetchall():
+                    print(f"   ✅ ID={row[0]}: {row[1]}")
+    else:
+        shops_count = 0
+        print(f"\n🏪 Магазины: таблица не найдена")
     
     # Проверка подписок
-    cursor.execute("SELECT COUNT(*) FROM shop_subscriptions")
-    subscriptions_count = cursor.fetchone()[0]
-    print(f"\n💳 Подписки (всего): {subscriptions_count}")
-    
-    cursor.execute("""
-        SELECT COUNT(*) FROM shop_subscriptions 
-        WHERE is_active = 1 AND end_date > datetime('now')
-    """)
-    active_subscriptions_count = cursor.fetchone()[0]
-    print(f"   ✅ Активных подписок: {active_subscriptions_count}")
-    
-    if active_subscriptions_count > 0:
+    if 'shop_subscriptions' in tables:
+        cursor.execute("SELECT COUNT(*) FROM shop_subscriptions")
+        subscriptions_count = cursor.fetchone()[0]
+        print(f"\n💳 Подписки (всего): {subscriptions_count}")
+        
         cursor.execute("""
-            SELECT ss.id, s.name, ss.start_date, ss.end_date, ss.is_active
-            FROM shop_subscriptions ss
-            JOIN shops s ON ss.shop_id = s.id
-            WHERE ss.is_active = 1 AND ss.end_date > datetime('now')
-            LIMIT 5
+            SELECT COUNT(*) FROM shop_subscriptions 
+            WHERE is_active = 1 AND end_date > datetime('now')
         """)
-        for row in cursor.fetchall():
-            print(f"   ✅ ID={row[0]}: {row[1]} (до {row[3]})")
+        active_subscriptions_count = cursor.fetchone()[0]
+        print(f"   ✅ Активных подписок: {active_subscriptions_count}")
+        
+        if active_subscriptions_count > 0:
+            cursor.execute("""
+                SELECT ss.id, s.name, ss.start_date, ss.end_date, ss.is_active
+                FROM shop_subscriptions ss
+                JOIN shops s ON ss.shop_id = s.id
+                WHERE ss.is_active = 1 AND ss.end_date > datetime('now')
+                LIMIT 5
+            """)
+            for row in cursor.fetchall():
+                print(f"   ✅ ID={row[0]}: {row[1]} (до {row[3]})")
+    else:
+        subscriptions_count = 0
+        active_subscriptions_count = 0
+        print(f"\n💳 Подписки: таблица не найдена")
     
     # Проверка товаров
-    cursor.execute("SELECT COUNT(*) FROM products")
-    products_count = cursor.fetchone()[0]
-    print(f"\n📦 Товары (всего): {products_count}")
+    if 'products' in tables:
+        cursor.execute("SELECT COUNT(*) FROM products")
+        products_count = cursor.fetchone()[0]
+        print(f"\n📦 Товары (всего): {products_count}")
+        
+        cursor.execute("SELECT COUNT(*) FROM products WHERE is_active = 1")
+        active_products_count = cursor.fetchone()[0]
+        print(f"   ✅ Активных товаров: {active_products_count}")
+        
+        # Проверка товаров с активными подписками
+        if 'shops' in tables and 'shop_subscriptions' in tables:
+            cursor.execute("""
+                SELECT COUNT(*) FROM products p
+                JOIN shops s ON p.shop_id = s.id
+                WHERE p.is_active = 1 
+                AND s.is_active = 1
+                AND EXISTS (
+                    SELECT 1 FROM shop_subscriptions ss 
+                    WHERE ss.shop_id = s.id 
+                    AND ss.is_active = 1 
+                    AND ss.end_date > datetime('now')
+                )
+            """)
+            visible_products_count = cursor.fetchone()[0]
+            print(f"   👁️  Видимых товаров (с активной подпиской): {visible_products_count}")
+        else:
+            visible_products_count = 0
+            print(f"   👁️  Видимых товаров: невозможно проверить (нет таблиц shops или shop_subscriptions)")
+    else:
+        products_count = 0
+        active_products_count = 0
+        visible_products_count = 0
+        print(f"\n📦 Товары: таблица не найдена")
     
-    cursor.execute("SELECT COUNT(*) FROM products WHERE is_active = 1")
-    active_products_count = cursor.fetchone()[0]
-    print(f"   ✅ Активных товаров: {active_products_count}")
-    
-    # Проверка товаров с активными подписками
-    cursor.execute("""
-        SELECT COUNT(*) FROM products p
-        JOIN shops s ON p.shop_id = s.id
-        WHERE p.is_active = 1 
-        AND s.is_active = 1
-        AND EXISTS (
-            SELECT 1 FROM shop_subscriptions ss 
-            WHERE ss.shop_id = s.id 
-            AND ss.is_active = 1 
-            AND ss.end_date > datetime('now')
-        )
-    """)
-    visible_products_count = cursor.fetchone()[0]
-    print(f"   👁️  Видимых товаров (с активной подпиской): {visible_products_count}")
-    
-    if visible_products_count == 0 and active_products_count > 0:
+    # Проверка проблемы с подписками (только если товары есть)
+    if 'products' in tables and active_products_count > 0 and visible_products_count == 0:
         print("\n⚠️  ПРОБЛЕМА: Есть активные товары, но нет активных подписок!")
         print("   Товары не будут отображаться на сайте.")
         print("   Решение: Создайте активную подписку для магазинов.")
     
     # Проверка пользователей
-    cursor.execute("SELECT COUNT(*) FROM users")
-    users_count = cursor.fetchone()[0]
-    print(f"\n👤 Пользователи: {users_count}")
+    if 'users' in tables:
+        cursor.execute("SELECT COUNT(*) FROM users")
+        users_count = cursor.fetchone()[0]
+        print(f"\n👤 Пользователи: {users_count}")
+    else:
+        users_count = 0
+        print(f"\n👤 Пользователи: таблица не найдена")
     
     # Итоговая диагностика
     print("\n" + "=" * 60)
@@ -114,17 +162,24 @@ def check_database():
     
     issues = []
     
-    if categories_count == 0:
+    # Проверка структуры базы данных
+    required_tables = ['users', 'shops', 'products', 'categories', 'shop_subscriptions', 'subscription_plans']
+    missing_tables = [t for t in required_tables if t not in tables]
+    if missing_tables:
+        issues.append(f"❌ Отсутствуют таблицы: {', '.join(missing_tables)}")
+        issues.append("   Решение: Запустите 'python database/init_db.py' для инициализации базы")
+    
+    if categories_count == 0 and 'categories' in tables:
         issues.append("❌ Нет категорий - сайт не будет работать")
     
-    if shops_count == 0:
+    if shops_count == 0 and 'shops' in tables:
         issues.append("⚠️  Нет магазинов")
     
-    if active_subscriptions_count == 0:
+    if 'shop_subscriptions' in tables and active_subscriptions_count == 0:
         issues.append("❌ Нет активных подписок - товары не будут отображаться")
     
-    if visible_products_count == 0:
-        issues.append("❌ Нет видимых товаров - каталог будет пустым")
+    if 'products' in tables and visible_products_count == 0 and active_products_count > 0:
+        issues.append("❌ Нет видимых товаров - каталог будет пустым (нет активных подписок)")
     
     if not issues:
         print("✅ Все проверки пройдены! Данные в порядке.")
