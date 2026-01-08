@@ -1388,6 +1388,22 @@ input {
     overflow: hidden;
 }
 
+.profile-home-btn-section {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+}
+
+.profile-home-btn-section .settings-btn {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.profile-home-btn-section .settings-hint {
+    text-align: center;
+}
+
 .menu-item {
     display: flex;
     align-items: center;
