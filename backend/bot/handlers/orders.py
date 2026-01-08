@@ -220,20 +220,13 @@ async def save_review(telegram_id: int, state: FSMContext, comment: Optional[str
         
         text += "\n<i>Ваш отзыв поможет другим покупателям!</i>"
         
-        # Добавляем кнопку открытия приложения
-        keyboard = None
-        if settings.WEBAPP_URL:
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="📱 Открыть приложение", url=settings.WEBAPP_URL)]
-            ])
-        
         # Проверяем тип объекта: CallbackQuery имеет атрибут message, Message - нет
         if hasattr(message_or_callback, 'message'):
             # Это CallbackQuery - редактируем сообщение
-            await message_or_callback.message.edit_text(text, reply_markup=keyboard)
+            await message_or_callback.message.edit_text(text)
         else:
             # Это Message - отправляем новое сообщение
-            await message_or_callback.answer(text, reply_markup=keyboard)
+            await message_or_callback.answer(text)
         
     except Exception as e:
         print(f"[ERROR] Failed to save review: {e}")
