@@ -3,7 +3,7 @@
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from ..services.database import DatabaseService
 
 
@@ -23,7 +23,7 @@ class SubscriptionManager:
         return subscription is not None
     
     @staticmethod
-    async def check_and_update_products_status(db: DatabaseService, shop_id: int) -> tuple[int, int]:
+    async def check_and_update_products_status(db: DatabaseService, shop_id: int) -> Tuple[int, int]:
         """
         Проверяет подписку и обновляет статус товаров магазина.
         Возвращает (активированных, деактивированных) товаров.
