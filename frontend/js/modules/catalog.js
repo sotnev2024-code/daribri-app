@@ -50,6 +50,8 @@
             'misc': 'Разное.PNG',
             'balloons': 'Шары.png',
             'masterclasses': 'Мастер классы.png',
+            'master-classes': 'Мастер классы.png',
+            'exotic-fruits': 'Экзотические фрукты и ягоды.png',
             'all': 'Все товары.png',
             'trending': 'Тренды хиты.png',
             'discounted': 'скидки.png',
