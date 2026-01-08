@@ -760,7 +760,7 @@ async function init() {
                     <p style="margin: 0 0 30px 0; opacity: 0.8; font-size: 16px;">
                         Это приложение доступно только через Telegram
                     </p>
-                    <a href="https://t.me/DariBriBot" style="
+                    <a href="https://t.me/Daribri_bot" style="
                         background: #dbff00;
                         color: #000;
                         padding: 14px 32px;
