@@ -740,36 +740,38 @@ async function init() {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         } else {
-            // DEV MODE: Тестовый пользователь для разработки без Telegram
-            console.log('DEV MODE: Creating test user');
-            const testUser = {
-                id: 1724263429,
-                username: 'testuser',
-                first_name: 'Тестовый',
-                last_name: 'Пользователь',
-                language_code: 'ru',
-                is_premium: false,
-            };
-            
-            api.setTelegramId(testUser.id);
-            state.user = testUser;
-            
-            if (elements.profileName) elements.profileName.textContent = testUser.first_name;
-            if (elements.profileUsername) elements.profileUsername.textContent = `@${testUser.username}`;
-            
-            // Регистрируем тестового пользователя
-            try {
-                await api.createOrUpdateUser({
-                    telegram_id: testUser.id,
-                    username: testUser.username,
-                    first_name: testUser.first_name,
-                    last_name: testUser.last_name,
-                    language_code: testUser.language_code,
-                    is_premium: testUser.is_premium,
-                });
-            } catch (error) {
-                console.error('Error registering test user:', error);
-            }
+            // Доступ только через Telegram
+            console.error('Access denied: Telegram WebApp not detected');
+            document.body.innerHTML = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                    color: white;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    text-align: center;
+                    padding: 20px;
+                ">
+                    <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+                    <h1 style="margin: 0 0 10px 0; font-size: 24px;">Доступ ограничен</h1>
+                    <p style="margin: 0 0 30px 0; opacity: 0.8; font-size: 16px;">
+                        Это приложение доступно только через Telegram
+                    </p>
+                    <a href="https://t.me/DariBriBot" style="
+                        background: #dbff00;
+                        color: #000;
+                        padding: 14px 32px;
+                        border-radius: 12px;
+                        text-decoration: none;
+                        font-weight: 600;
+                        font-size: 16px;
+                    ">Открыть в Telegram</a>
+                </div>
+            `;
+            return;
         }
         
         // Загружаем данные (для всех пользователей)

@@ -18,13 +18,12 @@ class API {
             this.baseUrl = baseUrl || window.location.origin;
         }
         
-        // Telegram ID (будет установлен из Telegram WebApp или тестовый)
+        // Telegram ID (будет установлен из Telegram WebApp)
         this.telegramId = null;
         
-        // В режиме разработки (без Telegram) используем тестовый ID
-        if (!window.Telegram?.WebApp?.initDataUnsafe?.user) {
-            this.telegramId = 1724263429; // Тестовый пользователь
-            console.log('DEV MODE: Using test Telegram ID:', this.telegramId);
+        // Получаем ID из Telegram WebApp если доступен
+        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+            this.telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
         }
         
         console.log('📡 API initialized');
