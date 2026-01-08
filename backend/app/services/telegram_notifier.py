@@ -3,6 +3,7 @@
 """
 
 import asyncio
+from datetime import datetime
 from typing import Optional
 from aiogram import Bot
 from aiogram.enums import ParseMode
@@ -134,9 +135,13 @@ class TelegramNotifier:
             if promo_discount > 0:
                 promo_info += f" (скидка {promo_discount:.2f} ₽)"
         
+        # Текущее время
+        order_time = datetime.now().strftime("%d.%m.%Y %H:%M")
+        
         message = f"""
 <b>🛒 Новый заказ!</b>
 
+<b>🕐 Время:</b> {order_time}
 <b>Номер заказа:</b> {order_number}
 <b>Клиент:</b> {customer_display}
 <b>Телефон:</b> {customer_phone or 'Не указан'}

@@ -607,38 +607,59 @@
             manageVideos(currentIndex);
         }
         
+        let startY = 0;
+        let isHorizontalSwipe = null;
+        
         slider.addEventListener('touchstart', (e) => {
             isDragging = true;
             startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isHorizontalSwipe = null;
             if (autoSlideInterval) clearInterval(autoSlideInterval);
-        });
+        }, { passive: true });
         
         slider.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            e.preventDefault();
-            currentX = e.touches[0].clientX - startX;
-            const offset = -currentIndex * 100 + (currentX / slider.offsetWidth) * 100;
-            track.style.transform = `translateX(${offset}%)`;
-            track.style.transition = 'none';
-        });
+            
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            
+            // Определяем направление свайпа при первом движении
+            if (isHorizontalSwipe === null && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
+                isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+            }
+            
+            // Только горизонтальный свайп обрабатываем каруселью
+            if (isHorizontalSwipe) {
+                e.preventDefault();
+                currentX = deltaX;
+                const offset = -currentIndex * 100 + (currentX / slider.offsetWidth) * 100;
+                track.style.transform = `translateX(${offset}%)`;
+                track.style.transition = 'none';
+            }
+        }, { passive: false });
         
         slider.addEventListener('touchend', () => {
             if (!isDragging) return;
             isDragging = false;
             track.style.transition = '';
             
-            const threshold = slider.offsetWidth * 0.2;
-            if (Math.abs(currentX) > threshold) {
-                if (currentX > 0) {
-                    updatePosition(currentIndex - 1);
+            // Обрабатываем только если был горизонтальный свайп
+            if (isHorizontalSwipe) {
+                const threshold = slider.offsetWidth * 0.2;
+                if (Math.abs(currentX) > threshold) {
+                    if (currentX > 0) {
+                        updatePosition(currentIndex - 1);
+                    } else {
+                        updatePosition(currentIndex + 1);
+                    }
                 } else {
-                    updatePosition(currentIndex + 1);
+                    updatePosition(currentIndex);
                 }
-            } else {
-                updatePosition(currentIndex);
             }
             
             currentX = 0;
+            isHorizontalSwipe = null;
             startAutoSlide();
         });
         

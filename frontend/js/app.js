@@ -283,6 +283,7 @@ function initElements() {
     clearCacheBtn: document.getElementById('clearCacheBtn'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
     addToHomeBtn: document.getElementById('addToHomeBtn'),
+    addToHomeProfileBtn: document.getElementById('addToHomeProfileBtn'),
     
     // My Shop
     myShopPage: document.getElementById('myShopPage'),
@@ -713,6 +714,23 @@ async function init() {
             if (elements.profileName) elements.profileName.textContent = user.first_name || 'Пользователь';
             if (elements.profileUsername) elements.profileUsername.textContent = user.username ? `@${user.username}` : '';
             
+            // Загружаем фото профиля из Telegram
+            if (user.photo_url) {
+                const avatarImg = document.getElementById('profileAvatarImg');
+                const avatarEmoji = document.getElementById('profileAvatarEmoji');
+                if (avatarImg && avatarEmoji) {
+                    avatarImg.src = user.photo_url;
+                    avatarImg.onload = () => {
+                        avatarImg.style.display = 'block';
+                        avatarEmoji.style.display = 'none';
+                    };
+                    avatarImg.onerror = () => {
+                        avatarImg.style.display = 'none';
+                        avatarEmoji.style.display = 'block';
+                    };
+                }
+            }
+            
         // Регистрируем пользователя
         try {
             await api.createOrUpdateUser({
@@ -798,6 +816,9 @@ async function init() {
             
             // Теперь загружаем товары - они будут рендериться с правильными сердечками
             await loadProducts();
+            
+            // Инициализируем pull-to-refresh
+            initPullToRefresh();
             
             console.log('[INIT] ✅ Данные загружены успешно');
         } catch (error) {
@@ -1164,6 +1185,7 @@ function initEventListeners() {
     
     // Добавление на главный экран
     elements.addToHomeBtn?.addEventListener('click', addToHomeScreen);
+    elements.addToHomeProfileBtn?.addEventListener('click', addToHomeScreen);
     
     // Счётчик символов в описании
     elements.shopDescription?.addEventListener('input', (e) => {
@@ -2598,6 +2620,74 @@ window.testClick = function(elementId) {
 
 // Простой тест - если видите этот alert, скрипт загружен
 console.log('🚀 app.js загружен!');
+
+// ==================== Pull to Refresh ====================
+function initPullToRefresh() {
+    const mainContent = document.getElementById('mainContent');
+    const pullIndicator = document.getElementById('pullToRefresh');
+    
+    if (!mainContent || !pullIndicator) return;
+    
+    let startY = 0;
+    let currentY = 0;
+    let isPulling = false;
+    let isRefreshing = false;
+    
+    mainContent.addEventListener('touchstart', (e) => {
+        if (mainContent.scrollTop === 0 && !isRefreshing) {
+            startY = e.touches[0].clientY;
+            isPulling = true;
+        }
+    }, { passive: true });
+    
+    mainContent.addEventListener('touchmove', (e) => {
+        if (!isPulling || isRefreshing) return;
+        
+        currentY = e.touches[0].clientY;
+        const pullDistance = currentY - startY;
+        
+        if (pullDistance > 0 && mainContent.scrollTop === 0) {
+            const progress = Math.min(pullDistance / 100, 1);
+            pullIndicator.style.transform = `translateY(${Math.min(pullDistance * 0.5, 60)}px)`;
+            pullIndicator.querySelector('.ptr-text').textContent = 
+                progress >= 1 ? 'Отпустите для обновления' : 'Потяните для обновления';
+        }
+    }, { passive: true });
+    
+    mainContent.addEventListener('touchend', async () => {
+        if (!isPulling || isRefreshing) return;
+        
+        const pullDistance = currentY - startY;
+        isPulling = false;
+        
+        if (pullDistance > 100 && mainContent.scrollTop === 0) {
+            // Обновление
+            isRefreshing = true;
+            pullIndicator.classList.add('refreshing');
+            pullIndicator.querySelector('.ptr-text').textContent = 'Обновление...';
+            
+            try {
+                // Перезагружаем данные
+                await loadCategories();
+                await loadProducts({ forceRefresh: true });
+            } catch (error) {
+                console.error('Pull to refresh error:', error);
+            }
+            
+            // Скрываем индикатор
+            setTimeout(() => {
+                pullIndicator.style.transform = '';
+                pullIndicator.classList.remove('refreshing');
+                isRefreshing = false;
+            }, 500);
+        } else {
+            pullIndicator.style.transform = '';
+        }
+        
+        startY = 0;
+        currentY = 0;
+    });
+}
 
 // Глобальная обработка ошибок
 window.addEventListener('error', function(e) {
