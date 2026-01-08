@@ -12,7 +12,7 @@ from pathlib import Path
 DATABASE_DIR = Path(__file__).parent
 DATABASE_PATH = DATABASE_DIR / "miniapp.db"
 SCHEMA_PATH = DATABASE_DIR / "schema.sql"
-SEED_DATA_PATH = DATABASE_DIR / "seed_data.sql"
+# SEED_DATA_PATH больше не используется - тестовые данные не загружаются автоматически
 
 
 def execute_sql_file(cursor: sqlite3.Cursor, file_path: Path) -> None:
