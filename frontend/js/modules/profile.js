@@ -1,29 +1,23 @@
 /**
  * Profile Module - профиль пользователя
+ * Этот модуль предоставляет дополнительные функции профиля
+ * Основной loadProfile находится в main.js
  */
 
-import { apiRequest } from './api.js';
-
-export async function loadProfile() {
-    try {
-        const user = await apiRequest('/users/me');
-        document.getElementById('profileName').textContent = user.first_name || 'Пользователь';
-        document.getElementById('profileId').textContent = 'ID: ' + user.telegram_id;
-    } catch (e) { 
-        console.error('Load profile error:', e); 
-    }
+// Функции для кнопок профиля (заглушки для будущего функционала)
+function openMyShop() { 
+    // Функционал реализован в myshop.js
+    console.log('[PROFILE] openMyShop called');
 }
 
-export function openMyShop() { 
-    alert('Управление магазином - в разработке'); 
+function openAddProduct() { 
+    // Функционал реализован в myshop.js
+    console.log('[PROFILE] openAddProduct called');
 }
 
-export function openAddProduct() { 
-    alert('Добавление товара - в разработке'); 
-}
-
-export function openSubscription() { 
-    alert('Подписка - в разработке'); 
+function openSubscription() { 
+    // Функционал реализован в subscription.js
+    console.log('[PROFILE] openSubscription called');
 }
 
 // Expose to window
@@ -31,5 +25,4 @@ window.openMyShop = openMyShop;
 window.openAddProduct = openAddProduct;
 window.openSubscription = openSubscription;
 
-
-
+console.log('[PROFILE] Profile module loaded');
