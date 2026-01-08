@@ -105,6 +105,7 @@ def fix_missing_columns():
         changes |= add_column_if_not_exists(cursor, 'shop_requests', 'description', 'TEXT')
         changes |= add_column_if_not_exists(cursor, 'shop_requests', 'status', 'TEXT', "'pending'")
         changes |= add_column_if_not_exists(cursor, 'shop_requests', 'admin_comment', 'TEXT')
+        changes |= add_column_if_not_exists(cursor, 'shop_requests', 'photo_file_id', 'TEXT')
     else:
         print("   ❌ Таблица shop_requests не найдена!")
     
