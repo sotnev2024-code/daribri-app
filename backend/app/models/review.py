@@ -26,8 +26,8 @@ class ShopReview(ShopReviewBase):
     user_id: int
     order_id: Optional[int] = None
     is_verified: bool = False
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     # Дополнительные поля для отображения
     user_name: Optional[str] = None
     user_avatar: Optional[str] = None
