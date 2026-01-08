@@ -740,7 +740,6 @@ async def approve_shop_request(callback: CallbackQuery, bot: Bot):
                     await bot.edit_message_text(
                         chat_id=group_id,
                         message_id=request["group_message_id"],
-                        message_thread_id=topic_id,
                         text=updated_text,
                         reply_markup=None
                     )
@@ -751,7 +750,6 @@ async def approve_shop_request(callback: CallbackQuery, bot: Bot):
                             await bot.edit_message_caption(
                                 chat_id=group_id,
                                 message_id=request["group_message_id"],
-                                message_thread_id=topic_id,
                                 caption=updated_text,
                                 reply_markup=None
                             )
@@ -762,7 +760,6 @@ async def approve_shop_request(callback: CallbackQuery, bot: Bot):
                                 await bot.edit_message_reply_markup(
                                     chat_id=group_id,
                                     message_id=request["group_message_id"],
-                                    message_thread_id=topic_id,
                                     reply_markup=None
                                 )
                             except Exception as markup_error:
@@ -774,7 +771,6 @@ async def approve_shop_request(callback: CallbackQuery, bot: Bot):
                             await bot.edit_message_reply_markup(
                                 chat_id=group_id,
                                 message_id=request["group_message_id"],
-                                message_thread_id=topic_id,
                                 reply_markup=None
                             )
                         except Exception as markup_error:
