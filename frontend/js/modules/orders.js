@@ -206,10 +206,10 @@
                         <span>${formatDeliveryDate(order.delivery_date)}</span>
                     </div>
                     ` : ''}
-                    ${order.delivery_time_slot ? `
+                    ${(order.delivery_time_slot || order.delivery_time) ? `
                     <div class="info-row">
                         <span class="info-label">Время доставки:</span>
-                        <span>${order.delivery_time_slot}</span>
+                        <span>${order.delivery_time_slot || order.delivery_time}</span>
                     </div>
                     ` : ''}
                 </div>
