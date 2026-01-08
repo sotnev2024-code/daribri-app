@@ -1,6 +1,6 @@
 """
 Скрипт инициализации базы данных SQLite для Telegram Mini App.
-Создаёт схему и наполняет начальными данными.
+Создаёт схему базы данных. Данные нужно добавлять вручную через API или бота.
 """
 
 import sqlite3
@@ -23,7 +23,7 @@ def execute_sql_file(cursor: sqlite3.Cursor, file_path: Path) -> None:
 
 
 def create_basic_schema(cursor: sqlite3.Cursor) -> None:
-    """Создаёт базовую схему базы данных (минимальный набор таблиц для seed_data)."""
+    """Создаёт базовую схему базы данных (минимальный набор таблиц)."""
     # Таблица subscription_plans
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS subscription_plans (
