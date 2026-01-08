@@ -113,14 +113,10 @@ def init_database(reset: bool = False) -> None:
         cursor.execute("SELECT COUNT(*) FROM categories")
         count = cursor.fetchone()[0]
         
+        # Не загружаем тестовые данные автоматически
+        # Пользователь должен добавить данные вручную через API или бота
         if count == 0:
-            # Наполняем начальными данными
-            if SEED_DATA_PATH.exists():
-                print("[...] Наполнение начальными данными...")
-                execute_sql_file(cursor, SEED_DATA_PATH)
-                print("[OK] Начальные данные добавлены")
-            else:
-                print("[WARNING] Файл seed_data.sql не найден")
+            print("[INFO] База данных пуста. Данные нужно добавить вручную через API или бота.")
         else:
             print(f"[INFO] Данные уже существуют ({count} категорий)")
         
