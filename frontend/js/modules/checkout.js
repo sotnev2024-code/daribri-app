@@ -111,10 +111,10 @@
         // Получаем город магазина для проверки адреса
         try {
             const shop = await api.getShop(checkoutState.shopId);
-            checkoutState.shopCity = shop.city || shop.city_name || 'Санкт-Петербург';
+            checkoutState.shopCity = shop.city || shop.city_name || 'Екатеринбург';
         } catch (error) {
             console.error('[CHECKOUT] Error loading shop:', error);
-            checkoutState.shopCity = 'Санкт-Петербург';
+            checkoutState.shopCity = 'Екатеринбург';
         }
         
         // Открываем модальное окно
@@ -723,8 +723,8 @@
             'сочи': [43.5855, 39.7231]
         };
         
-        const shopCity = (checkoutState.shopCity || 'Санкт-Петербург').toLowerCase();
-        let center = [59.939095, 30.315868]; // СПб по умолчанию
+        const shopCity = (checkoutState.shopCity || 'Екатеринбург').toLowerCase();
+        let center = [56.8389, 60.6057]; // Екатеринбург по умолчанию
         
         // Ищем координаты города
         for (const [cityName, coords] of Object.entries(cityCoords)) {
@@ -847,7 +847,7 @@
         if (!input || !suggestionsContainer) return;
         
         let timeoutId = null;
-        const city = checkoutState.shopCity || 'Санкт-Петербург';
+        const city = checkoutState.shopCity || 'Екатеринбург';
         
         // Добавляем placeholder с названием города
         input.placeholder = `Введите адрес в г. ${city}...`;
