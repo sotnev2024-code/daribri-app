@@ -844,13 +844,37 @@ async function init() {
         // Инициализация Telegram WebApp
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
-            tg.expand(); // Разворачиваем на весь экран
+            
+            // Разворачиваем на весь экран
+            tg.expand();
+            
+            // Повторный вызов expand с задержкой для надёжности
+            setTimeout(() => {
+                if (!tg.isExpanded) {
+                    tg.expand();
+                    console.log('[TG] Expanded (delayed)');
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                if (!tg.isExpanded) {
+                    tg.expand();
+                    console.log('[TG] Expanded (second attempt)');
+                }
+            }, 500);
             
             // Отключаем сворачивание при свайпе вниз
             if (tg.disableVerticalSwipes) {
                 tg.disableVerticalSwipes();
                 console.log('[TG] Vertical swipes disabled');
             }
+            
+            // Слушаем изменения viewport и разворачиваем если свернуто
+            tg.onEvent('viewportChanged', () => {
+                if (!tg.isExpanded) {
+                    tg.expand();
+                }
+            });
             
             // Инициализация кнопки "Назад" от Telegram
             initTelegramBackButton();
