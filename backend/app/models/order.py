@@ -37,12 +37,15 @@ class OrderBase(BaseModel):
     """Базовая модель заказа."""
     delivery_address: Optional[str] = None
     delivery_date: Optional[date] = None
-    delivery_time_slot: Optional[str] = None
+    delivery_time_slot: Optional[str] = Field(None, alias="delivery_time")
     recipient_name: Optional[str] = None
     recipient_phone: Optional[str] = None
     comment: Optional[str] = None
     payment_method: Optional[str] = None
     promo_code: Optional[str] = None  # Промокод
+    
+    class Config:
+        populate_by_name = True  # Позволяет использовать и имя поля, и alias
 
 
 class OrderCreate(OrderBase):
