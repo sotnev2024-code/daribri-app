@@ -845,6 +845,12 @@ async function init() {
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
             
+            // Отключаем сворачивание при свайпе вниз
+            if (tg.disableVerticalSwipes) {
+                tg.disableVerticalSwipes();
+                console.log('[TG] Vertical swipes disabled');
+            }
+            
             // Инициализация кнопки "Назад" от Telegram
             initTelegramBackButton();
             
