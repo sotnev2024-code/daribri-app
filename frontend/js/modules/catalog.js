@@ -346,15 +346,16 @@
     
     // Создание карточки товара
     function createProductCard(product) {
-        const state = getState();
-        const utils = getUtils();
-        if (!product || !product.id) {
-            console.error('[PRODUCT CARD] Invalid product data:', product);
-            return null;
-        }
-        
-        // Используем глобальные функции для избранного (будут вынесены позже)
-        const isFavorite = window.isProductFavorite ? window.isProductFavorite(product.id) : false;
+        try {
+            const state = getState();
+            const utils = getUtils();
+            if (!product || !product.id) {
+                console.error('[PRODUCT CARD] Invalid product data:', product);
+                return null;
+            }
+            
+            // Используем глобальные функции для избранного (будут вынесены позже)
+            const isFavorite = window.isProductFavorite ? window.isProductFavorite(product.id) : false;
         
         // Проверяем наличие скидки (приводим к числам для корректного сравнения)
         const price = parseFloat(product.price) || 0;
@@ -515,10 +516,12 @@
         });
         
         const favBtn = card.querySelector('.product-favorite-btn');
-        favBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (window.toggleFavorite) window.toggleFavorite(product.id);
-        });
+        if (favBtn) {
+            favBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (window.toggleFavorite) window.toggleFavorite(product.id);
+            });
+        }
         
         // Обработчик кнопки "В корзину"
         const addToCartBtn = card.querySelector('.product-card-btn.add-to-cart');
@@ -577,6 +580,10 @@
         }
         
         return card;
+        } catch (error) {
+            console.error('[PRODUCT CARD] Error creating card for product:', product?.id, error);
+            return null;
+        }
     }
     
     // Инициализация слайдера для карточки товара
