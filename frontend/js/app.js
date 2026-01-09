@@ -219,7 +219,11 @@ window.tg = tg;
 function initElements() {
     elements = {
         // Header
-        headerSearchInput: document.getElementById('headerSearchInput'),
+        searchBtn: document.getElementById('searchBtn'),
+        favoritesBtn: document.getElementById('favoritesBtn'),
+        cartBtn: document.getElementById('cartBtn'),
+        favoritesBadge: document.getElementById('favoritesBadge'),
+        cartBadge: document.getElementById('cartBadge'),
     
     // Search
     searchModal: document.getElementById('searchModal'),
@@ -1188,18 +1192,26 @@ function initEventListeners() {
         return;
     }
     
-    // Поиск через header
-    console.log('[EVENTS] Setting up header search...');
-    if (elements.headerSearchInput) {
-        elements.headerSearchInput.addEventListener('input', debounce(handleHeaderSearch, 300));
-        elements.headerSearchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                handleHeaderSearch();
-            }
+    // Кнопки header
+    if (elements.searchBtn) {
+        elements.searchBtn.addEventListener('click', () => {
+            openSearch();
         });
     }
     
-    // Модальное окно поиска (если используется)
+    if (elements.favoritesBtn) {
+        elements.favoritesBtn.addEventListener('click', () => {
+            navigateTo('favorites');
+        });
+    }
+    
+    if (elements.cartBtn) {
+        elements.cartBtn.addEventListener('click', () => {
+            navigateTo('cart');
+        });
+    }
+    
+    // Модальное окно поиска
     if (elements.closeSearch) {
         elements.closeSearch.addEventListener('click', closeSearch);
     }

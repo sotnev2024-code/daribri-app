@@ -329,13 +329,40 @@ input {
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
+    height: var(--header-height);
     background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
     z-index: 100;
     padding-top: env(safe-area-inset-top, 0px);
 }
 
-.header-search {
-    padding: 8px 12px;
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 16px;
+}
+
+.logo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .search-input-wrapper {
@@ -414,8 +441,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: safe-area + header с поиском (~56px) */
-    padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
+    /* Отступ сверху: safe-area + header */
+    padding-top: calc(env(safe-area-inset-top, 0px) + var(--header-height));
     padding-bottom: calc(var(--bottom-nav-height) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
