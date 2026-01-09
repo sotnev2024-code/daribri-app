@@ -39,13 +39,21 @@ class Shop(ShopBase):
     """Полная модель магазина."""
     id: int
     owner_id: int
-    average_rating: Decimal = Decimal("0.00")
-    total_reviews: int = 0
-    redemption_rate: Decimal = Decimal("0.00")
-    is_verified: bool = False
-    is_active: bool = True
-    created_at: datetime
-    updated_at: datetime
+    average_rating: Optional[Decimal] = Decimal("0.00")
+    total_reviews: Optional[int] = 0
+    redemption_rate: Optional[Decimal] = Decimal("0.00")
+    is_verified: Optional[bool] = False
+    is_active: Optional[bool] = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    # Дополнительные поля из базы данных
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    telegram: Optional[str] = None
+    instagram: Optional[str] = None
+    rating: Optional[float] = None
+    reviews_count: Optional[int] = 0
+    views_count: Optional[int] = 0
 
     class Config:
         from_attributes = True
