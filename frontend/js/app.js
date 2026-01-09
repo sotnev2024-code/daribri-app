@@ -844,6 +844,7 @@ async function init() {
         // Инициализация Telegram WebApp
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
+            tg.expand(); // Разворачиваем на весь экран
             
             // Отключаем сворачивание при свайпе вниз
             if (tg.disableVerticalSwipes) {
