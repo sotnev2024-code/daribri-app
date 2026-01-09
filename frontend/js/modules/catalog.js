@@ -367,20 +367,19 @@
     
     // Создание карточки товара
     function createProductCard(product) {
-        try {
-            const state = getState();
-            const utils = getUtils();
-            if (!product || !product.id) {
-                console.error('[PRODUCT CARD] Invalid product data:', product);
-                return null;
-            }
-            
-            // Используем глобальные функции для избранного (будут вынесены позже)
-            const isFavorite = window.isProductFavorite ? window.isProductFavorite(product.id) : false;
+        const state = getState();
+        const utils = getUtils();
         
-        // Проверяем наличие скидки (приводим к числам для корректного сравнения)
+        if (!product || !product.id) {
+            console.error('[PRODUCT CARD] Invalid product data:', product);
+            return null;
+        }
+        
+        // Используем глобальные функции для избранного
+        const isFavorite = window.isProductFavorite ? window.isProductFavorite(product.id) : false;
+        
+        // Проверяем наличие скидки
         const price = parseFloat(product.price) || 0;
-        // Обрабатываем discount_price: может быть null, 0, строкой "0", или числом
         let discountPrice = null;
         if (product.discount_price !== null && product.discount_price !== undefined && product.discount_price !== '') {
             const parsed = parseFloat(product.discount_price);
@@ -390,27 +389,12 @@
         }
         const hasDiscount = discountPrice !== null && discountPrice < price;
         
-        // Временное логирование для отладки (удалить после проверки)
-        if (product.discount_price !== null && product.discount_price !== undefined) {
-            console.log('[PRODUCT CARD] Discount check:', {
-                productId: product.id,
-                productName: product.name,
-                price,
-                discount_price_raw: product.discount_price,
-                discountPrice,
-                hasDiscount
-            });
-        }
-        
+        // Медиа контент
         let media = [];
         if (product.media && Array.isArray(product.media) && product.media.length > 0) {
             media = product.media;
         } else if (product.primary_image) {
             media = [{ url: product.primary_image, media_type: 'photo' }];
-        }
-        
-        if (media.length === 0 && product.id) {
-            console.warn('[PRODUCT CARD] No media found for product:', product.id, product.name);
         }
         
         const hasMultipleImages = media.length > 1;
@@ -421,6 +405,7 @@
         const getMediaUrl = utils.getMediaUrl || window.getMediaUrl || ((url) => url);
         const formatPrice = utils.formatPrice || window.formatPrice || ((p) => p);
         
+        // Генерируем HTML для изображения
         let imageHTML = '';
         if (media.length > 0) {
             if (hasMultipleImages) {
@@ -433,7 +418,7 @@
                                 <div class="product-slider-slide" data-index="${i}">
                                     ${m.media_type === 'video' 
                                         ? `<video src="${mediaUrl}" preload="metadata" muted playsinline controls loop style="width:100%;height:100%;object-fit:cover;"></video>` 
-                                        : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='flex');">`
+                                        : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
                                     }
                                 </div>
                             `;
@@ -459,8 +444,7 @@
             imageHTML = '<div class="product-image-placeholder">🌸</div>';
         }
         
-        // Проверяем, есть ли товар в корзине
-        const state = getState();
+        // Проверяем корзину
         const cart = state?.cart || [];
         const cartItem = cart.find(item => item.product_id === product.id);
         const isInCart = !!cartItem;
@@ -502,32 +486,12 @@
             </div>
         `;
         
+        // Инициализация слайдера
         if (hasMultipleImages) {
             initProductCardSlider(card, product.id, media.length);
-        } else if (media.length === 1 && media[0].media_type === 'video') {
-            const cardVideo = card.querySelector('video');
-            if (cardVideo) {
-                const playVideo = () => {
-                    if (cardVideo.readyState >= 2) {
-                        cardVideo.play().catch(err => {
-                            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-                                console.log('[VIDEO] Autoplay prevented for single video:', err);
-                            }
-                        });
-                    } else {
-                        cardVideo.addEventListener('loadeddata', playVideo, { once: true });
-                        cardVideo.load();
-                    }
-                };
-                if (cardVideo.readyState >= 2) {
-                    setTimeout(playVideo, 100);
-                } else {
-                    cardVideo.addEventListener('loadeddata', playVideo, { once: true });
-                    cardVideo.load();
-                }
-            }
         }
         
+        // Обработчик клика на карточку
         card.addEventListener('click', (e) => {
             if (e.target.closest('.product-favorite-btn') || 
                 e.target.closest('.product-slider-dots') || 
@@ -536,6 +500,7 @@
             if (window.openProductPage) window.openProductPage(product.id);
         });
         
+        // Обработчик избранного
         const favBtn = card.querySelector('.product-favorite-btn');
         if (favBtn) {
             favBtn.addEventListener('click', (e) => {
@@ -544,38 +509,34 @@
             });
         }
         
-        // Обработчик кнопки "В корзину"
+        // Обработчик "В корзину"
         const addToCartBtn = card.querySelector('.product-card-btn.add-to-cart');
         if (addToCartBtn) {
             addToCartBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 if (window.addToCart) {
                     await window.addToCart(product.id);
-                    // Перерендериваем карточку после добавления
                     renderProducts();
                 }
             });
         }
         
-        // Обработчики кнопок количества
+        // Обработчики количества
         const minusBtn = card.querySelector('.qty-btn.minus');
         const plusBtn = card.querySelector('.qty-btn.plus');
         
         if (minusBtn) {
             minusBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const currentState = getState();
-                const currentCart = currentState?.cart || [];
+                const currentCart = getState()?.cart || [];
                 const item = currentCart.find(i => i.product_id === product.id);
                 if (item) {
                     if (item.quantity <= 1) {
-                        // Удаляем из корзины
                         if (window.removeFromCart) {
                             await window.removeFromCart(item.id);
                             renderProducts();
                         }
                     } else {
-                        // Уменьшаем количество
                         if (window.updateCartQuantity) {
                             await window.updateCartQuantity(item.id, item.quantity - 1);
                             renderProducts();
@@ -588,8 +549,7 @@
         if (plusBtn) {
             plusBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const currentState = getState();
-                const currentCart = currentState?.cart || [];
+                const currentCart = getState()?.cart || [];
                 const item = currentCart.find(i => i.product_id === product.id);
                 if (item && item.quantity < product.quantity) {
                     if (window.updateCartQuantity) {
@@ -601,10 +561,6 @@
         }
         
         return card;
-        } catch (error) {
-            console.error('[PRODUCT CARD] Error creating card for product:', product?.id, error);
-            return null;
-        }
     }
     
     // Инициализация слайдера для карточки товара
