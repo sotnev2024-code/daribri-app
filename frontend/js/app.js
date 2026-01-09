@@ -780,22 +780,6 @@ async function init() {
         // Инициализация Telegram WebApp
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
-            tg.expand(); // Разворачиваем на весь экран
-            
-            // Отключаем сворачивание при свайпе вниз
-            if (tg.disableVerticalSwipes) {
-                tg.disableVerticalSwipes();
-            }
-            
-            // Включаем подтверждение закрытия (пользователь должен явно закрыть)
-            if (tg.enableClosingConfirmation) {
-                tg.enableClosingConfirmation();
-            }
-            
-            // Отключаем возможность закрытия через BackButton в каталоге
-            if (tg.BackButton) {
-                tg.BackButton.hide(); // Скрываем кнопку назад, чтобы пользователь не закрыл случайно
-            }
             
             // Предотвращаем случайное закрытие при прокрутке
             // Отслеживаем состояние прокрутки

@@ -237,7 +237,7 @@ body {
     /* Размеры */
     --header-height: 60px;
     --bottom-nav-height: 70px;
-    --tg-panel-height: 70px; /* Всегда 70px - приложение всегда в полноэкранном режиме */
+    --tg-panel-height: 0px; /* Telegram сам управляет отступами через viewport */
     --border-radius: 16px;
     --border-radius-sm: 12px;
     --border-radius-xs: 8px;
@@ -324,47 +324,33 @@ input {
 /* Header */
 .header {
     position: fixed;
-    /* Смещаем header вниз под панель Telegram */
-    top: calc(env(safe-area-inset-top, 0px) + var(--tg-panel-height));
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: auto;
-    min-height: var(--header-height);
     background: #dbff00;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
-}
-
-/* Фон над header для области панели Telegram */
-.header::before {
-    content: '';
-    position: absolute;
-    top: calc(-1 * (env(safe-area-inset-top, 0px) + var(--tg-panel-height)));
-    left: 0;
-    right: 0;
-    height: calc(env(safe-area-inset-top, 0px) + var(--tg-panel-height));
-    background: #dbff00;
-    z-index: -1;
+    padding-top: env(safe-area-inset-top, 0px);
 }
 
 .header-content {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 40px;
-    padding: 8px 16px 4px;
+    height: 44px;
+    padding: 0 16px;
 }
 
 .logo {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #000000;
 }
 
 .header-search {
-    padding: 0 12px 8px;
+    padding: 4px 12px 10px;
 }
 
 .search-input-wrapper {
@@ -400,23 +386,6 @@ input {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.logo::before {
-    content: '';
-    display: inline-block;
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    min-height: 48px;
-    background-image: url('../images/icons/icon.png?v=4');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    flex-shrink: 0;
-    /* Явно сбрасываем все свойства градиента текста для иконки */
-    background-clip: border-box;
-    -webkit-background-clip: border-box;
-    -webkit-text-fill-color: unset;
-}
 
 .header-actions {
     display: flex;
@@ -460,8 +429,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: панель Telegram + safe-area + header (с поиском ~100px) */
-    padding-top: calc(var(--tg-panel-height) + env(safe-area-inset-top, 0px) + 100px);
+    /* Отступ сверху: safe-area + header (~90px с поиском) */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
     padding-bottom: calc(var(--bottom-nav-height) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
@@ -1453,15 +1422,15 @@ input {
 /* Page */
 .page {
     position: fixed;
-    /* Отступ для панели Telegram */
-    top: calc(env(safe-area-inset-top, 0px) + var(--tg-panel-height));
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: calc(100vh - env(safe-area-inset-top, 0px) - var(--tg-panel-height));
-    height: calc(100dvh - env(safe-area-inset-top, 0px) - var(--tg-panel-height));
+    height: 100vh;
+    height: 100dvh;
     background: var(--bg-primary);
+    padding-top: env(safe-area-inset-top, 0px);
     z-index: 150;
     display: none;
     flex-direction: column;
