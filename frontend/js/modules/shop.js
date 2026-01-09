@@ -211,8 +211,10 @@
             
             console.log('[SHOP] Reviews loaded:', reviews?.length || 0);
             
+            const totalReviews = reviews?.length || 0;
+            
             if (reviewsCount) {
-                reviewsCount.textContent = `(${reviews?.length || 0})`;
+                reviewsCount.textContent = `(${totalReviews})`;
             }
             
             if (!reviewsList) return;
@@ -226,21 +228,35 @@
             reviewsList.hidden = false;
             if (reviewsEmpty) reviewsEmpty.hidden = true;
             
-            reviewsList.innerHTML = reviews.map(review => {
+            // Показываем только последние 3 отзыва
+            const lastReviews = reviews.slice(0, 3);
+            
+            let html = lastReviews.map(review => {
                 const reviewDate = new Date(review.created_at);
                 return `
-                    <div class="review-item">
+                    <div class="shop-review-card">
                         <div class="review-header">
-                            <div class="review-author">${review.user_name || 'Анонимный пользователь'}</div>
+                            <div class="review-author">${review.user_name || 'Покупатель'}</div>
                             <div class="review-date">${reviewDate.toLocaleDateString('ru-RU')}</div>
                         </div>
                         <div class="review-rating">
                             ${'⭐'.repeat(review.rating || 0)}
                         </div>
-                        <div class="review-text">${review.comment || ''}</div>
+                        ${review.comment ? `<div class="review-text">${review.comment}</div>` : ''}
                     </div>
                 `;
             }).join('');
+            
+            // Если отзывов больше 3, показываем кнопку "Показать все"
+            if (totalReviews > 3) {
+                html += `
+                    <button class="show-all-reviews-btn" onclick="window.showAllReviews && window.showAllReviews(${shopId})">
+                        Показать все отзывы (${totalReviews})
+                    </button>
+                `;
+            }
+            
+            reviewsList.innerHTML = html;
             
         } catch (error) {
             console.error('[SHOP] Error loading reviews:', error);
@@ -328,12 +344,68 @@
         loadShopProducts
     };
     
+    // Показать все отзывы в модальном окне
+    async function showAllReviews(shopId) {
+        const api = getApi();
+        if (!api) return;
+        
+        try {
+            const reviews = await api.getShopReviews(shopId);
+            
+            if (!reviews || reviews.length === 0) return;
+            
+            // Создаём модальное окно
+            const modal = document.createElement('div');
+            modal.className = 'reviews-modal';
+            modal.innerHTML = `
+                <div class="reviews-modal-overlay"></div>
+                <div class="reviews-modal-content">
+                    <div class="reviews-modal-header">
+                        <h2>Все отзывы (${reviews.length})</h2>
+                        <button class="reviews-modal-close">&times;</button>
+                    </div>
+                    <div class="reviews-modal-body">
+                        ${reviews.map(review => {
+                            const reviewDate = new Date(review.created_at);
+                            return `
+                                <div class="shop-review-card">
+                                    <div class="review-header">
+                                        <div class="review-author">${review.user_name || 'Покупатель'}</div>
+                                        <div class="review-date">${reviewDate.toLocaleDateString('ru-RU')}</div>
+                                    </div>
+                                    <div class="review-rating">
+                                        ${'⭐'.repeat(review.rating || 0)}
+                                    </div>
+                                    ${review.comment ? `<div class="review-text">${review.comment}</div>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Закрытие модального окна
+            const closeModal = () => {
+                modal.remove();
+            };
+            
+            modal.querySelector('.reviews-modal-overlay').onclick = closeModal;
+            modal.querySelector('.reviews-modal-close').onclick = closeModal;
+            
+        } catch (error) {
+            console.error('[SHOP] Error showing all reviews:', error);
+        }
+    }
+    
     // Экспортируем как глобальные функции для обратной совместимости
     window.openShopPage = openShopPage;
     window.loadShopData = loadShopData;
     window.loadShopMap = loadShopMap;
     window.loadShopReviews = loadShopReviews;
     window.loadShopProducts = loadShopProducts;
+    window.showAllReviews = showAllReviews;
 })();
 
 
