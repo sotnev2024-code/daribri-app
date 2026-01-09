@@ -687,6 +687,66 @@ async function handleHeaderSearch() {
 
 window.handleHeaderSearch = handleHeaderSearch;
 
+// ==================== Telegram BackButton ====================
+
+// История навигации для кнопки "Назад"
+let navigationHistory = ['catalog'];
+
+function initTelegramBackButton() {
+    const tg = window.Telegram?.WebApp;
+    if (!tg || !tg.BackButton) {
+        console.log('[BackButton] Telegram BackButton not available');
+        return;
+    }
+    
+    // Обработчик нажатия на кнопку "Назад"
+    tg.BackButton.onClick(() => {
+        console.log('[BackButton] Clicked, history:', navigationHistory);
+        goBack();
+    });
+    
+    console.log('[BackButton] Initialized');
+}
+
+// Показать кнопку "Назад"
+function showBackButton() {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.BackButton) {
+        tg.BackButton.show();
+    }
+}
+
+// Скрыть кнопку "Назад"
+function hideBackButton() {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.BackButton) {
+        tg.BackButton.hide();
+    }
+}
+
+// Навигация назад
+function goBack() {
+    console.log('[goBack] History before:', [...navigationHistory]);
+    
+    if (navigationHistory.length > 1) {
+        navigationHistory.pop(); // Убираем текущую страницу
+        const previousPage = navigationHistory[navigationHistory.length - 1];
+        console.log('[goBack] Going to:', previousPage);
+        
+        // Переходим на предыдущую страницу без добавления в историю
+        navigateToPage(previousPage, false);
+    } else {
+        // Если история пуста, переходим на каталог
+        navigateToPage('catalog', false);
+    }
+}
+
+// Экспортируем глобально
+window.showBackButton = showBackButton;
+window.hideBackButton = hideBackButton;
+window.goBack = goBack;
+window.navigationHistory = navigationHistory;
+
 // ==================== iOS Optimizations ====================
 
 function initIOSOptimizations() {
@@ -780,6 +840,9 @@ async function init() {
         // Инициализация Telegram WebApp
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
+            
+            // Инициализация кнопки "Назад" от Telegram
+            initTelegramBackButton();
             
             // Предотвращаем случайное закрытие при прокрутке
             // Отслеживаем состояние прокрутки
@@ -1499,7 +1562,32 @@ let checkoutState = window.App?.checkout?.checkoutState || {
 // Заглушки для обратной совместимости (если модули еще не загружены)
 // Если модули загружены, используем функции из них
 async function navigateTo(page) {
-    console.log('[NAV] Navigating to:', page);
+    // Вызываем navigateToPage с добавлением в историю
+    return navigateToPage(page, true);
+}
+
+// Внутренняя функция навигации (с опцией добавления в историю)
+async function navigateToPage(page, addToHistory = true) {
+    console.log('[NAV] Navigating to:', page, 'addToHistory:', addToHistory);
+    
+    // Управление историей и BackButton
+    const mainPages = ['catalog', 'favorites', 'cart', 'profile'];
+    
+    if (addToHistory) {
+        // Добавляем в историю только если это не дубликат
+        if (navigationHistory[navigationHistory.length - 1] !== page) {
+            navigationHistory.push(page);
+        }
+    }
+    
+    // Показываем/скрываем кнопку "Назад"
+    if (page === 'catalog' && navigationHistory.length <= 1) {
+        hideBackButton();
+    } else {
+        showBackButton();
+    }
+    
+    console.log('[NAV] History:', [...navigationHistory]);
     
     // Скрываем header при переходе на страницы (кроме каталога)
     const header = document.querySelector('.header');
@@ -1544,8 +1632,15 @@ async function navigateTo(page) {
     });
     
     // Обновляем навигацию (только для основных страниц)
-    const mainPages = ['catalog', 'favorites', 'cart', 'profile'];
     if (mainPages.includes(page)) {
+        // Сбрасываем историю при переходе на главные страницы через нижнее меню
+        if (addToHistory) {
+            navigationHistory = [page];
+            if (page === 'catalog') {
+                hideBackButton();
+            }
+        }
+        
         if (elements.bottomNav) {
             elements.bottomNav.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.page === page);

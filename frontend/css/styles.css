@@ -1475,12 +1475,8 @@ input {
 }
 
 .back-btn {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-primary);
+    /* Скрываем - используем кнопку "Назад" от Telegram */
+    display: none !important;
 }
 
 .clear-cart-btn {
