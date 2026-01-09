@@ -256,7 +256,8 @@ body {
 }
 
 /* Dark theme */
-@media (prefers-color-scheme: dark) {
+/* Темная тема отключена - всегда светлая */
+/* @media (prefers-color-scheme: dark) {
     :root {
         --bg-primary: #111827;
         --bg-secondary: #1F2937;
@@ -266,7 +267,7 @@ body {
         --text-muted: #9CA3AF;
         --border: #374151;
     }
-}
+} */
 
 /* Reset */
 *, *::before, *::after {
@@ -523,6 +524,7 @@ input {
     white-space: normal;
     word-break: break-word;
     overflow: visible;
+    color: #000000;
     display: block;
 }
 
