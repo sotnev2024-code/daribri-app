@@ -215,30 +215,17 @@
         const state = getState();
         const elements = getElements();
         
-        console.log('[CART UI] updateProductPageCartUI called', {
-            productId,
-            hasState: !!state,
-            hasElements: !!elements,
-            cart: state?.cart,
-            addToCartBtn: elements?.addToCartBtn,
-            inCartControls: elements?.inCartControls
-        });
-        
         if (!state || !elements) return;
         
         const cartItem = state.cart.find(item => item.product_id === productId);
         
-        console.log('[CART UI] Cart item found:', cartItem);
-        
         if (cartItem) {
             // Товар в корзине - показываем кнопки +/- и "Перейти в корзину"
-            console.log('[CART UI] Showing in-cart controls');
             if (elements.addToCartBtn) elements.addToCartBtn.hidden = true;
             if (elements.inCartControls) elements.inCartControls.hidden = false;
             if (elements.cartQtyValue) elements.cartQtyValue.textContent = cartItem.quantity;
         } else {
             // Товара нет в корзине - показываем кнопку "Добавить"
-            console.log('[CART UI] Showing add to cart button');
             if (elements.addToCartBtn) elements.addToCartBtn.hidden = false;
             if (elements.inCartControls) elements.inCartControls.hidden = true;
         }
@@ -253,11 +240,20 @@
         if (!state || !elements || !api || !state.currentProduct) return;
         
         const productId = state.currentProduct.id;
+        const currentProduct = state.currentProduct;
         const cartItem = state.cart.find(item => item.product_id === productId);
         
         if (!cartItem) return;
         
         const newQuantity = cartItem.quantity + delta;
+        
+        // Проверка на максимальное количество (наличие)
+        if (delta > 0 && currentProduct.quantity && newQuantity > currentProduct.quantity) {
+            if (utils.showToast) {
+                utils.showToast(`Нельзя добавить больше ${currentProduct.quantity} шт. (столько в наличии)`, 'warning');
+            }
+            return;
+        }
         
         if (newQuantity < 1) {
             // Удаляем товар из корзины

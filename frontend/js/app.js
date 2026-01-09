@@ -1053,9 +1053,7 @@ function initEventListeners() {
         closeProductPage();
     });
     
-    // Количество в модалке
-    elements.qtyMinus?.addEventListener('click', () => updateQuantity(-1));
-    elements.qtyPlus?.addEventListener('click', () => updateQuantity(1));
+    // Кнопки изменения количества удалены - теперь используем кнопки в корзине
     
     // Добавить в корзину
     elements.addToCartBtn?.addEventListener('click', addToCart);
