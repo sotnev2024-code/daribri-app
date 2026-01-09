@@ -256,18 +256,117 @@ body {
 }
 
 /* Dark theme */
-/* Темная тема отключена - всегда светлая */
-/* @media (prefers-color-scheme: dark) {
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
     :root {
-        --bg-primary: #111827;
-        --bg-secondary: #1F2937;
-        --bg-tertiary: #374151;
-        --text-primary: #F9FAFB;
-        --text-secondary: #D1D5DB;
-        --text-muted: #9CA3AF;
-        --border: #374151;
+        --bg-primary: #0f0f0f;
+        --bg-secondary: #1a1a1a;
+        --bg-tertiary: #262626;
+        --text-primary: #FFFFFF;
+        --text-secondary: #E5E5E5;
+        --text-muted: #A3A3A3;
+        --border: #333333;
+        --primary: #dbff00;
+        --primary-dark: #b8d900;
+        --primary-light: #e5ff33;
     }
-} */
+    
+    /* Header в темной теме */
+    .header {
+        background: #1a1a1a;
+        border-bottom-color: #333333;
+    }
+    
+    .logo {
+        color: #FFFFFF;
+    }
+    
+    .icon-btn {
+        color: #FFFFFF;
+    }
+    
+    /* Категории в темной теме */
+    .category-chip {
+        background: #1a1a1a;
+        border-color: #333333;
+    }
+    
+    .category-chip > span:last-child {
+        color: #FFFFFF;
+    }
+    
+    .category-chip.active {
+        background: var(--gradient-primary);
+    }
+    
+    .category-chip.active > span:last-child {
+        color: #000000;
+    }
+    
+    /* Поиск в темной теме */
+    .search-input {
+        background: #262626;
+        color: #FFFFFF;
+        border: 1px solid #333333;
+    }
+    
+    .search-input::placeholder {
+        color: #A3A3A3;
+    }
+    
+    /* Карточки товаров */
+    .product-card {
+        background: #1a1a1a;
+        border-color: #333333;
+    }
+    
+    /* Нижняя навигация */
+    .bottom-nav {
+        background: #1a1a1a;
+        border-top-color: #333333;
+    }
+    
+    /* Страницы */
+    .page {
+        background: #0f0f0f;
+    }
+    
+    .page-header {
+        background: #1a1a1a;
+        border-bottom-color: #333333;
+    }
+    
+    /* Модальные окна */
+    .modal-content {
+        background: #1a1a1a;
+    }
+    
+    /* Кнопки */
+    .btn-primary {
+        background: var(--primary);
+        color: #000000;
+    }
+    
+    .btn-secondary {
+        background: #262626;
+        color: #FFFFFF;
+        border-color: #333333;
+    }
+    
+    /* Inputs */
+    input, textarea, select {
+        background: #262626;
+        color: #FFFFFF;
+        border-color: #333333;
+    }
+    
+    /* Секции профиля */
+    .profile-menu,
+    .settings-section {
+        background: #1a1a1a;
+        border-color: #333333;
+    }
+}
 
 /* Reset */
 *, *::before, *::after {
@@ -524,7 +623,7 @@ input {
     white-space: normal;
     word-break: break-word;
     overflow: visible;
-    color: #000000;
+    color: var(--text-primary);
     display: block;
 }
 
