@@ -219,11 +219,7 @@ window.tg = tg;
 function initElements() {
     elements = {
         // Header
-        searchBtn: document.getElementById('searchBtn'),
-        favoritesBtn: document.getElementById('favoritesBtn'),
-        cartBtn: document.getElementById('cartBtn'),
-    favoritesBadge: document.getElementById('favoritesBadge'),
-    cartBadge: document.getElementById('cartBadge'),
+        headerSearchInput: document.getElementById('headerSearchInput'),
     
     // Search
     searchModal: document.getElementById('searchModal'),
@@ -413,7 +409,7 @@ function initElements() {
     window.tg = tg;
     
     // Проверяем, что основные элементы найдены
-    const requiredElements = ['searchBtn', 'categoriesSlider', 'productsGrid', 'bottomNav'];
+    const requiredElements = ['categoriesSlider', 'productsGrid', 'bottomNav'];
     const missing = requiredElements.filter(id => !elements[id]);
     if (missing.length > 0) {
         console.warn('Missing required elements:', missing);
@@ -662,6 +658,34 @@ const handleSearch = window.handleSearch || window.App?.navigation?.handleSearch
 window.openSearch = openSearch;
 window.closeSearch = closeSearch;
 window.handleSearch = handleSearch;
+
+// Поиск через header
+async function handleHeaderSearch() {
+    const query = elements.headerSearchInput?.value?.trim() || '';
+    
+    if (query.length === 0) {
+        // Сбрасываем поиск - показываем все товары
+        state.searchQuery = '';
+        loadProducts();
+        return;
+    }
+    
+    if (query.length < 2) {
+        return; // Минимум 2 символа
+    }
+    
+    state.searchQuery = query;
+    
+    try {
+        const products = await api.getProducts({ search: query });
+        state.products = Array.isArray(products) ? products : (products?.items || products?.data || []);
+        renderProducts();
+    } catch (error) {
+        console.error('[SEARCH] Error:', error);
+    }
+}
+
+window.handleHeaderSearch = handleHeaderSearch;
 
 // ==================== iOS Optimizations ====================
 
@@ -1112,18 +1136,26 @@ function initEventListeners() {
     console.log('[EVENTS] Setting up event listeners...');
     
     // Поиск
-    if (!elements.searchBtn || !elements.closeSearch || !elements.categoriesSlider) {
+    if (!elements.categoriesSlider) {
         console.error('[EVENTS] Critical elements not found. Some features may not work.');
         return;
     }
     
-    // Поиск
-    console.log('[EVENTS] Setting up search button...');
-    elements.searchBtn.addEventListener('click', (e) => {
-        console.log('[CLICK] Search button clicked');
-        openSearch();
-    });
-    elements.closeSearch.addEventListener('click', closeSearch);
+    // Поиск через header
+    console.log('[EVENTS] Setting up header search...');
+    if (elements.headerSearchInput) {
+        elements.headerSearchInput.addEventListener('input', debounce(handleHeaderSearch, 300));
+        elements.headerSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleHeaderSearch();
+            }
+        });
+    }
+    
+    // Модальное окно поиска (если используется)
+    if (elements.closeSearch) {
+        elements.closeSearch.addEventListener('click', closeSearch);
+    }
     elements.searchInput?.addEventListener('input', debounce(handleSearch, 300));
     
     // Категории
@@ -2850,21 +2882,15 @@ setTimeout(() => {
     console.log('🔍 Проверка инициализации...');
     if (typeof elements === 'undefined') {
         console.error('❌ ОШИБКА: elements не определён!');
-    } else if (!elements.searchBtn) {
-        console.error('❌ ОШИБКА: elements.searchBtn не найден!');
-        console.log('Доступные элементы:', Object.keys(elements).slice(0, 10));
     } else {
         console.log('✅ Приложение инициализировано успешно!');
-        console.log('✅ searchBtn найден:', elements.searchBtn);
     }
 }, 2000);
 
 // Глобальная проверка элементов после загрузки
 setTimeout(() => {
     console.log('[APP] Element check after 1 second:');
-    console.log('  searchBtn:', !!elements.searchBtn);
     console.log('  bottomNav:', !!elements.bottomNav);
-    console.log('  cartBtn:', !!elements.cartBtn);
-    console.log('  favoritesBtn:', !!elements.favoritesBtn);
+    console.log('  headerSearchInput:', !!elements.headerSearchInput);
 }, 1000);
 

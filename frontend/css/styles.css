@@ -330,7 +330,8 @@ input {
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: var(--header-height);
+    height: auto;
+    min-height: var(--header-height);
     background: #dbff00;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
@@ -351,9 +352,9 @@ input {
 .header-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 100%;
-    padding: 0 16px;
+    justify-content: center;
+    height: 50px;
+    padding: 8px 16px;
 }
 
 .logo {
@@ -363,6 +364,49 @@ input {
     gap: 8px;
     font-weight: 700;
     color: #000000;
+}
+
+.logo-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.header-search {
+    padding: 0 16px 12px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-wrapper .search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 12px 12px 44px;
+    border: none;
+    border-radius: 12px;
+    background: #FFFFFF;
+    font-size: 1rem;
+    color: var(--text-primary);
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-input:focus {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 }
 
 .logo::before {
@@ -425,8 +469,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: панель Telegram + safe-area + header */
-    padding-top: calc(var(--tg-panel-height) + env(safe-area-inset-top, 0px) + var(--header-height));
+    /* Отступ сверху: панель Telegram + safe-area + header + поиск */
+    padding-top: calc(var(--tg-panel-height) + env(safe-area-inset-top, 0px) + var(--header-height) + 50px);
     padding-bottom: calc(var(--bottom-nav-height) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
