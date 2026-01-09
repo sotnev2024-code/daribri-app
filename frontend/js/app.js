@@ -848,6 +848,9 @@ async function init() {
             // Инициализация кнопки "Назад" от Telegram
             initTelegramBackButton();
             
+            // Проверяем, добавлено ли приложение на главный экран
+            checkIfAddedToHomeScreen();
+            
             // Предотвращаем случайное закрытие при прокрутке
             // Отслеживаем состояние прокрутки
             let isScrolling = false;
@@ -2754,6 +2757,51 @@ function clearCache() {
     }
 }
 
+// Проверка, добавлено ли приложение на главный экран
+function checkIfAddedToHomeScreen() {
+    // Проверка через Telegram WebApp API (версия 8.0+)
+    if (tg && tg.checkHomeScreenStatus && tg.isVersionAtLeast && tg.isVersionAtLeast('8.0')) {
+        try {
+            tg.checkHomeScreenStatus((status) => {
+                console.log('[HOME SCREEN] Telegram status:', status);
+                // status: 'added', 'missed', 'unknown', 'unsupported'
+                if (status === 'added') {
+                    hideAddToHomeButtons();
+                }
+            });
+        } catch (e) {
+            console.warn('[HOME SCREEN] checkHomeScreenStatus failed:', e);
+        }
+    }
+    
+    // Проверка через display-mode (PWA)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         window.navigator.standalone === true || // iOS Safari
+                         document.referrer.includes('android-app://'); // Android TWA
+    
+    if (isStandalone) {
+        console.log('[HOME SCREEN] App is running in standalone mode');
+        hideAddToHomeButtons();
+        return true;
+    }
+    
+    return false;
+}
+
+// Скрыть кнопки "Добавить на главный экран"
+function hideAddToHomeButtons() {
+    const buttons = document.querySelectorAll('.add-to-home-section, #addToHomeProfileBtn, #addToHomeBtn');
+    buttons.forEach(btn => {
+        if (btn) {
+            const section = btn.closest('.add-to-home-section') || btn.parentElement;
+            if (section) {
+                section.style.display = 'none';
+            }
+        }
+    });
+    console.log('[HOME SCREEN] Add to home buttons hidden');
+}
+
 // Добавление на главный экран
 function addToHomeScreen() {
     console.log('[SETTINGS] Add to home screen clicked');
@@ -2763,6 +2811,8 @@ function addToHomeScreen() {
         console.log('[SETTINGS] Using Telegram addToHomeScreen API');
         try {
             tg.addToHomeScreen();
+            // После добавления проверяем статус
+            setTimeout(checkIfAddedToHomeScreen, 1000);
             return;
         } catch (e) {
             console.warn('[SETTINGS] addToHomeScreen failed:', e);
