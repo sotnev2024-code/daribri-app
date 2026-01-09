@@ -107,6 +107,7 @@
             }
             
             // Информация о продавце
+            const sellerSection = document.querySelector('.product-seller-section');
             const sellerCard = document.getElementById('productSellerCard');
             const sellerAvatar = document.getElementById('sellerAvatar');
             const sellerName = document.getElementById('sellerName');
@@ -132,11 +133,13 @@
                     ${reviewsCount > 0 ? `<span class="rating-count">(${reviewsCount} ${reviewsCount === 1 ? 'отзыв' : reviewsCount < 5 ? 'отзыва' : 'отзывов'})</span>` : ''}
                 `;
                 
-                sellerCard.style.cursor = 'pointer';
-                sellerCard.addEventListener('click', (e) => {
+                // Клик на всю секцию магазина
+                const clickTarget = sellerSection || sellerCard;
+                clickTarget.style.cursor = 'pointer';
+                clickTarget.onclick = (e) => {
                     e.stopPropagation();
                     if (window.openShopPage) window.openShopPage(product.shop_id);
-                });
+                };
             }
             
             // Загружаем товары продавца

@@ -1002,7 +1002,73 @@ input {
 }
 
 .product-info {
-    padding: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Секции карточки товара */
+.product-section {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+}
+
+.product-section .section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.product-main-section {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.product-description-section .product-description {
+    margin: 0;
+}
+
+.product-availability-section .product-stock {
+    margin-bottom: 12px;
+}
+
+.product-availability-section .product-quantity {
+    margin: 0;
+}
+
+.product-cart-section {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.product-seller-section {
+    cursor: pointer;
+}
+
+.product-seller-section .product-seller-card {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.product-seller-section .seller-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.product-seller-section .seller-arrow {
+    margin-left: auto;
+    color: var(--text-muted);
 }
 
 .product-header {
@@ -1010,7 +1076,6 @@ input {
     justify-content: space-between;
     align-items: flex-start;
     gap: 16px;
-    margin-bottom: 8px;
 }
 
 .product-info h2 {
@@ -1078,14 +1143,12 @@ input {
     color: var(--text-secondary);
     font-size: 0.9rem;
     line-height: 1.6;
-    margin-bottom: 20px;
 }
 
 .product-quantity {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
 }
 
 .quantity-control {
