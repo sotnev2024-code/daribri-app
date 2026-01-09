@@ -4350,7 +4350,9 @@ input {
     height: 100vh;
     border-radius: 0;
     padding: 0;
+    padding-top: calc(70px + env(safe-area-inset-top, 0px));
     overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .checkout-step {
