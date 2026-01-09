@@ -439,7 +439,8 @@
         
         // Проверяем, есть ли товар в корзине
         const state = getState();
-        const cartItem = state?.cart?.find(item => item.product_id === product.id);
+        const cart = state?.cart || [];
+        const cartItem = cart.find(item => item.product_id === product.id);
         const isInCart = !!cartItem;
         const cartQuantity = cartItem?.quantity || 0;
         const isOutOfStock = !product.quantity || product.quantity <= 0;
@@ -540,7 +541,8 @@
             minusBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const currentState = getState();
-                const item = currentState?.cart?.find(i => i.product_id === product.id);
+                const currentCart = currentState?.cart || [];
+                const item = currentCart.find(i => i.product_id === product.id);
                 if (item) {
                     if (item.quantity <= 1) {
                         // Удаляем из корзины
@@ -563,7 +565,8 @@
             plusBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const currentState = getState();
-                const item = currentState?.cart?.find(i => i.product_id === product.id);
+                const currentCart = currentState?.cart || [];
+                const item = currentCart.find(i => i.product_id === product.id);
                 if (item && item.quantity < product.quantity) {
                     if (window.updateCartQuantity) {
                         await window.updateCartQuantity(item.id, item.quantity + 1);
