@@ -162,3 +162,4 @@ info "  2. Логи приложения: journalctl -u $SERVICE_NAME -f"
 info "  3. Статус сервиса: systemctl status $SERVICE_NAME"
 echo ""
 
+

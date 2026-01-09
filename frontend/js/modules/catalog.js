@@ -318,24 +318,7 @@
             card.className = 'subcategory-card';
             card.dataset.category = sub.id;
             
-            const getSubcategoryIconHTML = (subcategory) => {
-                const iconFileName = getCategoryIconFileName(subcategory);
-                const iconPath = `images/icons/${iconFileName}?v=3`;
-                const emoji = subcategory.icon || '📦';
-                return `
-                    <img src="${iconPath}" alt="${subcategory.name}" class="subcategory-icon-img" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
-                         loading="lazy" style="display:block;">
-                    <span class="subcategory-icon-emoji" style="display:none; font-size: 2rem;">${emoji}</span>
-                `;
-            };
-            
-            card.innerHTML = `
-                <span class="subcategory-icon">
-                    ${getSubcategoryIconHTML(sub)}
-                </span>
-                <span class="subcategory-name">${sub.name}</span>
-            `;
+            card.innerHTML = `<span class="subcategory-name">${sub.name}</span>`;
             card.addEventListener('click', () => selectCategory(sub.id));
             elements.subcategoriesGrid.appendChild(card);
         });
