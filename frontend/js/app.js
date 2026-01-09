@@ -758,7 +758,11 @@ async function init() {
             tg.ready();
             tg.expand();
             
-            // Отключаем возможность случайного закрытия при свайпе вниз
+            // Отключаем сворачивание при свайпе вниз
+            if (tg.disableVerticalSwipes) {
+                tg.disableVerticalSwipes();
+            }
+            
             // Включаем подтверждение закрытия (пользователь должен явно закрыть)
             if (tg.enableClosingConfirmation) {
                 tg.enableClosingConfirmation();
