@@ -237,7 +237,7 @@ body {
     /* Размеры */
     --header-height: 60px;
     --bottom-nav-height: 70px;
-    --tg-panel-height: 30px; /* Высота панели Telegram с кнопкой закрыть */
+    --tg-panel-height: 70px; /* Высота панели Telegram с кнопкой закрыть */
     --border-radius: 16px;
     --border-radius-sm: 12px;
     --border-radius-xs: 8px;
