@@ -353,27 +353,18 @@ input {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 50px;
-    padding: 8px 16px;
+    height: 40px;
+    padding: 8px 16px 4px;
 }
 
 .logo {
-    font-size: 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #000000;
 }
 
-.logo-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-}
-
 .header-search {
-    padding: 0 16px 12px;
+    padding: 0 12px 8px;
 }
 
 .search-input-wrapper {
@@ -384,21 +375,21 @@ input {
 
 .search-input-wrapper .search-icon {
     position: absolute;
-    left: 12px;
+    left: 10px;
     color: var(--text-muted);
     pointer-events: none;
 }
 
 .search-input {
     width: 100%;
-    padding: 12px 12px 12px 44px;
+    padding: 10px 12px 10px 36px;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #FFFFFF;
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-primary);
     outline: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .search-input::placeholder {
@@ -406,7 +397,7 @@ input {
 }
 
 .search-input:focus {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .logo::before {
@@ -469,8 +460,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: панель Telegram + safe-area + header + поиск */
-    padding-top: calc(var(--tg-panel-height) + env(safe-area-inset-top, 0px) + var(--header-height) + 50px);
+    /* Отступ сверху: панель Telegram + safe-area + header (с поиском ~100px) */
+    padding-top: calc(var(--tg-panel-height) + env(safe-area-inset-top, 0px) + 100px);
     padding-bottom: calc(var(--bottom-nav-height) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
