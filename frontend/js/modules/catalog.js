@@ -67,7 +67,17 @@
         const state = getState();
         const elements = getElements();
         const api = getApi();
-        if (!state || !elements || !api) return;
+        
+        console.log('[LOAD] loadCategories called, checking dependencies:', {
+            hasState: !!state,
+            hasElements: !!elements,
+            hasApi: !!api
+        });
+        
+        if (!state || !elements || !api) {
+            console.error('[LOAD] loadCategories - Missing dependencies:', { state: !!state, elements: !!elements, api: !!api });
+            return;
+        }
         
         try {
             const categories = await api.getCategories();
@@ -98,7 +108,18 @@
         const elements = getElements();
         const utils = getUtils();
         const api = getApi();
-        if (!state || !elements || !api) return;
+        
+        console.log('[LOAD] loadProducts called, checking dependencies:', {
+            hasState: !!state,
+            hasElements: !!elements,
+            hasApi: !!api,
+            hasProductsGrid: !!elements?.productsGrid
+        });
+        
+        if (!state || !elements || !api) {
+            console.error('[LOAD] Missing dependencies:', { state: !!state, elements: !!elements, api: !!api });
+            return;
+        }
         
         console.log('[LOAD] Loading products...', { category: state.currentCategory, options, filters: state.filters });
         state.loading = true;
