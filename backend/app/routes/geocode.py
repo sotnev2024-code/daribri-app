@@ -118,32 +118,12 @@ async def reverse_geocode(
         logger.info(f"[GEOCODE] Reverse geocoding request: lat={lat}, lng={lng}, city={city}")
         
         # ВАЖНО: Yandex Geocoder API ожидает формат: долгота, широта (lng,lat)
-        # Параметры lat и lng приходят из фронтенда через URL параметры
-        # 
-        # Для Санкт-Петербурга правильные координаты:
-        # - Широта (lat): ~59.93°N (больше)
-        # - Долгота (lng): ~30.37°E (меньше)
-        # 
-        # ПРОБЛЕМА: В логах видно lat=30.37, lng=59.93, что ПЕРЕПУТАНО!
-        # Правильно должно быть lat=59.93, lng=30.37
-        # 
-        # Проверка: для российских городов широта обычно больше долготы
-        # Если lng > lat и lat < 60, значит они перепутаны
-        actual_lng = lng
-        actual_lat = lat
-        
-        # Проверка: для СПб lat должен быть ~59 (больше), lng ~30 (меньше)
-        # Если lng > lat и lat < 60, скорее всего они перепутаны
-        if lng > lat and lat < 60:
-            logger.warn(f"[GEOCODE] Coordinates appear swapped (lng > lat and lat < 60). lat={lat}, lng={lng}. Swapping...")
-            actual_lng = lat  # Меняем местами
-            actual_lat = lng
-        
-        logger.info(f"[GEOCODE] Using coordinates for Yandex API: lng={actual_lng}, lat={actual_lat} (format: lng,lat)")
+        # Frontend передает: lat (широта), lng (долгота) - стандартный порядок
+        # Для Yandex API нужно передать в порядке: lng,lat
         
         api_key_param = f"&apikey={settings.YANDEX_API_KEY}" if settings.YANDEX_API_KEY else ""
         # Yandex Geocoder API ожидает: долгота, широта (lng,lat)
-        url = f"https://geocode-maps.yandex.ru/1.x/?geocode={actual_lng},{actual_lat}&format=json&results=1{api_key_param}"
+        url = f"https://geocode-maps.yandex.ru/1.x/?geocode={lng},{lat}&format=json&results=1{api_key_param}"
         
         logger.info(f"[GEOCODE] Requesting Yandex API: {url.replace(settings.YANDEX_API_KEY, 'API_KEY_HIDDEN') if settings.YANDEX_API_KEY else url}")
         
@@ -202,7 +182,7 @@ async def reverse_geocode(
                     if len(pos_parts) == 2:
                         response_lng = float(pos_parts[0])
                         response_lat = float(pos_parts[1])
-                        logger.info(f"[GEOCODE] Yandex returned coordinates: lng={response_lng}, lat={response_lat} (requested: lng={actual_lng}, lat={actual_lat})")
+                        logger.info(f"[GEOCODE] Yandex returned coordinates: lng={response_lng}, lat={response_lat} (requested: lng={lng}, lat={lat})")
             
             meta_data = geo_object.get("metaDataProperty", {}).get("GeocoderMetaData", {})
             address_text = meta_data.get("text", "")
@@ -229,8 +209,8 @@ async def reverse_geocode(
                 "address": address_text,
                 "is_valid": is_valid,
                 "coordinates": {
-                    "lat": actual_lat,
-                    "lng": actual_lng
+                    "lat": lat,
+                    "lng": lng
                 }
             }
             
