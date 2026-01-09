@@ -758,6 +758,18 @@ async function init() {
             tg.ready();
             tg.expand(); // Разворачиваем на весь экран с учётом отступов в CSS
             
+            // Функция для установки отступа в зависимости от режима
+            const updateTgPanelHeight = () => {
+                const panelHeight = tg.isExpanded ? '70px' : '0px';
+                document.documentElement.style.setProperty('--tg-panel-height', panelHeight);
+            };
+            
+            // Устанавливаем начальное значение
+            updateTgPanelHeight();
+            
+            // Слушаем изменение состояния (развернуто/свернуто)
+            tg.onEvent('viewportChanged', updateTgPanelHeight);
+            
             // Отключаем сворачивание при свайпе вниз
             if (tg.disableVerticalSwipes) {
                 tg.disableVerticalSwipes();
