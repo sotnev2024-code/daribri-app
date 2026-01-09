@@ -3,7 +3,7 @@
 """
 
 from aiogram import Router, Bot
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 router = Router()
@@ -20,8 +20,8 @@ async def get_db():
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, bot: Bot):
-    """Обработчик команды /start."""
+async def cmd_start(message: Message, bot: Bot, command: CommandObject):
+    """Обработчик команды /start с поддержкой deep link."""
     # Создаём или обновляем пользователя в базе
     try:
         db = await get_db()
@@ -64,7 +64,30 @@ async def cmd_start(message: Message, bot: Bot):
     
     webapp_url = getattr(bot, 'webapp_url', 'http://localhost:8081')
     
-    welcome_text = """
+    # Проверяем deep link параметр
+    deep_link = command.args
+    product_id = None
+    
+    if deep_link and deep_link.startswith('product_'):
+        try:
+            product_id = int(deep_link.replace('product_', ''))
+            # Добавляем параметр товара к URL
+            webapp_url_with_product = f"{webapp_url}?product={product_id}"
+        except ValueError:
+            webapp_url_with_product = webapp_url
+    else:
+        webapp_url_with_product = webapp_url
+    
+    # Если пришли по ссылке на товар
+    if product_id:
+        welcome_text = """
+<b>🎁 Вам отправили подарок!</b>
+
+Нажмите кнопку ниже, чтобы посмотреть товар.
+"""
+        button_text = "🎁 Посмотреть товар"
+    else:
+        welcome_text = """
 <b>👋 Добро пожаловать в Дарибри!</b>
 
 Здесь вы найдёте:
@@ -75,11 +98,12 @@ async def cmd_start(message: Message, bot: Bot):
 
 <i>Нажмите кнопку ниже, чтобы открыть каталог</i>
 """
+        button_text = "🛒 Открыть каталог"
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="🛒 Открыть каталог",
-            web_app=WebAppInfo(url=webapp_url)
+            text=button_text,
+            web_app=WebAppInfo(url=webapp_url_with_product)
         )]
     ])
     

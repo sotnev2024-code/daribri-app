@@ -151,6 +151,39 @@ function showLoading(show) {
     }
 }
 
+// Поделиться товаром в Telegram
+function shareProduct(product) {
+    if (!product) return;
+    
+    const botUsername = 'Daribri_bot';
+    const productName = product.name || 'Товар';
+    const price = product.discount_price || product.price;
+    const formattedPrice = new Intl.NumberFormat('ru-RU').format(price);
+    
+    // Формируем текст для шаринга
+    const shareText = `🎁 Смотри, что я нашёл!\n\n${productName}\n💰 ${formattedPrice} ₽\n\nОткрой в приложении 👇`;
+    
+    // Ссылка на бота с параметром товара
+    const shareUrl = `https://t.me/${botUsername}?start=product_${product.id}`;
+    
+    // Используем Telegram WebApp API если доступен
+    if (window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp;
+        
+        // Открываем диалог шаринга через Telegram
+        const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+        tg.openTelegramLink(telegramShareUrl);
+    } else {
+        // Fallback - копируем ссылку в буфер обмена
+        const fullText = `${shareText}\n${shareUrl}`;
+        navigator.clipboard.writeText(fullText).then(() => {
+            showToast('Ссылка скопирована!', 'success');
+        }).catch(() => {
+            showToast('Не удалось скопировать ссылку', 'error');
+        });
+    }
+}
+
 function showToast(message, type = 'info') {
     if (!elements?.toastContainer) return;
     const toast = document.createElement('div');
@@ -233,6 +266,7 @@ function initElements() {
     productDiscount: document.getElementById('productDiscount'),
     productDescription: document.getElementById('productDescription'),
     productFavoriteBtn: document.getElementById('productFavoriteBtn'),
+    shareProductBtn: document.getElementById('shareProductBtn'),
     qtyMinus: document.getElementById('qtyMinus'),
     qtyPlus: document.getElementById('qtyPlus'),
     qtyValue: document.getElementById('qtyValue'),
@@ -836,6 +870,19 @@ async function init() {
             initPullToRefresh();
             
             console.log('[INIT] ✅ Данные загружены успешно');
+            
+            // Проверяем deep link параметр для открытия товара
+            const urlParams = new URLSearchParams(window.location.search);
+            const productIdParam = urlParams.get('product');
+            if (productIdParam) {
+                const productId = parseInt(productIdParam);
+                if (productId && window.openProductPage) {
+                    console.log('[INIT] Opening product from deep link:', productId);
+                    setTimeout(() => {
+                        window.openProductPage(productId);
+                    }, 300);
+                }
+            }
         } catch (error) {
             console.error('[INIT] ❌ Failed to load initial data:', error);
             console.error('[INIT] Error stack:', error.stack);
@@ -1070,6 +1117,13 @@ function initEventListeners() {
     elements.productFavoriteBtn?.addEventListener('click', () => {
         if (state.currentProduct) {
             toggleFavorite(state.currentProduct.id);
+        }
+    });
+    
+    // Поделиться товаром
+    elements.shareProductBtn?.addEventListener('click', () => {
+        if (state.currentProduct) {
+            shareProduct(state.currentProduct);
         }
     });
     

@@ -1282,6 +1282,36 @@ input {
     transform: scale(0.98);
 }
 
+/* Кнопки в хедере товара */
+.product-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.share-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.share-btn:active {
+    transform: scale(0.95);
+    background: var(--bg-tertiary);
+}
+
+.share-btn svg {
+    stroke: currentColor;
+}
+
 /* Page */
 .page {
     position: fixed;
