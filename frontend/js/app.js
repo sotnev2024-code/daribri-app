@@ -668,10 +668,63 @@ window.openSearch = openSearch;
 window.closeSearch = closeSearch;
 window.handleSearch = handleSearch;
 
+// ==================== iOS Optimizations ====================
+
+function initIOSOptimizations() {
+    // Определяем iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOS) {
+        document.documentElement.classList.add('ios');
+        console.log('[iOS] iOS device detected');
+    }
+    
+    // Устанавливаем правильную высоту viewport для iOS
+    function setAppHeight() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+    }
+    
+    setAppHeight();
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(setAppHeight, 100);
+    });
+    
+    // Предотвращаем bounce эффект на iOS
+    document.body.addEventListener('touchmove', function(e) {
+        if (e.target.closest('.page, .modal-content, .reviews-modal-body, .checkout-steps')) {
+            return; // Разрешаем скролл внутри скроллируемых контейнеров
+        }
+        // Не блокируем если есть overflow scroll
+        const target = e.target;
+        if (target.scrollHeight > target.clientHeight || target.scrollWidth > target.clientWidth) {
+            return;
+        }
+    }, { passive: true });
+    
+    // Предотвращаем двойной тап для зума на iOS
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+    
+    console.log('[iOS] iOS optimizations applied');
+}
+
 // ==================== Initialization ====================
 
 async function init() {
     console.log('[INIT] Starting initialization...');
+    
+    // Применяем iOS оптимизации
+    initIOSOptimizations();
     
     try {
         // Проверяем, что api загружен

@@ -49,6 +49,113 @@
     to { transform: rotate(360deg); }
 }
 
+/* ==================== iOS Optimizations ==================== */
+/* Фикс для 100vh на iOS */
+:root {
+    --app-height: 100vh;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+/* Поддержка safe-area на iOS */
+@supports (padding: max(0px)) {
+    .header {
+        padding-top: max(12px, env(safe-area-inset-top));
+    }
+    
+    .bottom-nav {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+        height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .page {
+        padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
+    }
+    
+    .modal-content {
+        padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* Предотвращение bounce эффекта на iOS */
+html, body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Улучшение скролла на iOS */
+.page,
+.modal-content,
+.reviews-modal-body,
+.checkout-steps,
+.shop-page-content {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Фикс для position: fixed на iOS */
+.header,
+.bottom-nav {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* Предотвращение выделения текста на iOS */
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Разрешаем выделение для input и textarea */
+input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* Фикс для input на iOS - предотвращение зума */
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="password"],
+textarea,
+select {
+    font-size: 16px !important;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0;
+}
+
+/* Улучшение touch targets для iOS */
+button, 
+a, 
+.nav-btn,
+.category-chip,
+.product-card,
+.icon-btn {
+    touch-action: manipulation;
+}
+
+/* Фикс для кнопок на iOS */
+button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Сглаживание шрифтов на iOS */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
 /* ==================== Banners ==================== */
 .banner-item {
     width: 100%;
