@@ -1220,6 +1220,11 @@ input {
     display: flex;
     gap: 12px;
     width: 100%;
+    padding: 12px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .cart-qty-controls {
@@ -1229,6 +1234,7 @@ input {
     background: var(--bg-tertiary);
     border-radius: var(--border-radius-sm);
     overflow: hidden;
+    border: 1px solid #E5E7EB;
 }
 
 .cart-qty-btn {
