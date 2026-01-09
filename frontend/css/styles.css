@@ -424,7 +424,7 @@ input {
 /* Header */
 .header {
     position: fixed;
-    top: 0;
+    top: 50px;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -434,6 +434,17 @@ input {
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
     padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Фон для области над header (Telegram панель) */
+.header::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: #dbff00;
 }
 
 .header-content {
@@ -541,8 +552,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: safe-area + header */
-    padding-top: calc(env(safe-area-inset-top, 0px) + var(--header-height));
+    /* Отступ сверху: 50px (Telegram панель) + safe-area + header */
+    padding-top: calc(50px + env(safe-area-inset-top, 0px) + var(--header-height));
     padding-bottom: calc(var(--bottom-nav-height) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
@@ -1543,7 +1554,7 @@ input {
     height: 100vh;
     height: 100dvh;
     background: var(--bg-primary);
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: calc(50px + env(safe-area-inset-top, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 150;
     display: none;
