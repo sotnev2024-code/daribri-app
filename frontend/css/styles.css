@@ -1382,6 +1382,11 @@ input {
     padding: 0;
 }
 
+/* Кнопки корзины под ценой */
+.product-cart-buttons {
+    margin-top: 16px;
+}
+
 .product-seller-section {
     cursor: pointer;
 }
