@@ -329,9 +329,8 @@ input {
     width: 100%;
     max-width: 480px;
     min-height: var(--header-height);
-    /* Добавляем отступ для кнопок Telegram в полноэкранном режиме */
-    height: calc(var(--header-height) + env(safe-area-inset-top, 0px) + var(--tg-viewport-stable-height, 0px) * 0);
-    padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+    /* Отступ для панели Telegram в полноэкранном режиме (~50px) */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
     background: #dbff00;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
@@ -414,8 +413,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: header + safe-area + 20px для кнопок Telegram */
-    padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 20px);
+    /* Отступ сверху: header + safe-area + 50px для панели Telegram */
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 50px);
     padding-bottom: calc(var(--bottom-nav-height) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
