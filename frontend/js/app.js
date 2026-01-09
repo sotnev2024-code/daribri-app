@@ -237,6 +237,11 @@ function initElements() {
     qtyPlus: document.getElementById('qtyPlus'),
     qtyValue: document.getElementById('qtyValue'),
     addToCartBtn: document.getElementById('addToCartBtn'),
+    inCartControls: document.getElementById('inCartControls'),
+    cartQtyMinus: document.getElementById('cartQtyMinus'),
+    cartQtyPlus: document.getElementById('cartQtyPlus'),
+    cartQtyValue: document.getElementById('cartQtyValue'),
+    goToCartBtn: document.getElementById('goToCartBtn'),
     
     // Pages
     productPage: document.getElementById('productPage'),
@@ -573,6 +578,16 @@ window.updateCartSummary = updateCartSummary;
 window.updateCartQuantity = updateCartQuantity;
 window.removeFromCart = removeFromCart;
 window.clearCart = clearCart;
+
+// Новые функции для UI корзины на странице товара
+const updateProductPageCartUI = window.updateProductPageCartUI || window.App?.cart?.updateProductPageCartUI || ((productId) => {
+    console.warn('[CART] updateProductPageCartUI not loaded from module');
+});
+const updateProductCartQuantity = window.updateProductCartQuantity || window.App?.cart?.updateProductCartQuantity || (async (delta) => {
+    console.warn('[CART] updateProductCartQuantity not loaded from module');
+});
+window.updateProductPageCartUI = updateProductPageCartUI;
+window.updateProductCartQuantity = updateProductCartQuantity;
 
 // ==================== Favorites Functions ====================
 // Функции избранного перенесены в modules/favorites.js
@@ -1044,6 +1059,14 @@ function initEventListeners() {
     
     // Добавить в корзину
     elements.addToCartBtn?.addEventListener('click', addToCart);
+    
+    // Кнопки когда товар в корзине
+    elements.cartQtyMinus?.addEventListener('click', () => updateProductCartQuantity(-1));
+    elements.cartQtyPlus?.addEventListener('click', () => updateProductCartQuantity(1));
+    elements.goToCartBtn?.addEventListener('click', () => {
+        closeProductPage();
+        navigateTo('cart');
+    });
     
     // Избранное в модалке
     elements.productFavoriteBtn?.addEventListener('click', () => {

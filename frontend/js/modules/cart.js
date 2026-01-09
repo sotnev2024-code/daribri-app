@@ -201,9 +201,70 @@
             await api.addToCart(currentProduct.id, quantity);
             if (utils.showToast) utils.showToast('Товар добавлен в корзину', 'success');
             await loadCart();
+            
+            // Обновляем UI кнопок
+            updateProductPageCartUI(currentProduct.id);
         } catch (error) {
             console.error('Error adding to cart:', error);
             if (utils.showToast) utils.showToast('Ошибка добавления в корзину', 'error');
+        }
+    }
+    
+    // Обновляет UI кнопок корзины на странице товара
+    function updateProductPageCartUI(productId) {
+        const state = getState();
+        const elements = getElements();
+        if (!state || !elements) return;
+        
+        const cartItem = state.cart.find(item => item.product_id === productId);
+        
+        if (cartItem) {
+            // Товар в корзине - показываем кнопки +/- и "Перейти в корзину"
+            if (elements.addToCartBtn) elements.addToCartBtn.hidden = true;
+            if (elements.inCartControls) elements.inCartControls.hidden = false;
+            if (elements.cartQtyValue) elements.cartQtyValue.textContent = cartItem.quantity;
+        } else {
+            // Товара нет в корзине - показываем кнопку "Добавить"
+            if (elements.addToCartBtn) elements.addToCartBtn.hidden = false;
+            if (elements.inCartControls) elements.inCartControls.hidden = true;
+        }
+    }
+    
+    // Обновляет количество товара на странице товара
+    async function updateProductCartQuantity(delta) {
+        const state = getState();
+        const elements = getElements();
+        const api = getApi();
+        const utils = getUtils();
+        if (!state || !elements || !api || !state.currentProduct) return;
+        
+        const productId = state.currentProduct.id;
+        const cartItem = state.cart.find(item => item.product_id === productId);
+        
+        if (!cartItem) return;
+        
+        const newQuantity = cartItem.quantity + delta;
+        
+        if (newQuantity < 1) {
+            // Удаляем товар из корзины
+            try {
+                await api.removeFromCart(cartItem.id);
+                await loadCart();
+                updateProductPageCartUI(productId);
+                if (utils.showToast) utils.showToast('Товар удалён из корзины', 'success');
+            } catch (error) {
+                console.error('Error removing from cart:', error);
+            }
+        } else {
+            // Обновляем количество
+            try {
+                await api.updateCartItem(cartItem.id, newQuantity);
+                await loadCart();
+                updateProductPageCartUI(productId);
+            } catch (error) {
+                console.error('Error updating cart:', error);
+                if (utils.showToast) utils.showToast('Ошибка обновления корзины', 'error');
+            }
         }
     }
     
@@ -351,7 +412,9 @@
         removeFromCart,
         clearCart,
         updateQuantity,
-        addToCart
+        addToCart,
+        updateProductPageCartUI,
+        updateProductCartQuantity
     };
     
     // Экспортируем как глобальные функции для обратной совместимости
@@ -363,4 +426,6 @@
     window.clearCart = clearCart;
     window.updateQuantity = updateQuantity;
     window.addToCart = addToCart;
+    window.updateProductPageCartUI = updateProductPageCartUI;
+    window.updateProductCartQuantity = updateProductCartQuantity;
 })();

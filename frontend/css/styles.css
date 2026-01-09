@@ -1139,6 +1139,67 @@ input {
     transform: scale(0.98);
 }
 
+/* Контейнер когда товар в корзине */
+.in-cart-controls {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.cart-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+}
+
+.cart-qty-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.cart-qty-btn:active {
+    background: var(--border);
+}
+
+.cart-qty-value {
+    min-width: 40px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.go-to-cart-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: var(--gradient-primary);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition);
+}
+
+.go-to-cart-btn:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+}
+
 /* Page */
 .page {
     position: fixed;

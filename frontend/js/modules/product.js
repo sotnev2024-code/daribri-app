@@ -161,6 +161,11 @@
             
             // Показываем страницу товара
             if (window.navigateTo) window.navigateTo('product');
+            
+            // Обновляем UI кнопок корзины
+            if (window.updateProductPageCartUI) {
+                window.updateProductPageCartUI(product.id);
+            }
         } catch (error) {
             console.error('Error loading product:', error);
             const utils = getUtils();
