@@ -206,10 +206,10 @@
                         <span>${formatDeliveryDate(order.delivery_date)}</span>
                     </div>
                     ` : ''}
-                    ${(order.delivery_time_slot || order.delivery_time) ? `
+                    ${order.delivery_time ? `
                     <div class="info-row">
                         <span class="info-label">Время доставки:</span>
-                        <span>${order.delivery_time_slot || order.delivery_time}</span>
+                        <span>${order.delivery_time}</span>
                     </div>
                     ` : ''}
                 </div>
@@ -412,10 +412,10 @@
                     <span>${formatDeliveryDate(order.delivery_date)}</span>
                 </div>
                 ` : ''}
-                ${order.delivery_time_slot ? `
+                ${order.delivery_time ? `
                 <div class="order-delivery-info">
                     <span class="order-delivery-label">Время доставки:</span>
-                    <span>${order.delivery_time_slot}</span>
+                    <span>${order.delivery_time}</span>
                 </div>
                 ` : ''}
                 <div class="order-footer">

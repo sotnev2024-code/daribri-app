@@ -383,7 +383,7 @@ async def create_order(
                 except:
                     delivery_date_str = str(order_data.delivery_date)
             
-            delivery_time_str = order_data.delivery_time_slot
+            delivery_time_str = order_data.delivery_time
             
             await telegram_notifier.send_order_notification(
                 shop_owner_telegram_id=shop["telegram_id"],
