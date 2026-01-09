@@ -237,7 +237,7 @@ body {
     /* Размеры */
     --header-height: 60px;
     --bottom-nav-height: 70px;
-    --tg-panel-height: 50px; /* Высота панели Telegram */
+    --tg-panel-height: 30px; /* Высота панели Telegram с кнопкой закрыть */
     --border-radius: 16px;
     --border-radius-sm: 12px;
     --border-radius-xs: 8px;
@@ -1418,13 +1418,14 @@ input {
 /* Page */
 .page {
     position: fixed;
-    top: 0;
+    /* Отступ для панели Telegram */
+    top: calc(env(safe-area-inset-top, 0px) + var(--tg-panel-height));
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: 100vh;
-    height: 100dvh;
+    height: calc(100vh - env(safe-area-inset-top, 0px) - var(--tg-panel-height));
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - var(--tg-panel-height));
     background: var(--bg-primary);
     z-index: 150;
     display: none;
