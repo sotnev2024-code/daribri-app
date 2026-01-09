@@ -214,17 +214,31 @@
     function updateProductPageCartUI(productId) {
         const state = getState();
         const elements = getElements();
+        
+        console.log('[CART UI] updateProductPageCartUI called', {
+            productId,
+            hasState: !!state,
+            hasElements: !!elements,
+            cart: state?.cart,
+            addToCartBtn: elements?.addToCartBtn,
+            inCartControls: elements?.inCartControls
+        });
+        
         if (!state || !elements) return;
         
         const cartItem = state.cart.find(item => item.product_id === productId);
         
+        console.log('[CART UI] Cart item found:', cartItem);
+        
         if (cartItem) {
             // Товар в корзине - показываем кнопки +/- и "Перейти в корзину"
+            console.log('[CART UI] Showing in-cart controls');
             if (elements.addToCartBtn) elements.addToCartBtn.hidden = true;
             if (elements.inCartControls) elements.inCartControls.hidden = false;
             if (elements.cartQtyValue) elements.cartQtyValue.textContent = cartItem.quantity;
         } else {
             // Товара нет в корзине - показываем кнопку "Добавить"
+            console.log('[CART UI] Showing add to cart button');
             if (elements.addToCartBtn) elements.addToCartBtn.hidden = false;
             if (elements.inCartControls) elements.inCartControls.hidden = true;
         }
