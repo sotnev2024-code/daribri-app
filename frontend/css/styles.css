@@ -320,6 +320,25 @@ body {
         border-color: #333333;
     }
     
+    .product-card-btn.add-to-cart {
+        background: var(--primary);
+        color: #000;
+    }
+    
+    .product-card-quantity {
+        background: #262626;
+    }
+    
+    .product-card-quantity .qty-btn {
+        background: #333333;
+        color: #FFFFFF;
+    }
+    
+    .product-card-quantity .qty-btn:active {
+        background: var(--primary);
+        color: #000;
+    }
+    
     /* Нижняя навигация */
     .bottom-nav {
         background: #1a1a1a;
@@ -986,6 +1005,76 @@ input {
     font-size: 0.8rem;
     color: var(--text-muted);
     text-decoration: line-through;
+}
+
+/* Product Card Actions */
+.product-card-actions {
+    margin-top: 10px;
+}
+
+.product-card-btn {
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.product-card-btn.add-to-cart {
+    background: var(--primary);
+    color: #000;
+}
+
+.product-card-btn.add-to-cart:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+}
+
+.product-card-btn.out-of-stock {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.product-card-quantity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.product-card-quantity .qty-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.product-card-quantity .qty-btn:active {
+    transform: scale(0.92);
+    background: var(--primary);
+}
+
+.product-card-quantity .qty-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 30px;
+    text-align: center;
 }
 
 /* Loading */

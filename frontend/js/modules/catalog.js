@@ -437,6 +437,13 @@
             imageHTML = '<div class="product-image-placeholder">🌸</div>';
         }
         
+        // Проверяем, есть ли товар в корзине
+        const state = getState();
+        const cartItem = state?.cart?.find(item => item.product_id === product.id);
+        const isInCart = !!cartItem;
+        const cartQuantity = cartItem?.quantity || 0;
+        const isOutOfStock = !product.quantity || product.quantity <= 0;
+        
         card.innerHTML = `
             <div class="product-image">
                 ${imageHTML}
@@ -456,6 +463,18 @@
                 <div class="product-price-row">
                     <span class="product-current-price">${formatPrice(hasDiscount ? discountPrice : price)}</span>
                     ${hasDiscount ? `<span class="product-original-price">${formatPrice(price)}</span>` : ''}
+                </div>
+                <div class="product-card-actions">
+                    ${isOutOfStock 
+                        ? `<button class="product-card-btn out-of-stock" disabled>Нет в наличии</button>`
+                        : isInCart 
+                            ? `<div class="product-card-quantity">
+                                <button class="qty-btn minus" data-product-id="${product.id}">−</button>
+                                <span class="qty-value">${cartQuantity}</span>
+                                <button class="qty-btn plus" data-product-id="${product.id}">+</button>
+                               </div>`
+                            : `<button class="product-card-btn add-to-cart" data-product-id="${product.id}">В корзину</button>`
+                    }
                 </div>
             </div>
         `;
@@ -487,7 +506,10 @@
         }
         
         card.addEventListener('click', (e) => {
-            if (e.target.closest('.product-favorite-btn') || e.target.closest('.product-slider-dots') || e.target.closest('.slider-dot')) return;
+            if (e.target.closest('.product-favorite-btn') || 
+                e.target.closest('.product-slider-dots') || 
+                e.target.closest('.slider-dot') ||
+                e.target.closest('.product-card-actions')) return;
             if (window.openProductPage) window.openProductPage(product.id);
         });
         
@@ -496,6 +518,60 @@
             e.stopPropagation();
             if (window.toggleFavorite) window.toggleFavorite(product.id);
         });
+        
+        // Обработчик кнопки "В корзину"
+        const addToCartBtn = card.querySelector('.product-card-btn.add-to-cart');
+        if (addToCartBtn) {
+            addToCartBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (window.addToCart) {
+                    await window.addToCart(product.id);
+                    // Перерендериваем карточку после добавления
+                    renderProducts();
+                }
+            });
+        }
+        
+        // Обработчики кнопок количества
+        const minusBtn = card.querySelector('.qty-btn.minus');
+        const plusBtn = card.querySelector('.qty-btn.plus');
+        
+        if (minusBtn) {
+            minusBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const currentState = getState();
+                const item = currentState?.cart?.find(i => i.product_id === product.id);
+                if (item) {
+                    if (item.quantity <= 1) {
+                        // Удаляем из корзины
+                        if (window.removeFromCart) {
+                            await window.removeFromCart(item.id);
+                            renderProducts();
+                        }
+                    } else {
+                        // Уменьшаем количество
+                        if (window.updateCartQuantity) {
+                            await window.updateCartQuantity(item.id, item.quantity - 1);
+                            renderProducts();
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (plusBtn) {
+            plusBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const currentState = getState();
+                const item = currentState?.cart?.find(i => i.product_id === product.id);
+                if (item && item.quantity < product.quantity) {
+                    if (window.updateCartQuantity) {
+                        await window.updateCartQuantity(item.id, item.quantity + 1);
+                        renderProducts();
+                    }
+                }
+            });
+        }
         
         return card;
     }
