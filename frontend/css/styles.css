@@ -873,7 +873,7 @@ input {
     top: 0;
     left: 0;
     right: 0;
-    bottom: var(--bottom-nav-height);
+    bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
     display: flex;
@@ -895,10 +895,11 @@ input {
     margin: 0 auto;
     background: var(--bg-secondary);
     border-radius: var(--border-radius) var(--border-radius) 0 0;
-    max-height: calc(90vh - var(--bottom-nav-height));
+    max-height: 90vh;
     overflow-y: auto;
     transform: translateY(100%);
     transition: var(--transition-slow);
+    padding-bottom: var(--bottom-nav-height);
 }
 
 .modal:not([hidden]) .modal-content {
@@ -3972,7 +3973,7 @@ input {
     top: 0;
     left: 0;
     right: 0;
-    bottom: var(--bottom-nav-height);
+    bottom: 0;
     z-index: 9000;
     display: flex;
     align-items: flex-end;
@@ -3992,12 +3993,13 @@ input {
     position: relative;
     width: 100%;
     max-width: 480px;
-    max-height: calc(85vh - var(--bottom-nav-height));
+    max-height: 85vh;
     background: var(--bg-primary);
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
     animation: slideUp 0.3s ease;
+    padding-bottom: var(--bottom-nav-height);
 }
 
 @keyframes slideUp {
