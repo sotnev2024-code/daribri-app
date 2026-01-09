@@ -1016,13 +1016,15 @@ input {
     border: 1px solid var(--border);
 }
 
+/* Секции с белыми рамками как в профиле (как profile-menu и settings-section) */
 .product-description-section,
 .product-availability-section,
 .product-seller-section {
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    outline: 2px solid #ffffff !important;
-    outline-offset: -3px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    background: var(--bg-secondary) !important;
+    border-radius: var(--border-radius) !important;
+    margin-bottom: 12px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--border) !important;
 }
 
 .product-section .section-title {
