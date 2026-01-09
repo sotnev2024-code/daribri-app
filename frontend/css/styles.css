@@ -237,7 +237,7 @@ body {
     /* Размеры */
     --header-height: 60px;
     --bottom-nav-height: 70px;
-    --tg-panel-height: 0px; /* По умолчанию 0, устанавливается через JS при fullscreen */
+    --tg-panel-height: 70px; /* Всегда 70px - приложение всегда в полноэкранном режиме */
     --border-radius: 16px;
     --border-radius-sm: 12px;
     --border-radius-xs: 8px;
