@@ -1016,6 +1016,12 @@ input {
     border: 1px solid var(--border);
 }
 
+.product-description-section,
+.product-availability-section,
+.product-seller-section {
+    border: 1px solid #ffffff;
+}
+
 .product-section .section-title {
     font-size: 0.85rem;
     font-weight: 600;
