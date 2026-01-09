@@ -237,9 +237,7 @@ function initElements() {
     closeFilterModal: document.getElementById('closeFilterModal'),
     filterMinPrice: document.getElementById('filterMinPrice'),
     filterMaxPrice: document.getElementById('filterMaxPrice'),
-    filterDiscounted: document.getElementById('filterDiscounted'),
     filterInStock: document.getElementById('filterInStock'),
-    filterTrending: document.getElementById('filterTrending'),
     resetFilters: document.getElementById('resetFilters'),
     applyFilters: document.getElementById('applyFilters'),
     
@@ -464,10 +462,7 @@ function getCategoryIconFileName(category) {
         'masterclasses': 'Мастер классы.png',
         'master-classes': 'Мастер классы.png',
         'exotic-fruits': 'Экзотические фрукты и ягоды.png',
-        'all': 'Все товары.png',
-        'trending': 'Тренды хиты.png',
-        'discounted': 'скидки.png',
-        'discounts': 'скидки.png'
+        'all': 'Все товары.png'
     };
     
     if (iconMap[category.slug]) {
@@ -1054,14 +1049,8 @@ function openFilterModal() {
     if (elements.filterMaxPrice) {
         elements.filterMaxPrice.value = state.filters.maxPrice || '';
     }
-    if (elements.filterDiscounted) {
-        elements.filterDiscounted.checked = state.filters.discounted || false;
-    }
     if (elements.filterInStock) {
         elements.filterInStock.checked = state.filters.inStock !== false;
-    }
-    if (elements.filterTrending) {
-        elements.filterTrending.checked = state.filters.trending || false;
     }
     
     elements.filterModal.hidden = false;
@@ -1080,9 +1069,7 @@ function applyFilters() {
     // Сохраняем значения из формы в state
     state.filters.minPrice = elements.filterMinPrice?.value ? parseFloat(elements.filterMinPrice.value) : null;
     state.filters.maxPrice = elements.filterMaxPrice?.value ? parseFloat(elements.filterMaxPrice.value) : null;
-    state.filters.discounted = elements.filterDiscounted?.checked || false;
     state.filters.inStock = elements.filterInStock?.checked !== false;
-    state.filters.trending = elements.filterTrending?.checked || false;
     
     console.log('[FILTERS] Applied filters:', state.filters);
     
@@ -1097,17 +1084,13 @@ function resetFilters() {
     state.filters = {
         minPrice: null,
         maxPrice: null,
-        discounted: false,
         inStock: true,
-        trending: false,
     };
     
     // Очищаем поля формы
     if (elements.filterMinPrice) elements.filterMinPrice.value = '';
     if (elements.filterMaxPrice) elements.filterMaxPrice.value = '';
-    if (elements.filterDiscounted) elements.filterDiscounted.checked = false;
     if (elements.filterInStock) elements.filterInStock.checked = true;
-    if (elements.filterTrending) elements.filterTrending.checked = false;
     
     console.log('[FILTERS] Filters reset');
     

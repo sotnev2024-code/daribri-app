@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="images/icons/icon.png?v=4">
     <link rel="apple-touch-icon" href="images/icons/icon.png?v=4">
     <link rel="shortcut icon" href="images/icons/icon.png?v=4">
-    <link rel="stylesheet" href="css/styles.css?v=14">
+    <link rel="stylesheet" href="css/styles.css?v=15">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -87,19 +87,9 @@
                     <div class="filter-section">
                         <h3>✨ Опции</h3>
                         <label class="checkbox-label">
-                            <input type="checkbox" id="filterDiscounted">
-                            <span class="checkmark"></span>
-                            <span>Только со скидками</span>
-                        </label>
-                        <label class="checkbox-label">
                             <input type="checkbox" id="filterInStock" checked>
                             <span class="checkmark"></span>
                             <span>Только в наличии</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="filterTrending">
-                            <span class="checkmark"></span>
-                            <span>Только трендовые</span>
                         </label>
                     </div>
                 </div>
@@ -128,24 +118,6 @@
                             <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">📦</span>
                         </span>
                         <span>Все</span>
-                    </button>
-                    <button class="category-chip" data-category="trending">
-                        <span class="chip-icon">
-                            <img src="images/icons/Тренды хиты.png?v=3" alt="Тренды" class="category-icon-img" 
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
-                                 loading="lazy" style="display:block;">
-                            <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">🔥</span>
-                        </span>
-                        <span>Тренды</span>
-                    </button>
-                    <button class="category-chip" data-category="discounts">
-                        <span class="chip-icon">
-                            <img src="images/icons/скидки.png?v=3" alt="Скидки" class="category-icon-img" 
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
-                                 loading="lazy" style="display:block;">
-                            <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">🏷</span>
-                        </span>
-                        <span>Скидки</span>
                     </button>
                     <!-- Категории загружаются динамически -->
                 </div>
@@ -1659,8 +1631,8 @@
     <script src="js/subscription.js?v=7"></script>
     <!-- Modules -->
     <script src="js/modules/utils.js?v=1"></script>
-    <script src="js/modules/state.js?v=1"></script>
-    <script src="js/modules/catalog.js?v=6"></script>
+    <script src="js/modules/state.js?v=2"></script>
+    <script src="js/modules/catalog.js?v=7"></script>
     <script src="js/modules/cart.js?v=5"></script>
     <script src="js/modules/favorites.js?v=1"></script>
     <script src="js/modules/navigation.js?v=1"></script>
@@ -1670,7 +1642,7 @@
     <script src="js/modules/checkout.js?v=11"></script>
     <script src="js/modules/orders.js?v=2"></script>
     <script src="js/modules/myshop.js?v=2"></script>
-    <script src="js/app.js?v=33"></script>
+    <script src="js/app.js?v=34"></script>
 </body>
 </html>
 

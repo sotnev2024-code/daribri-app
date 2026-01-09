@@ -52,10 +52,7 @@
             'masterclasses': 'Мастер классы.png',
             'master-classes': 'Мастер классы.png',
             'exotic-fruits': 'Экзотические фрукты и ягоды.png',
-            'all': 'Все товары.png',
-            'trending': 'Тренды хиты.png',
-            'discounted': 'скидки.png',
-            'discounts': 'скидки.png'
+            'all': 'Все товары.png'
         };
         
         if (iconMap[category.slug]) {
@@ -112,19 +109,11 @@
                 ...options,
                 minPrice: state.filters.minPrice,
                 maxPrice: state.filters.maxPrice,
-                discounted: state.filters.discounted || undefined,
-                trending: state.filters.trending || undefined,
                 inStock: state.filters.inStock !== false,
             };
             
             let products;
-            if (state.currentCategory === 'trending') {
-                products = await api.getTrendingProducts();
-                products = applyClientFilters(products);
-            } else if (state.currentCategory === 'discounts') {
-                products = await api.getDiscountedProducts();
-                products = applyClientFilters(products);
-            } else if (state.currentCategory !== 'all') {
+            if (state.currentCategory !== 'all') {
                 products = await api.getCategoryProducts(state.currentCategory, filterOptions);
             } else {
                 products = await api.getProducts(filterOptions);
@@ -198,14 +187,8 @@
         if (elements.filterMaxPrice) {
             elements.filterMaxPrice.value = state.filters.maxPrice || '';
         }
-        if (elements.filterDiscounted) {
-            elements.filterDiscounted.checked = state.filters.discounted;
-        }
         if (elements.filterInStock) {
             elements.filterInStock.checked = state.filters.inStock !== false;
-        }
-        if (elements.filterTrending) {
-            elements.filterTrending.checked = state.filters.trending;
         }
         
         elements.filterModal.hidden = false;
@@ -225,9 +208,7 @@
         
         state.filters.minPrice = elements.filterMinPrice?.value ? parseFloat(elements.filterMinPrice.value) : null;
         state.filters.maxPrice = elements.filterMaxPrice?.value ? parseFloat(elements.filterMaxPrice.value) : null;
-        state.filters.discounted = elements.filterDiscounted?.checked || false;
         state.filters.inStock = elements.filterInStock?.checked !== false;
-        state.filters.trending = elements.filterTrending?.checked || false;
         
         console.log('[FILTERS] Applied filters:', state.filters);
         
@@ -243,16 +224,12 @@
         state.filters = {
             minPrice: null,
             maxPrice: null,
-            discounted: false,
             inStock: true,
-            trending: false,
         };
         
         if (elements.filterMinPrice) elements.filterMinPrice.value = '';
         if (elements.filterMaxPrice) elements.filterMaxPrice.value = '';
-        if (elements.filterDiscounted) elements.filterDiscounted.checked = false;
         if (elements.filterInStock) elements.filterInStock.checked = true;
-        if (elements.filterTrending) elements.filterTrending.checked = false;
         
         console.log('[FILTERS] Filters reset');
         
@@ -269,7 +246,7 @@
         const slider = elements.categoriesSlider;
         const staticButtons = slider.querySelectorAll('.category-chip');
         staticButtons.forEach((btn, i) => {
-            if (i > 2) btn.remove();
+            if (i > 0) btn.remove(); // Оставляем только кнопку "Все"
         });
         
         state.categories.forEach(cat => {
@@ -355,14 +332,6 @@
             if (elements.productsTitle) elements.productsTitle.textContent = 'Все товары';
             if (elements.subcategoriesSection) elements.subcategoriesSection.hidden = true;
             if (elements.bannerSection) elements.bannerSection.hidden = false;
-        } else if (categoryId === 'trending') {
-            if (elements.productsTitle) elements.productsTitle.textContent = 'Тренды 🔥';
-            if (elements.subcategoriesSection) elements.subcategoriesSection.hidden = true;
-            if (elements.bannerSection) elements.bannerSection.hidden = true;
-        } else if (categoryId === 'discounts') {
-            if (elements.productsTitle) elements.productsTitle.textContent = 'Скидки 🏷';
-            if (elements.subcategoriesSection) elements.subcategoriesSection.hidden = true;
-            if (elements.bannerSection) elements.bannerSection.hidden = true;
         } else {
             const category = findCategory(categoryId);
             if (category) {

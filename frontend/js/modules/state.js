@@ -56,9 +56,7 @@ function initElements() {
         closeFilterModal: document.getElementById('closeFilterModal'),
         filterMinPrice: document.getElementById('filterMinPrice'),
         filterMaxPrice: document.getElementById('filterMaxPrice'),
-        filterDiscounted: document.getElementById('filterDiscounted'),
         filterInStock: document.getElementById('filterInStock'),
-        filterTrending: document.getElementById('filterTrending'),
         resetFilters: document.getElementById('resetFilters'),
         applyFilters: document.getElementById('applyFilters'),
         
