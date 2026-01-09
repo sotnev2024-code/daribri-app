@@ -21,20 +21,56 @@
     // Константа стоимости доставки
     const DELIVERY_FEE = 500;
     
+    // ==================== Сохранение данных пользователя ====================
+    const SAVED_USER_DATA_KEY = 'daribri_checkout_user_data';
+    
+    function getSavedUserData() {
+        try {
+            const saved = localStorage.getItem(SAVED_USER_DATA_KEY);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (e) {
+            console.warn('[CHECKOUT] Error loading saved user data:', e);
+        }
+        return null;
+    }
+    
+    function saveUserData(data) {
+        try {
+            const toSave = {
+                phone: data.phone,
+                recipientName: data.recipientName,
+                address: data.address,
+                deliveryComment: data.deliveryComment,
+                latitude: data.latitude,
+                longitude: data.longitude
+            };
+            localStorage.setItem(SAVED_USER_DATA_KEY, JSON.stringify(toSave));
+            console.log('[CHECKOUT] User data saved');
+        } catch (e) {
+            console.warn('[CHECKOUT] Error saving user data:', e);
+        }
+    }
+    
     // ==================== Состояние checkout ====================
     const getCheckoutState = () => {
         if (window.checkoutState) return window.checkoutState;
+        
+        // Загружаем сохранённые данные пользователя
+        const savedData = getSavedUserData();
+        
         window.checkoutState = {
             step: 1,
-            phone: null,
-            address: null,
+            phone: savedData?.phone || null,
+            address: savedData?.address || null,
             addressIsValid: null,
-            latitude: null,
-            longitude: null,
-            recipientName: '',
-            deliveryComment: '',
-            deliveryDate: null,
-            deliveryTime: null,
+            latitude: savedData?.latitude || null,
+            longitude: savedData?.longitude || null,
+            recipientName: savedData?.recipientName || '',
+            deliveryComment: savedData?.deliveryComment || '',
+            deliveryDate: null,  // Дата и время не сохраняем
+            deliveryTime: null,  // Дата и время не сохраняем
             shopId: null,
             shopCity: null,
             items: [],
@@ -69,6 +105,52 @@
     // Переменные для карты
     let deliveryMap = null;
     let deliveryMapPlacemark = null;
+    
+    // ==================== TELEGRAM BACK BUTTON ДЛЯ CHECKOUT ====================
+    let checkoutBackButtonHandler = null;
+    
+    function setupCheckoutBackButton() {
+        const tg = getTg();
+        if (!tg || !tg.BackButton) return;
+        
+        // Удаляем старый обработчик если есть
+        if (checkoutBackButtonHandler) {
+            tg.BackButton.offClick(checkoutBackButtonHandler);
+        }
+        
+        // Создаём новый обработчик для checkout
+        checkoutBackButtonHandler = () => {
+            const checkoutState = getCheckoutState();
+            console.log('[CHECKOUT BackButton] Clicked, current step:', checkoutState.step);
+            
+            if (checkoutState.step > 1) {
+                // Возвращаемся на предыдущий шаг
+                showCheckoutStep(checkoutState.step - 1);
+            } else {
+                // На первом шаге - закрываем checkout
+                closeCheckoutModal();
+            }
+        };
+        
+        tg.BackButton.onClick(checkoutBackButtonHandler);
+        tg.BackButton.show();
+        console.log('[CHECKOUT] BackButton setup for checkout');
+    }
+    
+    function restoreMainBackButton() {
+        const tg = getTg();
+        if (!tg || !tg.BackButton) return;
+        
+        // Удаляем обработчик checkout
+        if (checkoutBackButtonHandler) {
+            tg.BackButton.offClick(checkoutBackButtonHandler);
+            checkoutBackButtonHandler = null;
+        }
+        
+        // Скрываем кнопку (основной обработчик восстановится автоматически)
+        tg.BackButton.hide();
+        console.log('[CHECKOUT] BackButton restored to main handler');
+    }
     
     // ==================== ОСНОВНАЯ ФУНКЦИЯ CHECKOUT ====================
     async function checkout() {
@@ -121,6 +203,10 @@
         const modal = document.getElementById('checkoutModal');
         if (modal) {
             modal.hidden = false;
+            
+            // Настраиваем кнопку "Назад" для checkout
+            setupCheckoutBackButton();
+            
             showCheckoutStep(1);
         } else {
             console.error('[CHECKOUT] Modal not found');
@@ -1344,6 +1430,9 @@
             
             console.log('[CHECKOUT] Order created:', result);
             
+            // Сохраняем данные пользователя для следующих заказов
+            saveUserData(checkoutState);
+            
             // Корзина очищается на бэкенде при создании заказа
             // Просто обновляем UI
             if (window.loadCart) await window.loadCart();
@@ -1375,6 +1464,9 @@
         const modal = document.getElementById('checkoutModal');
         if (modal) modal.hidden = true;
         
+        // Восстанавливаем основную кнопку "Назад"
+        restoreMainBackButton();
+        
         // Очищаем карту
         if (deliveryMap) {
             try { deliveryMap.destroy(); } catch(e) {}
@@ -1382,16 +1474,21 @@
             deliveryMapPlacemark = null;
         }
         
-        // Сбрасываем состояние
+        // Загружаем сохранённые данные для следующего заказа
+        const savedData = getSavedUserData();
+        
+        // Сбрасываем состояние, но сохраняем пользовательские данные
         const checkoutState = getCheckoutState();
         checkoutState.step = 1;
-        checkoutState.phone = null;
-        checkoutState.address = null;
+        // Сохраняем данные пользователя из localStorage
+        checkoutState.phone = savedData?.phone || null;
+        checkoutState.address = savedData?.address || null;
+        checkoutState.recipientName = savedData?.recipientName || '';
+        checkoutState.deliveryComment = savedData?.deliveryComment || '';
+        checkoutState.latitude = savedData?.latitude || null;
+        checkoutState.longitude = savedData?.longitude || null;
+        // Сбрасываем остальное
         checkoutState.addressIsValid = null;
-        checkoutState.latitude = null;
-        checkoutState.longitude = null;
-        checkoutState.recipientName = '';
-        checkoutState.deliveryComment = '';
         checkoutState.deliveryDate = null;
         checkoutState.deliveryTime = null;
         checkoutState.shopId = null;
