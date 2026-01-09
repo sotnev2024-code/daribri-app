@@ -434,6 +434,11 @@
             if (cartModule?.loadCart) {
                 await cartModule.loadCart();
             }
+            
+            // Обновляем UI - показываем кнопки +/- и "Перейти в корзину"
+            if (window.updateProductPageCartUI) {
+                window.updateProductPageCartUI(currentProduct.id);
+            }
         } catch (error) {
             console.error('Error adding to cart:', error);
             if (utils.showToast) utils.showToast('Ошибка добавления в корзину', 'error');
