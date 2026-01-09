@@ -1019,7 +1019,7 @@ input {
 .product-description-section,
 .product-availability-section,
 .product-seller-section {
-    border: 1px solid #ffffff;
+    border: 2px solid #ffffff !important;
 }
 
 .product-section .section-title {
