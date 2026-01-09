@@ -73,7 +73,12 @@
             if (shopLocationSection) {
                 if (shop.address) {
                     shopLocationSection.hidden = false;
-                    if (shopAddressEl) shopAddressEl.textContent = shop.address;
+                    // Показываем адрес с городом
+                    const city = shop.city || 'Екатеринбург';
+                    const fullAddress = shop.address.toLowerCase().includes(city.toLowerCase()) 
+                        ? shop.address 
+                        : `г. ${city}, ${shop.address}`;
+                    if (shopAddressEl) shopAddressEl.textContent = fullAddress;
                 } else {
                     shopLocationSection.hidden = true;
                 }
@@ -123,7 +128,7 @@
         }
         
         const address = shop.address;
-        const city = shop.city || '';
+        const city = shop.city || 'Екатеринбург';
         
         // Если есть координаты, используем их
         // Yandex Maps Widget API параметр pt использует формат lon,lat (долгота, широта)
