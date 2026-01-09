@@ -845,23 +845,36 @@ async function init() {
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
             
-            // Разворачиваем на весь экран
-            tg.expand();
-            
-            // Повторный вызов expand с задержкой для надёжности
-            setTimeout(() => {
-                if (!tg.isExpanded) {
+            // Функция для разворачивания на весь экран
+            const expandToFullscreen = () => {
+                // Используем новый метод requestFullscreen если доступен (Telegram WebApp 7.8+)
+                if (tg.requestFullscreen && typeof tg.requestFullscreen === 'function') {
+                    try {
+                        tg.requestFullscreen();
+                        console.log('[TG] requestFullscreen called');
+                    } catch (e) {
+                        console.log('[TG] requestFullscreen not available, using expand');
+                        tg.expand();
+                    }
+                } else {
                     tg.expand();
-                    console.log('[TG] Expanded (delayed)');
                 }
-            }, 100);
+            };
             
-            setTimeout(() => {
-                if (!tg.isExpanded) {
-                    tg.expand();
-                    console.log('[TG] Expanded (second attempt)');
-                }
-            }, 500);
+            // Разворачиваем на весь экран сразу
+            expandToFullscreen();
+            console.log('[TG] Initial expand called, isExpanded:', tg.isExpanded);
+            
+            // Повторные вызовы expand с разными задержками для надёжности
+            const expandDelays = [50, 100, 200, 500, 1000, 2000];
+            expandDelays.forEach(delay => {
+                setTimeout(() => {
+                    if (!tg.isExpanded) {
+                        expandToFullscreen();
+                        console.log(`[TG] Expand attempt at ${delay}ms, isExpanded:`, tg.isExpanded);
+                    }
+                }, delay);
+            });
             
             // Отключаем сворачивание при свайпе вниз
             if (tg.disableVerticalSwipes) {
@@ -869,10 +882,41 @@ async function init() {
                 console.log('[TG] Vertical swipes disabled');
             }
             
+            // Отключаем закрытие свайпом
+            if (tg.enableClosingConfirmation) {
+                tg.enableClosingConfirmation();
+                console.log('[TG] Closing confirmation enabled');
+            }
+            
             // Слушаем изменения viewport и разворачиваем если свернуто
-            tg.onEvent('viewportChanged', () => {
+            tg.onEvent('viewportChanged', (data) => {
+                console.log('[TG] Viewport changed, isExpanded:', tg.isExpanded, data);
                 if (!tg.isExpanded) {
-                    tg.expand();
+                    setTimeout(() => expandToFullscreen(), 100);
+                }
+            });
+            
+            // Слушаем событие активации приложения
+            if (tg.onEvent) {
+                tg.onEvent('activated', () => {
+                    console.log('[TG] App activated, expanding');
+                    expandToFullscreen();
+                });
+            }
+            
+            // Когда документ становится видимым - пробуем развернуть
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && !tg.isExpanded) {
+                    console.log('[TG] Document visible, expanding');
+                    expandToFullscreen();
+                }
+            });
+            
+            // Когда окно получает фокус - пробуем развернуть
+            window.addEventListener('focus', () => {
+                if (!tg.isExpanded) {
+                    console.log('[TG] Window focused, expanding');
+                    expandToFullscreen();
                 }
             });
             
