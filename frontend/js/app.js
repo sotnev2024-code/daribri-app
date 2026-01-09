@@ -756,7 +756,7 @@ async function init() {
         // Инициализация Telegram WebApp
         if (tg && tg.initDataUnsafe?.user) {
             tg.ready();
-            tg.expand();
+            // tg.expand(); // Убрано - приложение открывается в компактном режиме
             
             // Отключаем сворачивание при свайпе вниз
             if (tg.disableVerticalSwipes) {
