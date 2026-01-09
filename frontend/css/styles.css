@@ -71,11 +71,11 @@
     }
     
     .page {
-        padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     
     .modal-content {
-        padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 }
 
@@ -1443,13 +1443,13 @@ input {
     height: 100dvh;
     background: var(--bg-primary);
     padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 150;
     display: none;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: var(--bottom-nav-height);
     box-sizing: border-box;
 }
 
