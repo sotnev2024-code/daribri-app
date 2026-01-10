@@ -101,6 +101,18 @@
                 })}`;
             }
             
+            // Описание магазина
+            const shopDescriptionSection = document.getElementById('shopDescriptionSection');
+            const shopDescriptionEl = document.getElementById('shopPageDescription');
+            if (shopDescriptionSection && shopDescriptionEl) {
+                if (shop.description && shop.description.trim()) {
+                    shopDescriptionEl.textContent = shop.description;
+                    shopDescriptionSection.hidden = false;
+                } else {
+                    shopDescriptionSection.hidden = true;
+                }
+            }
+            
             // Загружаем карту
             const mapContainer = document.getElementById('shopMapContainer');
             if (mapContainer) {

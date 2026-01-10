@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="images/icons/icon.png?v=4">
     <link rel="apple-touch-icon" href="images/icons/icon.png?v=4">
     <link rel="shortcut icon" href="images/icons/icon.png?v=4">
-    <link rel="stylesheet" href="css/styles.css?v=50">
+    <link rel="stylesheet" href="css/styles.css?v=51">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -302,7 +302,6 @@
                                     <polyline points="9 18 15 12 9 6"/>
                                 </svg>
                             </div>
-                            <div class="seller-description" id="sellerDescription" hidden></div>
                         </div>
                     </div>
                     
@@ -355,6 +354,12 @@
                             <div class="shop-stat-label">Заказов</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Описание магазина -->
+                <div class="shop-description-section" id="shopDescriptionSection" hidden>
+                    <h3 class="section-title">О магазине</h3>
+                    <div class="shop-description" id="shopPageDescription"></div>
                 </div>
 
                 <!-- Местоположение (Карта) -->

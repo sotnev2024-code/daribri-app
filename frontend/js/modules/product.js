@@ -112,7 +112,6 @@
             const sellerAvatar = document.getElementById('sellerAvatar');
             const sellerName = document.getElementById('sellerName');
             const sellerRating = document.getElementById('sellerRating');
-            const sellerDescription = document.getElementById('sellerDescription');
             
             if (sellerCard && sellerName && sellerRating) {
                 sellerName.textContent = product.shop_name || 'Магазин';
@@ -133,16 +132,6 @@
                     <span class="rating-value">${rating.toFixed(1)}</span>
                     ${reviewsCount > 0 ? `<span class="rating-count">(${reviewsCount} ${reviewsCount === 1 ? 'отзыв' : reviewsCount < 5 ? 'отзыва' : 'отзывов'})</span>` : ''}
                 `;
-                
-                // Отображение описания магазина
-                if (sellerDescription) {
-                    if (product.shop_description && product.shop_description.trim()) {
-                        sellerDescription.textContent = product.shop_description;
-                        sellerDescription.hidden = false;
-                    } else {
-                        sellerDescription.hidden = true;
-                    }
-                }
                 
                 // Клик на всю секцию магазина
                 const clickTarget = sellerSection || sellerCard;
