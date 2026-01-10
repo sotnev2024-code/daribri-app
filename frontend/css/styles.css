@@ -360,6 +360,40 @@ body {
         background: #1a1a1a;
     }
     
+    /* Карточка деталей товара в тёмной теме */
+    .product-details-card {
+        background: #1a1a1a;
+        border-color: #333333;
+    }
+    
+    .product-detail-item .detail-title {
+        color: #FFFFFF;
+    }
+    
+    .product-detail-item .product-description {
+        color: #E5E5E5;
+    }
+    
+    .product-detail-item .product-stock {
+        color: #E5E5E5;
+    }
+    
+    .detail-divider {
+        background: #333333;
+    }
+    
+    .product-seller-item .seller-avatar {
+        background: #262626;
+    }
+    
+    .product-seller-item .seller-name {
+        color: #FFFFFF;
+    }
+    
+    .product-seller-item .seller-rating {
+        color: #A3A3A3;
+    }
+    
     /* Кнопки */
     .btn-primary {
         background: var(--primary);
@@ -1350,7 +1384,91 @@ input {
     border: 1px solid var(--border);
 }
 
-/* Секции с белыми рамками как в профиле (как profile-menu и settings-section) */
+/* Объединённая карточка деталей товара */
+.product-details-card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.product-detail-item {
+    padding: 16px;
+}
+
+.product-detail-item .detail-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 8px;
+}
+
+.product-detail-item .product-description {
+    font-size: 0.95rem;
+    color: #000000;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.product-detail-item .product-stock {
+    color: #000000;
+}
+
+.product-detail-item .stock-value {
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.detail-divider {
+    height: 1px;
+    background: #E5E7EB;
+    margin: 0 16px;
+}
+
+.product-seller-item {
+    cursor: pointer;
+}
+
+.product-seller-item .seller-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.product-seller-item .seller-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #F3F4F6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.product-seller-item .seller-info {
+    flex: 1;
+}
+
+.product-seller-item .seller-name {
+    font-weight: 600;
+    color: #000000;
+    font-size: 0.95rem;
+}
+
+.product-seller-item .seller-rating {
+    font-size: 0.85rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+.product-seller-item .seller-arrow {
+    color: #9CA3AF;
+}
+
+/* Старые секции (для обратной совместимости) */
 .product-section.product-description-section,
 .product-section.product-availability-section,
 .product-section.product-seller-section {
