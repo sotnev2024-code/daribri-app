@@ -1393,6 +1393,16 @@ function initEventListeners() {
         console.log('[CLICK] Bottom nav clicked', e.target);
         const navItem = e.target.closest('.nav-item');
         if (navItem) {
+            // Проверяем, открыт ли checkout, и закрываем его при навигации
+            const checkoutModal = document.getElementById('checkoutModal');
+            if (checkoutModal && !checkoutModal.hidden) {
+                console.log('[NAV] Closing checkout modal before navigation');
+                if (window.closeCheckoutModal && typeof window.closeCheckoutModal === 'function') {
+                    window.closeCheckoutModal();
+                } else if (window.App?.checkout?.closeCheckoutModal) {
+                    window.App.checkout.closeCheckoutModal();
+                }
+            }
             console.log('[NAV] Navigating to:', navItem.dataset.page);
             navigateTo(navItem.dataset.page);
         }
@@ -1402,10 +1412,30 @@ function initEventListeners() {
     console.log('[EVENTS] Setting up header buttons...');
     elements.favoritesBtn?.addEventListener('click', () => {
         console.log('[CLICK] Favorites button clicked');
+        // Проверяем, открыт ли checkout, и закрываем его при навигации
+        const checkoutModal = document.getElementById('checkoutModal');
+        if (checkoutModal && !checkoutModal.hidden) {
+            console.log('[NAV] Closing checkout modal before navigation');
+            if (window.closeCheckoutModal && typeof window.closeCheckoutModal === 'function') {
+                window.closeCheckoutModal();
+            } else if (window.App?.checkout?.closeCheckoutModal) {
+                window.App.checkout.closeCheckoutModal();
+            }
+        }
         navigateTo('favorites');
     });
     elements.cartBtn?.addEventListener('click', () => {
         console.log('[CLICK] Cart button clicked');
+        // Проверяем, открыт ли checkout, и закрываем его при навигации
+        const checkoutModal = document.getElementById('checkoutModal');
+        if (checkoutModal && !checkoutModal.hidden) {
+            console.log('[NAV] Closing checkout modal before navigation');
+            if (window.closeCheckoutModal && typeof window.closeCheckoutModal === 'function') {
+                window.closeCheckoutModal();
+            } else if (window.App?.checkout?.closeCheckoutModal) {
+                window.App.checkout.closeCheckoutModal();
+            }
+        }
         navigateTo('cart');
     });
     

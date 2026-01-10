@@ -138,6 +138,17 @@
         
         console.log('[NAV] Navigating to:', page);
         
+        // Проверяем, открыт ли checkout, и закрываем его при навигации
+        const checkoutModal = document.getElementById('checkoutModal');
+        if (checkoutModal && !checkoutModal.hidden) {
+            console.log('[NAV] Closing checkout modal before navigation');
+            if (window.closeCheckoutModal && typeof window.closeCheckoutModal === 'function') {
+                window.closeCheckoutModal();
+            } else if (window.App?.checkout?.closeCheckoutModal) {
+                window.App.checkout.closeCheckoutModal();
+            }
+        }
+        
         // Список всех страниц
         const allPages = [
             elements.productPage,

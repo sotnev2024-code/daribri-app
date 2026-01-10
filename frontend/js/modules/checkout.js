@@ -123,11 +123,20 @@
             const checkoutState = getCheckoutState();
             console.log('[CHECKOUT BackButton] Clicked, current step:', checkoutState.step);
             
+            // Проверяем, что checkout modal действительно открыт
+            const modal = document.getElementById('checkoutModal');
+            if (!modal || modal.hidden) {
+                console.log('[CHECKOUT BackButton] Modal is hidden, closing anyway');
+                closeCheckoutModal();
+                return;
+            }
+            
             if (checkoutState.step > 1) {
                 // Возвращаемся на предыдущий шаг
                 showCheckoutStep(checkoutState.step - 1);
             } else {
                 // На первом шаге - закрываем checkout
+                console.log('[CHECKOUT BackButton] First step, closing checkout');
                 closeCheckoutModal();
             }
         };
@@ -141,14 +150,33 @@
         const tg = getTg();
         if (!tg || !tg.BackButton) return;
         
+        console.log('[CHECKOUT] Restoring main back button...');
+        
         // Удаляем обработчик checkout
         if (checkoutBackButtonHandler) {
-            tg.BackButton.offClick(checkoutBackButtonHandler);
+            try {
+                tg.BackButton.offClick(checkoutBackButtonHandler);
+            } catch (e) {
+                console.warn('[CHECKOUT] Error removing checkout back handler:', e);
+            }
             checkoutBackButtonHandler = null;
         }
         
-        // Скрываем кнопку (основной обработчик восстановится автоматически)
+        // Скрываем кнопку (основной обработчик восстановится автоматически при необходимости)
+        // Если кнопка нужна для текущей страницы, она будет показана в navigateToPage
         tg.BackButton.hide();
+        
+        // Даем время для правильного восстановления
+        setTimeout(() => {
+            // Проверяем, нужна ли кнопка для текущей страницы
+            // Если есть история навигации и не каталог, кнопка должна быть показана
+            if (window.navigationHistory && window.navigationHistory.length > 1) {
+                if (window.showBackButton && typeof window.showBackButton === 'function') {
+                    window.showBackButton();
+                }
+            }
+        }, 100);
+        
         console.log('[CHECKOUT] BackButton restored to main handler');
     }
     
@@ -317,6 +345,9 @@
         if (progressText) {
             progressText.textContent = `Шаг ${step} из 4`;
         }
+        
+        // Обновляем кнопку "Назад" для текущего шага
+        setupCheckoutBackButton();
         
         // Инициализируем шаг
         switch(step) {
