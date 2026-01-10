@@ -1062,11 +1062,12 @@ async function init() {
                         </p>
                         <div style="padding: 20px; background: var(--bg-secondary); border-radius: 12px; margin-top: 8px; border: 1px solid var(--border);">
                             <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 12px; font-size: 0.95rem;">Как открыть приложение:</p>
-                            <ol style="text-align: left; color: var(--text-secondary); line-height: 1.9; padding-left: 24px; margin: 0; font-size: 0.9rem;">
+                            <ol style="text-align: left; color: var(--text-secondary); line-height: 1.9; padding-left: 24px; margin: 0 0 20px 0; font-size: 0.9rem;">
                                 <li>Откройте Telegram на вашем устройстве</li>
-                                <li>Найдите бота "Дарибри"</li>
+                                <li>Перейдите к боту <a href="https://t.me/Daribri_bot" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600;">@Daribri_bot</a></li>
                                 <li>Нажмите кнопку "Открыть приложение" в боте</li>
                             </ol>
+                            <a href="https://t.me/Daribri_bot" target="_blank" style="display: inline-block; padding: 12px 24px; background: var(--primary); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.95rem; margin-top: 8px;">Перейти к боту @Daribri_bot</a>
                         </div>
                     </div>
                 `;
