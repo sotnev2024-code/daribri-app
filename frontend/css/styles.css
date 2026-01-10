@@ -1899,18 +1899,6 @@ input {
     font-size: 0.8rem;
 }
 
-.product-seller-item .seller-rating .rating-stars {
-    color: #FBBF24;
-}
-
-.product-seller-item .seller-rating .rating-value {
-    font-weight: 500;
-}
-
-.product-seller-item .seller-rating .rating-count {
-    color: var(--text-secondary);
-}
-
 .product-seller-item .seller-arrow {
     color: #9CA3AF;
     flex-shrink: 0;
