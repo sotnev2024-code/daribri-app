@@ -305,7 +305,7 @@ body {
     }
     
     .category-chip.active > span:last-child {
-        color: #FFFFFF;
+        color: #000000 !important;
     }
     
     /* Поиск в темной теме */
@@ -702,7 +702,7 @@ input {
 }
 
 .category-chip.active > span:last-child {
-    color: var(--text-primary);
+    color: #000000 !important;
 }
 
 .category-icon-img {
