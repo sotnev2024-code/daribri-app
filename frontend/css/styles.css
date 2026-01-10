@@ -2368,6 +2368,9 @@ input {
 /* Profile */
 .profile-content {
     padding: 20px;
+    position: relative;
+    min-height: calc(100vh - var(--header-height) - var(--bottom-nav-height) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
 }
 
 .profile-header {
@@ -2422,6 +2425,26 @@ input {
 
 .profile-home-btn-section .settings-hint {
     text-align: center;
+}
+
+.profile-footer-credit {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+    .profile-footer-credit {
+        opacity: 0.4;
+    }
 }
 
 .menu-item {
