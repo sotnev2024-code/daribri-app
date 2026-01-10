@@ -135,11 +135,13 @@
                 
                 // Клик на всю секцию магазина
                 const clickTarget = sellerSection || sellerCard;
-                clickTarget.style.cursor = 'pointer';
-                clickTarget.onclick = (e) => {
-                    e.stopPropagation();
-                    if (window.openShopPage) window.openShopPage(product.shop_id);
-                };
+                if (clickTarget && product.shop_id) {
+                    clickTarget.style.cursor = 'pointer';
+                    clickTarget.onclick = (e) => {
+                        e.stopPropagation();
+                        if (window.openShopPage) window.openShopPage(product.shop_id);
+                    };
+                }
             }
             
             // Загружаем товары продавца
