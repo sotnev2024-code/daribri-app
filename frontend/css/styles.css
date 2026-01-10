@@ -573,7 +573,8 @@ input {
     flex: 1;
     /* Отступ сверху: 70px (Telegram панель) + safe-area + header */
     padding-top: calc(70px + env(safe-area-inset-top, 0px) + var(--header-height));
-    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+    /* Отступ снизу: nav + safe-area + немного padding */
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
     overscroll-behavior-y: none;
     overscroll-behavior: none;
@@ -1134,14 +1135,26 @@ input {
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: var(--bottom-nav-height);
+    height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
     background: var(--bg-secondary);
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-around;
+    align-items: flex-start;
     padding: 8px 0;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 100;
+}
+
+/* Фон для области под bottom-nav (iPhone home indicator) */
+.bottom-nav::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: var(--bg-secondary);
 }
 
 .nav-item {
