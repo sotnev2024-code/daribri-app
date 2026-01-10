@@ -56,10 +56,25 @@ async def get_products(
         params.extend(cat_ids)
     
     if search:
-        # Используем LOWER для регистронезависимого поиска кириллицы
-        search_lower = search.lower()
-        conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ?)")
-        params.extend([f"%{search_lower}%", f"%{search_lower}%"])
+        # Умный поиск: разбиваем на слова и ищем любое из них
+        search_lower = search.lower().strip()
+        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 2]
+        
+        if words:
+            # Создаём условия для каждого слова (OR между словами)
+            word_conditions = []
+            for word in words:
+                word_conditions.append(
+                    "(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)"
+                )
+                params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
+            
+            # Объединяем условия слов через OR (найти любое слово)
+            conditions.append(f"({' OR '.join(word_conditions)})")
+        else:
+            # Если слова слишком короткие, ищем всю фразу
+            conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)")
+            params.extend([f"%{search_lower}%", f"%{search_lower}%", f"%{search_lower}%"])
     
     if min_price is not None:
         conditions.append("COALESCE(p.discount_price, p.price) >= ?")
@@ -76,6 +91,31 @@ async def get_products(
         conditions.append("p.discount_price IS NOT NULL")
     
     where_clause = " AND ".join(conditions)
+    
+    # Строим ORDER BY с учётом релевантности поиска
+    order_by = "p.is_trending DESC, p.created_at DESC"
+    
+    if search:
+        search_lower = search.lower().strip()
+        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 2]
+        
+        if words:
+            # Создаём score для релевантности: чем больше слов совпало, тем выше
+            relevance_parts = []
+            for word in words:
+                # +10 за совпадение в названии, +5 за совпадение в описании, +3 за магазин
+                relevance_parts.append(f"(CASE WHEN LOWER(p.name) LIKE '%{word}%' THEN 10 ELSE 0 END)")
+                relevance_parts.append(f"(CASE WHEN LOWER(p.description) LIKE '%{word}%' THEN 5 ELSE 0 END)")
+                relevance_parts.append(f"(CASE WHEN LOWER(s.name) LIKE '%{word}%' THEN 3 ELSE 0 END)")
+            
+            # Дополнительные баллы за точное совпадение названия
+            relevance_parts.append(f"(CASE WHEN LOWER(p.name) = '{search_lower}' THEN 100 ELSE 0 END)")
+            # Баллы если название начинается с поискового запроса
+            relevance_parts.append(f"(CASE WHEN LOWER(p.name) LIKE '{search_lower}%' THEN 50 ELSE 0 END)")
+            
+            relevance_score = " + ".join(relevance_parts)
+            order_by = f"({relevance_score}) DESC, p.is_trending DESC, p.created_at DESC"
+    
     params.extend([limit, skip])
     
     products = await db.fetch_all(
@@ -88,7 +128,7 @@ async def get_products(
             JOIN shops s ON p.shop_id = s.id
             LEFT JOIN categories c ON p.category_id = c.id
             WHERE {where_clause}
-            ORDER BY p.is_trending DESC, p.created_at DESC
+            ORDER BY {order_by}
             LIMIT ? OFFSET ?""",
         tuple(params)
     )
