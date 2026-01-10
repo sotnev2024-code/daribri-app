@@ -123,6 +123,7 @@ async def get_products(
                    s.name as shop_name,
                    s.id as shop_id,
                    s.average_rating as shop_rating,
+                   (SELECT COUNT(*) FROM shop_reviews WHERE shop_id = s.id) as shop_reviews_count,
                    c.name as category_name
             FROM products p
             JOIN shops s ON p.shop_id = s.id

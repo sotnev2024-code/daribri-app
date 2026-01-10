@@ -1055,16 +1055,31 @@ input {
     overflow: hidden;
 }
 
+.product-shop-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
 .product-shop-name {
     font-size: 0.75rem;
     color: var(--text-muted);
-    margin-bottom: 8px;
+}
+
+.product-shop-rating {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .product-price-row {
     display: flex;
     align-items: baseline;
+    justify-content: center;
     gap: 6px;
+    text-align: center;
 }
 
 .product-current-price {

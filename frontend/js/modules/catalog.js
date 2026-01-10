@@ -444,6 +444,14 @@
             imageHTML = '<div class="product-image-placeholder">🌸</div>';
         }
         
+        // Рейтинг и отзывы магазина
+        const shopRating = product.shop_rating || 0;
+        const shopReviewsCount = product.shop_reviews_count || 0;
+        const ratingText = shopRating > 0 ? shopRating.toFixed(1) : '—';
+        const reviewsText = shopReviewsCount > 0 
+            ? `(${shopReviewsCount} ${shopReviewsCount === 1 ? 'отзыв' : shopReviewsCount < 5 ? 'отзыва' : 'отзывов'})` 
+            : '';
+        
         card.innerHTML = `
             <div class="product-image">
                 ${imageHTML}
@@ -459,7 +467,14 @@
             </div>
             <div class="product-content">
                 <div class="product-name">${product.name}</div>
-                <div class="product-shop-name">${product.shop_name || 'Магазин'}</div>
+                <div class="product-shop-info">
+                    <span class="product-shop-name">${product.shop_name || 'Магазин'}</span>
+                    ${shopRating > 0 || shopReviewsCount > 0 ? `
+                        <span class="product-shop-rating">
+                            ⭐ ${ratingText} ${reviewsText}
+                        </span>
+                    ` : ''}
+                </div>
                 <div class="product-price-row">
                     <span class="product-current-price">${formatPrice(hasDiscount ? discountPrice : price)}</span>
                     ${hasDiscount ? `<span class="product-original-price">${formatPrice(price)}</span>` : ''}
