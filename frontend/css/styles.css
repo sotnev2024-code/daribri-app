@@ -647,9 +647,9 @@ input {
     align-items: center;
     justify-content: flex-start;
     gap: 0;
-    padding: 6px;
-    width: 90px;
-    min-width: 90px;
+    padding: 6px 4px;
+    width: 85px;
+    min-width: 85px;
     height: auto;
     min-height: 95px;
     background: var(--bg-tertiary);
@@ -686,13 +686,16 @@ input {
 .category-chip > span:last-child {
     width: 100%;
     text-align: center;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 600;
-    line-height: 1.2;
-    padding: 2px 1px 0;
+    line-height: 1.15;
+    padding: 2px 2px 0;
     margin-top: 2px;
     white-space: normal;
-    word-break: break-word;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
     overflow: visible;
     color: #000000;
     display: block;
