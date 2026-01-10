@@ -478,7 +478,7 @@ input {
 /* Header */
 .header {
     position: fixed;
-    top: 70px;
+    top: calc(70px + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -487,17 +487,16 @@ input {
     background: #dbff00;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
-    padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Фон для области над header (Telegram панель) */
+/* Фон для области над header (Telegram панель + iOS safe area) */
 .header::before {
     content: '';
     position: absolute;
-    top: -70px;
-    left: 0;
-    right: 0;
-    height: 70px;
+    top: calc(-70px - env(safe-area-inset-top, 0px));
+    left: -50vw;
+    right: -50vw;
+    height: calc(70px + env(safe-area-inset-top, 0px));
     background: #dbff00;
 }
 
