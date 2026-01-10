@@ -504,13 +504,15 @@
             </div>
             <div class="product-content">
                 <div class="product-name">${product.name}</div>
-                <div class="product-shop-info">
-                    <span class="product-shop-name">${product.shop_name || 'Магазин'}</span>
-                    <span class="product-shop-rating">${ratingDisplay}</span>
-                </div>
-                <div class="product-price-row">
-                    <span class="product-current-price">${formatPrice(hasDiscount ? discountPrice : price)}</span>
-                    ${hasDiscount ? `<span class="product-original-price">${formatPrice(price)}</span>` : ''}
+                <div class="product-shop-price-section">
+                    <div class="product-shop-info">
+                        <span class="product-shop-name">${product.shop_name || 'Магазин'}</span>
+                        <span class="product-shop-rating">${ratingDisplay}</span>
+                    </div>
+                    <div class="product-price-row">
+                        <span class="product-current-price">${formatPrice(hasDiscount ? discountPrice : price)}</span>
+                        ${hasDiscount ? `<span class="product-original-price">${formatPrice(price)}</span>` : ''}
+                    </div>
                 </div>
             </div>
         `;
