@@ -569,8 +569,8 @@
                 'москва': ['москва', 'мск', 'moscow'],
                 'казань': ['казань', 'kazan'],
                 'новосибирск': ['новосибирск'],
-                'екатеринбург': ['екатеринбург', 'свердловск'],
-                'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород'],
+                'екатеринбург': ['екатеринбург', 'свердловск', 'ekaterinburg'],
+                'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород', 'нижний'],
                 'краснодар': ['краснодар'],
                 'сочи': ['сочи'],
                 'ростов-на-дону': ['ростов-на-дону', 'ростов на дону', 'ростов'],
@@ -579,14 +579,25 @@
             // Находим варианты для текущего города
             let allowedVariants = [shopCity];
             for (const [city, variants] of Object.entries(cityVariants)) {
-                if (shopCity.includes(city) || city.includes(shopCity) || variants.some(v => shopCity.includes(v))) {
+                // Проверяем, соответствует ли shopCity этому городу
+                if (shopCity === city || 
+                    shopCity.includes(city) || 
+                    city.includes(shopCity) || 
+                    variants.some(v => shopCity === v || shopCity.includes(v) || v.includes(shopCity))) {
                     allowedVariants = [...allowedVariants, city, ...variants];
                     break;
                 }
             }
             
             // Проверяем, содержит ли адрес допустимый город
-            return allowedVariants.some(variant => addressLower.includes(variant));
+            const isValid = allowedVariants.some(variant => addressLower.includes(variant));
+            console.log('[CHECKOUT] Address validation (validateAddress):', {
+                address: address,
+                shopCity: shopCity,
+                allowedVariants: allowedVariants,
+                isValid: isValid
+            });
+            return isValid;
         }
         
         // Валидация формы
@@ -773,12 +784,12 @@
         
         // Варианты написания городов
         const cityAliases = {
-            'санкт-петербург': ['санкт-петербург', 'спб', 'с.-петербург', 'петербург', 'питер'],
-            'москва': ['москва', 'мск'],
-            'казань': ['казань'],
+            'санкт-петербург': ['санкт-петербург', 'спб', 'с.-петербург', 'с-петербург', 'петербург', 'питер', 'ленинград'],
+            'москва': ['москва', 'мск', 'moscow'],
+            'казань': ['казань', 'kazan'],
             'новосибирск': ['новосибирск'],
-            'екатеринбург': ['екатеринбург'],
-            'нижний новгород': ['нижний новгород', 'н.новгород'],
+            'екатеринбург': ['екатеринбург', 'свердловск', 'ekaterinburg'],
+            'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород', 'нижний'],
             'краснодар': ['краснодар'],
             'сочи': ['сочи'],
             'ростов-на-дону': ['ростов-на-дону', 'ростов на дону', 'ростов'],
@@ -787,14 +798,25 @@
         // Находим все допустимые варианты названия города
         let variants = [cityLower];
         for (const [mainCity, aliases] of Object.entries(cityAliases)) {
-            if (cityLower.includes(mainCity) || aliases.some(a => cityLower.includes(a))) {
+            // Проверяем, соответствует ли shopCity этому городу
+            if (cityLower === mainCity || 
+                cityLower.includes(mainCity) || 
+                mainCity.includes(cityLower) || 
+                aliases.some(a => cityLower === a || cityLower.includes(a) || a.includes(cityLower))) {
                 variants = [...variants, mainCity, ...aliases];
                 break;
             }
         }
         
         // Проверяем, содержит ли адрес хотя бы один вариант
-        return variants.some(v => addressLower.includes(v));
+        const isValid = variants.some(v => addressLower.includes(v));
+        console.log('[CHECKOUT] Address validation:', {
+            address: address,
+            shopCity: shopCity,
+            variants: variants,
+            isValid: isValid
+        });
+        return isValid;
     }
     
     // Загрузка карты Yandex

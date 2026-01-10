@@ -202,8 +202,30 @@ async def reverse_geocode(
             if city:
                 address_lower = address_text.lower()
                 city_lower = city.lower()
-                is_valid = city_lower in address_lower
-                logger.info(f"[GEOCODE] Address validation: is_valid={is_valid}, city={city}, address={address_text}")
+                
+                # Варианты написания городов для более гибкой проверки
+                city_aliases = {
+                    'санкт-петербург': ['санкт-петербург', 'спб', 'с.-петербург', 'с-петербург', 'петербург', 'питер', 'ленинград'],
+                    'москва': ['москва', 'мск', 'moscow'],
+                    'казань': ['казань', 'kazan'],
+                    'новосибирск': ['новосибирск'],
+                    'екатеринбург': ['екатеринбург', 'свердловск', 'ekaterinburg'],
+                    'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород', 'нижний'],
+                    'краснодар': ['краснодар'],
+                    'сочи': ['сочи'],
+                    'ростов-на-дону': ['ростов-на-дону', 'ростов на дону', 'ростов'],
+                }
+                
+                # Находим все допустимые варианты для текущего города
+                allowed_variants = [city_lower]
+                for main_city, aliases in city_aliases.items():
+                    if city_lower == main_city or city_lower in aliases or main_city in city_lower or any(alias in city_lower for alias in aliases):
+                        allowed_variants.extend([main_city] + aliases)
+                        break
+                
+                # Проверяем, содержит ли адрес хотя бы один вариант названия города
+                is_valid = any(variant in address_lower for variant in allowed_variants)
+                logger.info(f"[GEOCODE] Address validation: is_valid={is_valid}, city={city}, address={address_text}, allowed_variants={allowed_variants}")
             
             return {
                 "address": address_text,
@@ -307,8 +329,30 @@ async def geocode_address(
             if city:
                 address_lower = full_address_text.lower()
                 city_lower = city.lower()
-                is_valid = city_lower in address_lower
-                logger.info(f"[GEOCODE] Address validation: is_valid={is_valid}, city={city}")
+                
+                # Варианты написания городов для более гибкой проверки
+                city_aliases = {
+                    'санкт-петербург': ['санкт-петербург', 'спб', 'с.-петербург', 'с-петербург', 'петербург', 'питер', 'ленинград'],
+                    'москва': ['москва', 'мск', 'moscow'],
+                    'казань': ['казань', 'kazan'],
+                    'новосибирск': ['новосибирск'],
+                    'екатеринбург': ['екатеринбург', 'свердловск', 'ekaterinburg'],
+                    'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород', 'нижний'],
+                    'краснодар': ['краснодар'],
+                    'сочи': ['сочи'],
+                    'ростов-на-дону': ['ростов-на-дону', 'ростов на дону', 'ростов'],
+                }
+                
+                # Находим все допустимые варианты для текущего города
+                allowed_variants = [city_lower]
+                for main_city, aliases in city_aliases.items():
+                    if city_lower == main_city or city_lower in aliases or main_city in city_lower or any(alias in city_lower for alias in aliases):
+                        allowed_variants.extend([main_city] + aliases)
+                        break
+                
+                # Проверяем, содержит ли адрес хотя бы один вариант названия города
+                is_valid = any(variant in address_lower for variant in allowed_variants)
+                logger.info(f"[GEOCODE] Address validation: is_valid={is_valid}, city={city}, allowed_variants={allowed_variants}")
             
             return {
                 "coordinates": {
