@@ -147,7 +147,7 @@
             
             // Избранное
             const favoritesModule = window.App?.favorites;
-            if (favoritesModule?.isProductFavorite) {
+            if (favoritesModule?.isProductFavorite && elements.productFavoriteBtn) {
                 const isFavorite = favoritesModule.isProductFavorite(product.id);
                 elements.productFavoriteBtn.classList.toggle('active', isFavorite);
             }
