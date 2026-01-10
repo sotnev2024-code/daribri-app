@@ -1087,6 +1087,9 @@ input {
     color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
+    display: inline-block;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .product-price-row {

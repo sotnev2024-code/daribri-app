@@ -445,8 +445,32 @@
         }
         
         // Рейтинг и отзывы магазина
-        const shopRating = parseFloat(product.shop_rating) || 0;
-        const shopReviewsCount = parseInt(product.shop_reviews_count) || 0;
+        // Отладка: проверяем, что данные приходят
+        console.log('[PRODUCT CARD] Product data:', {
+            id: product.id,
+            name: product.name,
+            shop_name: product.shop_name,
+            shop_rating: product.shop_rating,
+            shop_reviews_count: product.shop_reviews_count,
+            shop_rating_type: typeof product.shop_rating,
+            shop_reviews_count_type: typeof product.shop_reviews_count
+        });
+        
+        // Пробуем разные варианты получения данных
+        const shopRatingRaw = product.shop_rating || product.average_rating || 0;
+        const shopReviewsCountRaw = product.shop_reviews_count || product.total_reviews || product.reviews_count || 0;
+        
+        const shopRating = typeof shopRatingRaw === 'string' 
+            ? parseFloat(shopRatingRaw) 
+            : typeof shopRatingRaw === 'number' 
+                ? shopRatingRaw 
+                : 0;
+        const shopReviewsCount = typeof shopReviewsCountRaw === 'string' 
+            ? parseInt(shopReviewsCountRaw) 
+            : typeof shopReviewsCountRaw === 'number' 
+                ? shopReviewsCountRaw 
+                : 0;
+        
         const hasRating = shopRating > 0 && !isNaN(shopRating);
         const ratingText = hasRating ? shopRating.toFixed(1) : '';
         const reviewsText = shopReviewsCount > 0 
@@ -455,6 +479,15 @@
         const ratingDisplay = hasRating 
             ? `⭐ ${ratingText} ${reviewsText}` 
             : 'Нет оценки';
+        
+        console.log('[PRODUCT CARD] Parsed rating data:', {
+            shopRatingRaw,
+            shopRating,
+            shopReviewsCountRaw,
+            shopReviewsCount,
+            hasRating,
+            ratingDisplay
+        });
         
         card.innerHTML = `
             <div class="product-image">
