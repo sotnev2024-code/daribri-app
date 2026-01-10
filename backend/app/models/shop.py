@@ -17,6 +17,7 @@ class ShopBase(BaseModel):
     address: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    working_hours: Optional[str] = None
 
 
 class ShopCreate(ShopBase):
@@ -33,6 +34,7 @@ class ShopUpdate(BaseModel):
     address: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    working_hours: Optional[str] = None
 
 
 class Shop(ShopBase):

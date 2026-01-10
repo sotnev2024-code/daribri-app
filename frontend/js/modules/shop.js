@@ -113,6 +113,56 @@
                 }
             }
             
+            // Расписание работы
+            const shopScheduleSection = document.getElementById('shopScheduleSection');
+            const shopScheduleEl = document.getElementById('shopPageSchedule');
+            if (shopScheduleSection && shopScheduleEl) {
+                if (shop.working_hours || shop.schedule) {
+                    const schedule = shop.working_hours || shop.schedule;
+                    let scheduleText = '';
+                    
+                    // Если расписание - JSON строка, парсим его
+                    try {
+                        const scheduleData = typeof schedule === 'string' ? JSON.parse(schedule) : schedule;
+                        if (typeof scheduleData === 'object' && !Array.isArray(scheduleData)) {
+                            // Форматируем расписание из объекта
+                            const daysOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                            const daysNames = {
+                                'monday': 'Пн',
+                                'tuesday': 'Вт',
+                                'wednesday': 'Ср',
+                                'thursday': 'Чт',
+                                'friday': 'Пт',
+                                'saturday': 'Сб',
+                                'sunday': 'Вс'
+                            };
+                            
+                            scheduleText = daysOrder
+                                .map(day => {
+                                    const hours = scheduleData[day] || scheduleData[daysNames[day]?.toLowerCase()];
+                                    return hours ? `${daysNames[day]}: ${hours}` : null;
+                                })
+                                .filter(Boolean)
+                                .join('<br>');
+                        } else {
+                            scheduleText = schedule;
+                        }
+                    } catch (e) {
+                        // Если не JSON, используем как текст (с поддержкой переносов строк)
+                        scheduleText = String(schedule).replace(/\n/g, '<br>');
+                    }
+                    
+                    if (scheduleText && scheduleText.trim()) {
+                        shopScheduleEl.innerHTML = scheduleText.trim();
+                        shopScheduleSection.hidden = false;
+                    } else {
+                        shopScheduleSection.hidden = true;
+                    }
+                } else {
+                    shopScheduleSection.hidden = true;
+                }
+            }
+            
             // Загружаем карту
             const mapContainer = document.getElementById('shopMapContainer');
             if (mapContainer) {

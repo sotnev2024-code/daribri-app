@@ -410,6 +410,16 @@ body {
         color: #E5E5E5;
     }
     
+    /* Shop Schedule Section в темной теме */
+    .shop-schedule-section .shop-stat-card {
+        background: #1a1a1a;
+        border-color: #333333;
+    }
+    
+    .shop-schedule-content {
+        color: #E5E5E5;
+    }
+    
     /* Кнопки */
     .btn-primary {
         background: var(--primary);
@@ -4623,6 +4633,28 @@ input {
 .shop-stat-label {
     font-size: 0.875rem;
     color: var(--text-secondary);
+}
+
+/* Shop Schedule Section */
+.shop-schedule-section {
+    margin-bottom: 24px;
+}
+
+.shop-schedule-section .shop-stat-card {
+    width: 100%;
+    align-items: flex-start;
+}
+
+.shop-schedule-section .shop-stat-icon {
+    margin-top: 2px;
+}
+
+.shop-schedule-content {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    word-wrap: break-word;
+    white-space: pre-line;
 }
 
 /* Shop Description Section */
