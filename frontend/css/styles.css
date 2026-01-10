@@ -61,10 +61,6 @@
 
 /* Поддержка safe-area на iOS */
 @supports (padding: max(0px)) {
-    .header {
-        padding-top: max(12px, env(safe-area-inset-top));
-    }
-    
     .bottom-nav {
         padding-bottom: max(8px, env(safe-area-inset-bottom));
         height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
@@ -76,6 +72,15 @@
     
     .modal-content {
         padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    
+    /* Дополнительный отступ для контента на iOS с вырезом */
+    .main-content {
+        padding-top: calc(max(70px, calc(50px + env(safe-area-inset-top, 0px))) + var(--header-height) + 10px);
+    }
+    
+    .categories-section {
+        margin-top: 5px;
     }
 }
 
