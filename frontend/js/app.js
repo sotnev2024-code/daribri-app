@@ -1054,23 +1054,25 @@ async function init() {
             const mainContent = document.querySelector('.main-content');
             if (mainContent) {
                 mainContent.innerHTML = `
-                    <div style="padding: 40px 20px; text-align: center; max-width: 500px; margin: 0 auto;">
+                    <div style="padding: 40px 20px; text-align: center; max-width: 500px; margin: 0 auto; min-height: calc(100vh - 120px); display: flex; flex-direction: column; justify-content: center;">
                         <div style="font-size: 64px; margin-bottom: 24px;">⚠️</div>
-                        <h2 style="margin-bottom: 16px; color: var(--text-primary); font-size: 1.5rem;">Приложение доступно только через Telegram</h2>
-                        <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; font-size: 0.95rem;">
+                        <h2 style="margin-bottom: 16px; color: var(--text-primary); font-size: 1.5rem; font-weight: 600;">Приложение доступно только через Telegram</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 32px; line-height: 1.6; font-size: 0.95rem;">
                             Для использования приложения откройте его через Telegram бота. Это обеспечивает безопасность и корректную работу всех функций.
                         </p>
-                        <div style="padding: 16px; background: var(--bg-secondary); border-radius: 12px; margin-top: 24px;">
-                            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">Как открыть приложение:</p>
-                            <ol style="text-align: left; color: var(--text-secondary); line-height: 1.8; padding-left: 20px; margin: 0;">
-                                <li>Откройте Telegram</li>
-                                <li>Найдите бота</li>
-                                <li>Нажмите кнопку "Открыть приложение"</li>
+                        <div style="padding: 20px; background: var(--bg-secondary); border-radius: 12px; margin-top: 8px; border: 1px solid var(--border);">
+                            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 12px; font-size: 0.95rem;">Как открыть приложение:</p>
+                            <ol style="text-align: left; color: var(--text-secondary); line-height: 1.9; padding-left: 24px; margin: 0; font-size: 0.9rem;">
+                                <li>Откройте Telegram на вашем устройстве</li>
+                                <li>Найдите бота "Дарибри"</li>
+                                <li>Нажмите кнопку "Открыть приложение" в боте</li>
                             </ol>
                         </div>
                     </div>
                 `;
-                mainContent.style.display = 'block';
+                mainContent.style.display = 'flex';
+                mainContent.style.alignItems = 'center';
+                mainContent.style.justifyContent = 'center';
             }
             
             // Скрываем header и bottom nav
@@ -1079,7 +1081,8 @@ async function init() {
             const bottomNav = document.querySelector('.bottom-nav');
             if (bottomNav) bottomNav.style.display = 'none';
             
-            return; // Прерываем инициализацию
+            // Останавливаем дальнейшую инициализацию
+            return;
         }
         
         // Загружаем данные (для всех пользователей)
