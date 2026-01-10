@@ -1043,27 +1043,43 @@ async function init() {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         } else {
-            // Тестовый режим - доступ через браузер без Telegram
-            console.warn('[INIT] Running in TEST MODE - no Telegram detected');
+            // Доступ только через Telegram
+            console.error('[INIT] ERROR: Application must be opened through Telegram');
             
-            // Создаём тестового пользователя
-            const testUser = {
-                id: 999999999,
-                first_name: 'Тестовый',
-                last_name: 'Пользователь',
-                username: 'test_user',
-                language_code: 'ru'
-            };
+            // Скрываем основной контент
+            if (elements.productsGrid) {
+                elements.productsGrid.innerHTML = '';
+            }
             
-            api.setTelegramId(testUser.id);
-            state.user = testUser;
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.innerHTML = `
+                    <div style="padding: 40px 20px; text-align: center; max-width: 500px; margin: 0 auto;">
+                        <div style="font-size: 64px; margin-bottom: 24px;">⚠️</div>
+                        <h2 style="margin-bottom: 16px; color: var(--text-primary); font-size: 1.5rem;">Приложение доступно только через Telegram</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; font-size: 0.95rem;">
+                            Для использования приложения откройте его через Telegram бота. Это обеспечивает безопасность и корректную работу всех функций.
+                        </p>
+                        <div style="padding: 16px; background: var(--bg-secondary); border-radius: 12px; margin-top: 24px;">
+                            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">Как открыть приложение:</p>
+                            <ol style="text-align: left; color: var(--text-secondary); line-height: 1.8; padding-left: 20px; margin: 0;">
+                                <li>Откройте Telegram</li>
+                                <li>Найдите бота</li>
+                                <li>Нажмите кнопку "Открыть приложение"</li>
+                            </ol>
+                        </div>
+                    </div>
+                `;
+                mainContent.style.display = 'block';
+            }
             
-            // Обновляем профиль
-            if (elements.profileName) elements.profileName.textContent = testUser.first_name;
-            if (elements.profileUsername) elements.profileUsername.textContent = `@${testUser.username}`;
+            // Скрываем header и bottom nav
+            const header = document.querySelector('.header');
+            if (header) header.style.display = 'none';
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.display = 'none';
             
-            // Показываем уведомление о тестовом режиме
-            console.log('[INIT] Test user created:', testUser);
+            return; // Прерываем инициализацию
         }
         
         // Загружаем данные (для всех пользователей)
