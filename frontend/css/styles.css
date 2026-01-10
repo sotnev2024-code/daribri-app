@@ -697,12 +697,12 @@ input {
     hyphens: auto;
     -webkit-hyphens: auto;
     overflow: visible;
-    color: #000000;
+    color: var(--text-primary);
     display: block;
 }
 
 .category-chip.active > span:last-child {
-    color: #000000;
+    color: var(--text-primary);
 }
 
 .category-icon-img {
