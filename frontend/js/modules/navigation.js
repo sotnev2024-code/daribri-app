@@ -138,6 +138,18 @@
         
         console.log('[NAV] Navigating to:', page);
         
+        // Проверяем, открыто ли модальное окно добавления товара, и закрываем его при навигации
+        const addProductModal = document.getElementById('addProductModal');
+        if (addProductModal && !addProductModal.hidden) {
+            console.log('[NAV] Closing add product modal before navigation');
+            addProductModal.hidden = true;
+            if (typeof window.resetProductForm === 'function') {
+                window.resetProductForm();
+            } else if (window.App?.myshop?.resetProductForm) {
+                window.App.myshop.resetProductForm();
+            }
+        }
+        
         // Проверяем, открыт ли checkout, и закрываем его при навигации
         const checkoutModal = document.getElementById('checkoutModal');
         if (checkoutModal && !checkoutModal.hidden) {

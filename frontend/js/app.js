@@ -1421,6 +1421,18 @@ function initEventListeners() {
         console.log('[CLICK] Bottom nav clicked', e.target);
         const navItem = e.target.closest('.nav-item');
         if (navItem) {
+            // Проверяем, открыто ли модальное окно добавления товара, и закрываем его при навигации
+            const addProductModal = document.getElementById('addProductModal');
+            if (addProductModal && !addProductModal.hidden) {
+                console.log('[NAV] Closing add product modal before navigation');
+                addProductModal.hidden = true;
+                if (typeof window.resetProductForm === 'function') {
+                    window.resetProductForm();
+                } else if (window.App?.myshop?.resetProductForm) {
+                    window.App.myshop.resetProductForm();
+                }
+            }
+            
             // Проверяем, открыт ли checkout, и закрываем его при навигации
             const checkoutModal = document.getElementById('checkoutModal');
             if (checkoutModal && !checkoutModal.hidden) {
@@ -1431,6 +1443,7 @@ function initEventListeners() {
                     window.App.checkout.closeCheckoutModal();
                 }
             }
+            
             console.log('[NAV] Navigating to:', navItem.dataset.page);
             navigateTo(navItem.dataset.page);
         }
@@ -1440,6 +1453,17 @@ function initEventListeners() {
     console.log('[EVENTS] Setting up header buttons...');
     elements.favoritesBtn?.addEventListener('click', () => {
         console.log('[CLICK] Favorites button clicked');
+        // Закрываем модальное окно добавления товара, если открыто
+        const addProductModal = document.getElementById('addProductModal');
+        if (addProductModal && !addProductModal.hidden) {
+            console.log('[NAV] Closing add product modal before navigation');
+            addProductModal.hidden = true;
+            if (typeof window.resetProductForm === 'function') {
+                window.resetProductForm();
+            } else if (window.App?.myshop?.resetProductForm) {
+                window.App.myshop.resetProductForm();
+            }
+        }
         // Проверяем, открыт ли checkout, и закрываем его при навигации
         const checkoutModal = document.getElementById('checkoutModal');
         if (checkoutModal && !checkoutModal.hidden) {
@@ -1454,6 +1478,17 @@ function initEventListeners() {
     });
     elements.cartBtn?.addEventListener('click', () => {
         console.log('[CLICK] Cart button clicked');
+        // Закрываем модальное окно добавления товара, если открыто
+        const addProductModal = document.getElementById('addProductModal');
+        if (addProductModal && !addProductModal.hidden) {
+            console.log('[NAV] Closing add product modal before navigation');
+            addProductModal.hidden = true;
+            if (typeof window.resetProductForm === 'function') {
+                window.resetProductForm();
+            } else if (window.App?.myshop?.resetProductForm) {
+                window.App.myshop.resetProductForm();
+            }
+        }
         // Проверяем, открыт ли checkout, и закрываем его при навигации
         const checkoutModal = document.getElementById('checkoutModal');
         if (checkoutModal && !checkoutModal.hidden) {
