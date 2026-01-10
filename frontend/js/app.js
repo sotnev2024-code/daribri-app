@@ -735,6 +735,34 @@ function hideBackButton() {
 function goBack() {
     console.log('[goBack] History before:', [...navigationHistory]);
     
+    // Проверяем, открыто ли модальное окно добавления товара
+    const addProductModal = document.getElementById('addProductModal');
+    if (addProductModal && !addProductModal.hidden) {
+        console.log('[goBack] Closing add product modal');
+        addProductModal.hidden = true;
+        // Сбрасываем форму, если функция доступна
+        if (typeof resetProductForm === 'function') {
+            resetProductForm();
+        } else if (typeof window.resetProductForm === 'function') {
+            window.resetProductForm();
+        } else if (window.App?.myshop?.resetProductForm) {
+            window.App.myshop.resetProductForm();
+        }
+        return;
+    }
+    
+    // Проверяем, открыто ли модальное окно оформления заказа
+    const checkoutModal = document.getElementById('checkoutModal');
+    if (checkoutModal && !checkoutModal.hidden) {
+        console.log('[goBack] Closing checkout modal');
+        if (window.App?.checkout?.closeCheckoutModal) {
+            window.App.checkout.closeCheckoutModal();
+        } else if (typeof window.closeCheckoutModal === 'function') {
+            window.closeCheckoutModal();
+        }
+        return;
+    }
+    
     if (navigationHistory.length > 1) {
         navigationHistory.pop(); // Убираем текущую страницу
         const previousPage = navigationHistory[navigationHistory.length - 1];

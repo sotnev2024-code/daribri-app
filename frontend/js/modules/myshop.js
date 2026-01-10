@@ -1519,7 +1519,15 @@
         // Инициализируем обработчики формы
         initProductFormHandlers();
         
-        if (elements.addProductModal) elements.addProductModal.hidden = false;
+        if (elements.addProductModal) {
+            elements.addProductModal.hidden = false;
+            
+            // Показываем кнопку "Назад" Telegram при открытии модального окна
+            const tg = window.tg || window.Telegram?.WebApp || null;
+            if (tg && tg.BackButton) {
+                tg.BackButton.show();
+            }
+        }
     }
     
     async function loadProductForEdit(productId) {
