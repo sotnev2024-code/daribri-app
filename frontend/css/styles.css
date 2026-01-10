@@ -1058,14 +1058,15 @@ input {
 .product-shop-info {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
     margin-bottom: 8px;
-    flex-wrap: wrap;
 }
 
 .product-shop-name {
     font-size: 0.75rem;
     color: var(--text-muted);
+    flex: 1;
 }
 
 .product-shop-rating {
@@ -1077,9 +1078,9 @@ input {
 .product-price-row {
     display: flex;
     align-items: baseline;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 6px;
-    text-align: center;
+    text-align: left;
 }
 
 .product-current-price {

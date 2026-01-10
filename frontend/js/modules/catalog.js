@@ -447,10 +447,14 @@
         // Рейтинг и отзывы магазина
         const shopRating = product.shop_rating || 0;
         const shopReviewsCount = product.shop_reviews_count || 0;
-        const ratingText = shopRating > 0 ? shopRating.toFixed(1) : '—';
+        const hasRating = shopRating > 0;
+        const ratingText = hasRating ? shopRating.toFixed(1) : '';
         const reviewsText = shopReviewsCount > 0 
             ? `(${shopReviewsCount} ${shopReviewsCount === 1 ? 'отзыв' : shopReviewsCount < 5 ? 'отзыва' : 'отзывов'})` 
             : '';
+        const ratingDisplay = hasRating 
+            ? `⭐ ${ratingText} ${reviewsText}` 
+            : 'Нет оценки';
         
         card.innerHTML = `
             <div class="product-image">
@@ -469,11 +473,7 @@
                 <div class="product-name">${product.name}</div>
                 <div class="product-shop-info">
                     <span class="product-shop-name">${product.shop_name || 'Магазин'}</span>
-                    ${shopRating > 0 || shopReviewsCount > 0 ? `
-                        <span class="product-shop-rating">
-                            ⭐ ${ratingText} ${reviewsText}
-                        </span>
-                    ` : ''}
+                    <span class="product-shop-rating">${ratingDisplay}</span>
                 </div>
                 <div class="product-price-row">
                     <span class="product-current-price">${formatPrice(hasDiscount ? discountPrice : price)}</span>
