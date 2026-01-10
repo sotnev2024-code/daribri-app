@@ -1827,37 +1827,97 @@ input {
     display: flex;
     align-items: center;
     gap: 12px;
+    width: 100%;
 }
 
 .product-seller-item .seller-avatar {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    flex-shrink: 0;
     border-radius: 50%;
     background: #F3F4F6;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    overflow: hidden;
+}
+
+.product-seller-item .seller-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .product-seller-item .seller-info {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
 }
 
 .product-seller-item .seller-name {
     font-weight: 600;
     color: var(--text-primary);
     font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 .product-seller-item .seller-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.85rem;
     color: var(--text-secondary);
-    margin-top: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 0;
+}
+
+.product-seller-item .seller-rating .rating-stars {
+    color: #FBBF24;
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+.product-seller-item .seller-rating .rating-value {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.product-seller-item .seller-rating .rating-count {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.product-seller-item .seller-rating .rating-stars {
+    color: #FBBF24;
+}
+
+.product-seller-item .seller-rating .rating-value {
+    font-weight: 500;
+}
+
+.product-seller-item .seller-rating .rating-count {
+    color: var(--text-secondary);
 }
 
 .product-seller-item .seller-arrow {
     color: #9CA3AF;
+    flex-shrink: 0;
+    margin-left: 8px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Старые секции (для обратной совместимости) */
