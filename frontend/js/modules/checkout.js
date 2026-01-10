@@ -162,20 +162,8 @@
             checkoutBackButtonHandler = null;
         }
         
-        // Скрываем кнопку (основной обработчик восстановится автоматически при необходимости)
-        // Если кнопка нужна для текущей страницы, она будет показана в navigateToPage
+        // Скрываем кнопку - основная логика в app.js покажет её, если нужно для текущей страницы
         tg.BackButton.hide();
-        
-        // Даем время для правильного восстановления
-        setTimeout(() => {
-            // Проверяем, нужна ли кнопка для текущей страницы
-            // Если есть история навигации и не каталог, кнопка должна быть показана
-            if (window.navigationHistory && window.navigationHistory.length > 1) {
-                if (window.showBackButton && typeof window.showBackButton === 'function') {
-                    window.showBackButton();
-                }
-            }
-        }, 100);
         
         console.log('[CHECKOUT] BackButton restored to main handler');
     }
