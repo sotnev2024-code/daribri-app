@@ -22,7 +22,21 @@ cd /var/www/daribri
 systemctl stop daribri
 ```
 
-### 4. Обновите код из GitHub (откат версии)
+### 4. Настройте Git (если нужно, только первый раз)
+
+```bash
+# Настройте имя и email для Git (можно локально для репозитория)
+git config user.email "deploy@daribri.ru"
+git config user.name "Deploy Bot"
+```
+
+**Или глобально (если нужно для всех репозиториев на сервере):**
+```bash
+git config --global user.email "deploy@daribri.ru"
+git config --global user.name "Deploy Bot"
+```
+
+### 5. Обновите код из GitHub (откат версии)
 
 ```bash
 git pull origin main
@@ -30,19 +44,19 @@ git pull origin main
 
 Это автоматически обновит код до последней версии (которую мы откатили локально и запушили в репозиторий).
 
-### 5. Запустите сервис
+### 6. Запустите сервис
 
 ```bash
 systemctl start daribri
 ```
 
-### 6. Проверьте статус
+### 7. Проверьте статус
 
 ```bash
 systemctl status daribri
 ```
 
-### 7. Проверьте логи (если нужно)
+### 8. Проверьте логи (если нужно)
 
 ```bash
 journalctl -u daribri -n 50 --no-pager
@@ -89,6 +103,17 @@ git log --oneline -5
 ---
 
 ## Если возникли проблемы
+
+### Проблема: "Please tell me who you are" (Git identity не настроен)
+```bash
+# Настройте Git identity локально для репозитория
+cd /var/www/daribri
+git config user.email "deploy@daribri.ru"
+git config user.name "Deploy Bot"
+
+# Затем повторите git pull
+git pull origin main
+```
 
 ### Проблема: "Permission denied"
 ```bash
