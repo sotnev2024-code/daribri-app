@@ -406,6 +406,9 @@ async def get_shop_products(
         )
         product_dict = dict(product)
         product_dict["media"] = [dict(m) for m in media]
+        # Добавляем primary_image для удобства (первое изображение из media или первое с is_primary=1)
+        primary_media = next((m for m in media if m.get("is_primary") == 1), None) or (media[0] if media else None)
+        product_dict["primary_image"] = primary_media["url"] if primary_media else None
         result.append(product_dict)
     
     return result

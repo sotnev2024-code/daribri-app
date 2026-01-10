@@ -769,7 +769,26 @@
             const hasDiscount = product.discount_price && product.discount_price < product.price;
             const isOutOfStock = (product.quantity || 0) === 0;
             const mediaCount = product.media ? product.media.length : (product.primary_image ? 1 : 0);
-            const imageUrl = product.primary_image ? getMediaUrl(product.primary_image) : '';
+            
+            // Получаем URL изображения: сначала primary_image, потом первое из media, потом пусто
+            let imageUrl = '';
+            if (product.primary_image) {
+                imageUrl = getMediaUrl(product.primary_image);
+            } else if (product.media && Array.isArray(product.media) && product.media.length > 0) {
+                // Ищем первое изображение (не видео)
+                const firstImage = product.media.find(m => m.media_type !== 'video') || product.media[0];
+                if (firstImage && firstImage.url) {
+                    imageUrl = getMediaUrl(firstImage.url);
+                }
+            }
+            
+            console.log('[MY PRODUCTS] Product image:', {
+                id: product.id,
+                name: product.name,
+                primary_image: product.primary_image,
+                media_count: product.media?.length || 0,
+                imageUrl: imageUrl
+            });
             
             return `
             <div class="my-product-item ${!isActive ? 'inactive' : ''} ${isOutOfStock ? 'out-of-stock' : ''}" data-product-id="${product.id}">
