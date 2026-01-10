@@ -317,7 +317,8 @@ body {
     /* Карточки товаров */
     .product-card {
         background: #1a1a1a;
-        border-color: #333333;
+        border-color: #262626;
+        box-shadow: none;
     }
     
     .product-card-btn.add-to-cart {
@@ -477,7 +478,7 @@ input {
 /* Header */
 .header {
     position: fixed;
-    top: 100px;
+    top: 70px;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -493,10 +494,10 @@ input {
 .header::before {
     content: '';
     position: absolute;
-    top: -100px;
+    top: -70px;
     left: 0;
     right: 0;
-    height: 100px;
+    height: 70px;
     background: #dbff00;
 }
 
@@ -605,8 +606,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: 100px (Telegram панель) + safe-area + header */
-    padding-top: calc(100px + env(safe-area-inset-top, 0px) + var(--header-height));
+    /* Отступ сверху: 70px (Telegram панель) + safe-area + header */
+    padding-top: calc(70px + env(safe-area-inset-top, 0px) + var(--header-height));
     /* Отступ снизу: nav + safe-area + немного padding */
     padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
@@ -1779,7 +1780,7 @@ input {
     height: 100vh;
     height: 100dvh;
     background: var(--bg-primary);
-    padding-top: calc(100px + env(safe-area-inset-top, 0px));
+    padding-top: calc(70px + env(safe-area-inset-top, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 150;
     display: none;
@@ -4575,7 +4576,7 @@ input {
     height: 100vh;
     border-radius: 0;
     padding: 0;
-    padding-top: calc(100px + env(safe-area-inset-top, 0px));
+    padding-top: calc(70px + env(safe-area-inset-top, 0px));
     overflow-y: auto;
     box-sizing: border-box;
 }
