@@ -160,22 +160,25 @@ function shareProduct(product) {
     const price = product.discount_price || product.price;
     const formattedPrice = new Intl.NumberFormat('ru-RU').format(price);
     
-    // Формируем текст для шаринга
-    const shareText = `🎁 Смотри, что я нашёл!\n\n${productName}\n💰 ${formattedPrice} ₽\n\nОткрой в приложении 👇`;
-    
     // Ссылка на бота с параметром товара
     const shareUrl = `https://t.me/${botUsername}?start=product_${product.id}`;
+    
+    // Формируем текст для шаринга - в Telegram Share URL HTML не поддерживается
+    // Используем обычный текст, ссылка будет добавлена автоматически
+    const shareText = `🎁 Смотри, что я нашёл!\n\n${productName}\n💰 ${formattedPrice} ₽\n\nОткрой в приложении 👉 ОТКРЫТЬ`;
     
     // Используем Telegram WebApp API если доступен
     if (window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
         
         // Открываем диалог шаринга через Telegram
+        // Telegram автоматически добавит ссылку в конец сообщения
         const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
         tg.openTelegramLink(telegramShareUrl);
     } else {
         // Fallback - копируем ссылку в буфер обмена
-        const fullText = `${shareText}\n${shareUrl}`;
+        // Формируем текст с ссылкой в слове ОТКРЫТЬ для ручного шаринга
+        const fullText = `🎁 Смотри, что я нашёл!\n\n${productName}\n💰 ${formattedPrice} ₽\n\nОткрой в приложении 👉 ОТКРЫТЬ\n${shareUrl}`;
         navigator.clipboard.writeText(fullText).then(() => {
             showToast('Ссылка скопирована!', 'success');
         }).catch(() => {
