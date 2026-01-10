@@ -417,7 +417,7 @@
                                 return `
                                 <div class="product-slider-slide" data-index="${i}">
                                     ${m.media_type === 'video' 
-                                        ? `<video src="${mediaUrl}" preload="metadata" muted playsinline controls loop style="width:100%;height:100%;object-fit:cover;"></video>` 
+                                        ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>` 
                                         : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
                                     }
                                 </div>
@@ -434,7 +434,7 @@
                 imageHTML = `
                     <div class="product-single-image">
                         ${media[0].media_type === 'video'
-                            ? `<video src="${mediaUrl}" preload="metadata" muted playsinline controls loop style="width:100%;height:100%;object-fit:cover;"></video>`
+                            ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>`
                             : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
                         }
                     </div>
