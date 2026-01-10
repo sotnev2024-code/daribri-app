@@ -59,14 +59,12 @@
         return text.replace(regex, '<mark>$1</mark>');
     }
     
-    // Показ подсказок (история + популярные категории)
+    // Показ подсказок (история + популярные запросы)
     function showSearchSuggestions() {
         const elements = getElements();
-        const state = getState();
         if (!elements?.searchResults) return;
         
         const history = getSearchHistory();
-        const categories = state?.categories || [];
         
         let html = '';
         
@@ -94,25 +92,6 @@
             `;
         }
         
-        // Популярные категории
-        if (categories.length > 0) {
-            html += `
-                <div class="search-section">
-                    <div class="search-section-header">
-                        <span>📂 Категории</span>
-                    </div>
-                    <div class="search-categories-grid">
-                        ${categories.slice(0, 8).map(cat => `
-                            <button class="search-category-chip" onclick="window.searchByCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}')">
-                                ${cat.icon ? `<img src="${cat.icon}" alt="" style="width:20px;height:20px;border-radius:4px;">` : ''}
-                                <span>${cat.name}</span>
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-        
         // Популярные запросы
         html += `
             <div class="search-section">
@@ -125,6 +104,7 @@
                     <button class="search-tag" onclick="window.searchFromHistory('розы')">розы</button>
                     <button class="search-tag" onclick="window.searchFromHistory('торт')">торт</button>
                     <button class="search-tag" onclick="window.searchFromHistory('подарок')">подарок</button>
+                    <button class="search-tag" onclick="window.searchFromHistory('хризантемы')">хризантемы</button>
                 </div>
             </div>
         `;

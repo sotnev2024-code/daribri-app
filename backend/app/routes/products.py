@@ -56,8 +56,10 @@ async def get_products(
         params.extend(cat_ids)
     
     if search:
-        conditions.append("(p.name LIKE ? OR p.description LIKE ?)")
-        params.extend([f"%{search}%", f"%{search}%"])
+        # Используем LOWER для регистронезависимого поиска кириллицы
+        search_lower = search.lower()
+        conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ?)")
+        params.extend([f"%{search_lower}%", f"%{search_lower}%"])
     
     if min_price is not None:
         conditions.append("COALESCE(p.discount_price, p.price) >= ?")
