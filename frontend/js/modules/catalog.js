@@ -445,9 +445,9 @@
         }
         
         // Рейтинг и отзывы магазина
-        const shopRating = product.shop_rating || 0;
-        const shopReviewsCount = product.shop_reviews_count || 0;
-        const hasRating = shopRating > 0;
+        const shopRating = parseFloat(product.shop_rating) || 0;
+        const shopReviewsCount = parseInt(product.shop_reviews_count) || 0;
+        const hasRating = shopRating > 0 && !isNaN(shopRating);
         const ratingText = hasRating ? shopRating.toFixed(1) : '';
         const reviewsText = shopReviewsCount > 0 
             ? `(${shopReviewsCount} ${shopReviewsCount === 1 ? 'отзыв' : shopReviewsCount < 5 ? 'отзыва' : 'отзывов'})` 
