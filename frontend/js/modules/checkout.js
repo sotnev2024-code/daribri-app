@@ -162,8 +162,36 @@
             checkoutBackButtonHandler = null;
         }
         
-        // Скрываем кнопку - основная логика в app.js покажет её, если нужно для текущей страницы
+        // Скрываем кнопку временно
         tg.BackButton.hide();
+        
+        // Проверяем, нужна ли кнопка для текущей страницы после закрытия checkout
+        // Даем время для обновления DOM и затем проверяем
+        setTimeout(() => {
+            // Проверяем, на какой странице мы находимся
+            const cartPage = document.getElementById('cartPage');
+            const favoritesPage = document.getElementById('favoritesPage');
+            const profilePage = document.getElementById('profilePage');
+            const productPage = document.getElementById('productPage');
+            
+            // Если открыта любая страница кроме каталога, показываем кнопку "Назад"
+            const isOnMainPage = !cartPage?.hidden || !favoritesPage?.hidden || !profilePage?.hidden || !productPage?.hidden;
+            const mainContent = document.querySelector('.main-content');
+            const isOnCatalog = mainContent && mainContent.style.display !== 'none' && mainContent.hidden === false;
+            
+            // Проверяем историю навигации
+            const shouldShowBackButton = (window.navigationHistory && window.navigationHistory.length > 1) || 
+                                        (isOnMainPage && !isOnCatalog);
+            
+            if (shouldShowBackButton) {
+                console.log('[CHECKOUT] Showing back button for current page');
+                if (window.showBackButton && typeof window.showBackButton === 'function') {
+                    window.showBackButton();
+                }
+            } else {
+                console.log('[CHECKOUT] Hiding back button (on catalog or no history)');
+            }
+        }, 50);
         
         console.log('[CHECKOUT] BackButton restored to main handler');
     }
