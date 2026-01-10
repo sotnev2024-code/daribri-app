@@ -231,6 +231,7 @@ async def get_product(
             """SELECT p.*, 
                       s.name as shop_name,
                       s.photo_url as shop_photo,
+                      s.description as shop_description,
                       s.average_rating as shop_rating,
                       c.name as category_name
                FROM products p
@@ -244,6 +245,7 @@ async def get_product(
             """SELECT p.*, 
                       s.name as shop_name,
                       s.photo_url as shop_photo,
+                      s.description as shop_description,
                       s.average_rating as shop_rating,
                       c.name as category_name
                FROM products p

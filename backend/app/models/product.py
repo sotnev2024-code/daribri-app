@@ -76,6 +76,7 @@ class ProductWithMedia(Product):
     media: List[ProductMedia] = []
     shop_name: Optional[str] = None
     shop_photo: Optional[str] = None
+    shop_description: Optional[str] = None
     shop_rating: Optional[float] = None
     shop_reviews_count: int = 0
     category_name: Optional[str] = None
