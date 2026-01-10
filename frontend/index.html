@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="images/icons/icon.png?v=4">
     <link rel="apple-touch-icon" href="images/icons/icon.png?v=4">
     <link rel="shortcut icon" href="images/icons/icon.png?v=4">
-    <link rel="stylesheet" href="css/styles.css?v=47">
+    <link rel="stylesheet" href="css/styles.css?v=48">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -52,12 +52,13 @@
         <div class="modal" id="searchModal" hidden>
             <div class="modal-content search-modal">
                 <div class="search-input-wrapper">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"/>
                         <path d="m21 21-4.35-4.35"/>
                     </svg>
-                    <input type="text" id="searchInput" placeholder="Поиск товаров..." autofocus>
-                    <button class="close-search" id="closeSearch">✕</button>
+                    <input type="text" id="searchInput" placeholder="Поиск товаров, магазинов..." autocomplete="off" oninput="handleSearchInput()">
+                    <button class="clear-search-btn" id="clearSearchBtn" onclick="document.getElementById('searchInput').value=''; handleSearchInput();" style="display:none;">✕</button>
+                    <button class="close-search" id="closeSearch">Отмена</button>
                 </div>
                 <div id="searchResults" class="search-results"></div>
             </div>
@@ -1642,7 +1643,7 @@
     <script src="js/modules/catalog.js?v=12"></script>
     <script src="js/modules/cart.js?v=5"></script>
     <script src="js/modules/favorites.js?v=1"></script>
-    <script src="js/modules/navigation.js?v=1"></script>
+    <script src="js/modules/navigation.js?v=2"></script>
     <script src="js/modules/product.js?v=5"></script>
     <script src="js/modules/profile.js?v=1"></script>
     <script src="js/modules/shop.js?v=4"></script>
