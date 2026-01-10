@@ -1012,38 +1012,27 @@ async function init() {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         } else {
-            // Доступ только через Telegram
-            console.error('Access denied: Telegram WebApp not detected');
-            document.body.innerHTML = `
-                <div style="
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100vh;
-                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                    color: white;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    text-align: center;
-                    padding: 20px;
-                ">
-                    <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
-                    <h1 style="margin: 0 0 10px 0; font-size: 24px;">Доступ ограничен</h1>
-                    <p style="margin: 0 0 30px 0; opacity: 0.8; font-size: 16px;">
-                        Это приложение доступно только через Telegram
-                    </p>
-                    <a href="https://t.me/Daribri_bot" style="
-                        background: #dbff00;
-                        color: #000;
-                        padding: 14px 32px;
-                        border-radius: 12px;
-                        text-decoration: none;
-                        font-weight: 600;
-                        font-size: 16px;
-                    ">Открыть в Telegram</a>
-                </div>
-            `;
-            return;
+            // Тестовый режим - доступ через браузер без Telegram
+            console.warn('[INIT] Running in TEST MODE - no Telegram detected');
+            
+            // Создаём тестового пользователя
+            const testUser = {
+                id: 999999999,
+                first_name: 'Тестовый',
+                last_name: 'Пользователь',
+                username: 'test_user',
+                language_code: 'ru'
+            };
+            
+            api.setTelegramId(testUser.id);
+            state.user = testUser;
+            
+            // Обновляем профиль
+            if (elements.profileName) elements.profileName.textContent = testUser.first_name;
+            if (elements.profileUsername) elements.profileUsername.textContent = `@${testUser.username}`;
+            
+            // Показываем уведомление о тестовом режиме
+            console.log('[INIT] Test user created:', testUser);
         }
         
         // Загружаем данные (для всех пользователей)
