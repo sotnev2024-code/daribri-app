@@ -1492,15 +1492,23 @@
     
     // ==================== ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА ====================
     function closeCheckoutModal() {
+        console.log('[CHECKOUT] Closing checkout modal...');
         const modal = document.getElementById('checkoutModal');
-        if (modal) modal.hidden = true;
+        if (modal) {
+            modal.hidden = true;
+            console.log('[CHECKOUT] Modal hidden');
+        }
         
-        // Восстанавливаем основную кнопку "Назад"
+        // Восстанавливаем основную кнопку "Назад" ПЕРЕД сбросом состояния
         restoreMainBackButton();
         
         // Очищаем карту
         if (deliveryMap) {
-            try { deliveryMap.destroy(); } catch(e) {}
+            try { 
+                deliveryMap.destroy(); 
+            } catch(e) {
+                console.warn('[CHECKOUT] Error destroying map:', e);
+            }
             deliveryMap = null;
             deliveryMapPlacemark = null;
         }
@@ -1528,6 +1536,8 @@
         checkoutState.promoCode = null;
         checkoutState.promoDiscount = 0;
         checkoutState.promoType = null;
+        
+        console.log('[CHECKOUT] Checkout modal closed, state reset');
     }
     
     // ==================== ЭКСПОРТ ====================
