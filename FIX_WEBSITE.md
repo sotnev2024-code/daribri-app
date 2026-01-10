@@ -161,3 +161,4 @@ ls -la /etc/nginx/sites-enabled/ | grep daribri && echo "✅ Конфигура�
 - `http://flow.plus-shop.ru/api/health` - проверка API
 
 
+

@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="images/icons/icon.png?v=4">
     <link rel="apple-touch-icon" href="images/icons/icon.png?v=4">
     <link rel="shortcut icon" href="images/icons/icon.png?v=4">
-    <link rel="stylesheet" href="css/styles.css?v=48">
+    <link rel="stylesheet" href="css/styles.css?v=49">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -215,11 +215,11 @@
                             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                         </svg>
                     </button>
-                    <button class="favorite-btn header-favorite-btn" id="productFavoriteBtn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
-                    </button>
+                <button class="favorite-btn header-favorite-btn" id="productFavoriteBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </button>
                 </div>
             </div>
             <div class="product-page-content">
@@ -229,27 +229,27 @@
                 <div class="product-info">
                     <!-- Заголовок и цена -->
                     <div class="product-section product-main-section">
-                        <div class="product-header">
-                            <h2 id="productName"></h2>
-                        </div>
-                        <div class="product-price-block">
-                            <span class="product-price" id="productPrice"></span>
-                            <span class="product-old-price" id="productOldPrice"></span>
-                            <span class="product-discount" id="productDiscount"></span>
-                        </div>
-                        
+                    <div class="product-header">
+                        <h2 id="productName"></h2>
+                    </div>
+                    <div class="product-price-block">
+                        <span class="product-price" id="productPrice"></span>
+                        <span class="product-old-price" id="productOldPrice"></span>
+                        <span class="product-discount" id="productDiscount"></span>
+                    </div>
+                    
                         <!-- Кнопки корзины -->
                         <div class="product-cart-buttons">
                             <!-- Кнопка добавления в корзину (начальное состояние) -->
-                            <button class="add-to-cart-btn" id="addToCartBtn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="9" cy="21" r="1"/>
-                                    <circle cx="20" cy="21" r="1"/>
-                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                                </svg>
-                                Добавить в корзину
-                            </button>
-                            
+                    <button class="add-to-cart-btn" id="addToCartBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"/>
+                            <circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                        </svg>
+                        Добавить в корзину
+                    </button>
+                    
                             <!-- Контейнер когда товар в корзине -->
                             <div class="in-cart-controls" id="inCartControls" hidden>
                                 <div class="cart-qty-controls">
@@ -292,11 +292,11 @@
                         <!-- Магазин -->
                         <div class="product-detail-item product-seller-item" id="productSellerCard">
                             <h3 class="detail-title">Магазин</h3>
-                            <div class="seller-card-header">
-                                <div class="seller-avatar" id="sellerAvatar">🏪</div>
-                                <div class="seller-info">
-                                    <div class="seller-name" id="sellerName"></div>
-                                    <div class="seller-rating" id="sellerRating"></div>
+                        <div class="seller-card-header">
+                            <div class="seller-avatar" id="sellerAvatar">🏪</div>
+                            <div class="seller-info">
+                                <div class="seller-name" id="sellerName"></div>
+                                <div class="seller-rating" id="sellerRating"></div>
                                 </div>
                                 <svg class="seller-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="9 18 15 12 9 6"/>

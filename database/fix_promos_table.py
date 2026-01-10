@@ -90,3 +90,4 @@ def fix_promos_table():
 if __name__ == "__main__":
     fix_promos_table()
 
+

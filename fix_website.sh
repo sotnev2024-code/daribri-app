@@ -163,3 +163,4 @@ info "  3. Статус сервиса: systemctl status $SERVICE_NAME"
 echo ""
 
 
+

@@ -94,3 +94,4 @@ def fix_subscription_prices():
 if __name__ == "__main__":
     fix_subscription_prices()
 
+

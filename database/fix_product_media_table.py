@@ -119,3 +119,4 @@ if __name__ == "__main__":
     fix_product_media_table()
 
 
+
