@@ -170,7 +170,7 @@ body {
     padding: 16px;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
-    border: 1px solid var(--border);
+    border: none;
 }
 
 .banner-item:hover {
@@ -858,7 +858,7 @@ input {
     gap: 6px;
     padding: 8px 14px;
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    border: none;
     border-radius: 20px;
     font-size: 0.875rem;
     color: var(--text-secondary);
@@ -883,7 +883,7 @@ input {
     background: var(--bg-secondary);
     border-radius: var(--border-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: none;
     transition: var(--transition);
     display: flex;
     flex-direction: column;
@@ -1777,7 +1777,7 @@ input {
     border-radius: var(--border-radius);
     margin-bottom: 12px;
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: none;
     padding: 16px;
 }
 
@@ -1918,7 +1918,7 @@ input {
     border-radius: 12px;
     margin-bottom: 12px;
     overflow: hidden;
-    border: 1px solid #E5E7EB;
+    border: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -2133,7 +2133,7 @@ input {
     background: var(--bg-tertiary);
     border-radius: var(--border-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: none;
 }
 
 .cart-qty-btn {
@@ -2292,7 +2292,7 @@ input {
     background: var(--bg-secondary);
     border-radius: var(--border-radius-sm);
     margin-bottom: 12px;
-    border: 1px solid var(--border);
+    border: none;
 }
 
 .cart-item-image {
@@ -4742,7 +4742,7 @@ input {
     padding: 16px;
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
-    border: 1px solid var(--border);
+    border: none;
 }
 
 .shop-stat-icon {
