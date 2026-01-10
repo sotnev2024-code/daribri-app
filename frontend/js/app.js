@@ -1159,28 +1159,46 @@ async function init() {
 }
 
 function applyTelegramTheme() {
-    if (!tg?.themeParams) return;
+    if (!tg) return;
     
-    const theme = tg.themeParams;
     const root = document.documentElement;
     
-    if (theme.bg_color) {
-        root.style.setProperty('--bg-secondary', theme.bg_color);
+    // Определяем тему (light/dark)
+    const colorScheme = tg.colorScheme || 'light';
+    console.log('[THEME] Telegram colorScheme:', colorScheme);
+    
+    // Устанавливаем атрибут для CSS
+    document.body.setAttribute('data-theme', colorScheme);
+    
+    // Применяем цвета из Telegram
+    const theme = tg.themeParams;
+    if (theme) {
+        if (theme.bg_color) {
+            root.style.setProperty('--bg-secondary', theme.bg_color);
+        }
+        if (theme.secondary_bg_color) {
+            root.style.setProperty('--bg-primary', theme.secondary_bg_color);
+            root.style.setProperty('--bg-tertiary', theme.secondary_bg_color);
+        }
+        if (theme.text_color) {
+            root.style.setProperty('--text-primary', theme.text_color);
+        }
+        if (theme.hint_color) {
+            root.style.setProperty('--text-secondary', theme.hint_color);
+            root.style.setProperty('--text-muted', theme.hint_color);
+        }
+        if (theme.button_color) {
+            root.style.setProperty('--primary', theme.button_color);
+        }
     }
-    if (theme.secondary_bg_color) {
-        root.style.setProperty('--bg-primary', theme.secondary_bg_color);
-        root.style.setProperty('--bg-tertiary', theme.secondary_bg_color);
-    }
-    if (theme.text_color) {
-        root.style.setProperty('--text-primary', theme.text_color);
-    }
-    if (theme.hint_color) {
-        root.style.setProperty('--text-secondary', theme.hint_color);
-        root.style.setProperty('--text-muted', theme.hint_color);
-    }
-    if (theme.button_color) {
-        root.style.setProperty('--primary', theme.button_color);
-    }
+}
+
+// Слушаем изменение темы в Telegram
+if (tg?.onEvent) {
+    tg.onEvent('themeChanged', () => {
+        console.log('[THEME] Theme changed');
+        applyTelegramTheme();
+    });
 }
 
 // ==================== Data Loading ====================
