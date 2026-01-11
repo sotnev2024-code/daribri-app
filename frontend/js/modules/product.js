@@ -354,33 +354,125 @@
             sellerProductsSection.hidden = false;
             sellerProductsGrid.innerHTML = '';
             
+            // Используем функцию создания карточек из каталога
+            const catalogModule = window.App?.catalog;
+            const createProductCard = catalogModule?.createProductCard || window.createProductCard || null;
+            const initProductCardSlider = catalogModule?.initProductCardSlider || window.initProductCardSlider || null;
             const formatPrice = utils.formatPrice || window.formatPrice || ((p) => p);
+            const getMediaUrl = utils.getMediaUrl || window.getMediaUrl || ((url) => url);
             
             otherProducts.forEach(product => {
-                const card = document.createElement('div');
-                card.className = 'seller-product-card';
-                card.onclick = () => {
-                    if (window.openProductPage) window.openProductPage(product.id);
-                };
+                let card;
                 
-                const hasDiscount = product.discount_price !== null && product.discount_price < product.price;
-                const primaryImage = product.primary_image || product.media?.[0]?.url || '';
+                // Если доступна функция из каталога, используем её
+                if (createProductCard) {
+                    card = createProductCard(product);
+                    if (card) {
+                        // Меняем класс для стилизации товаров продавца
+                        card.classList.remove('product-card');
+                        card.classList.add('seller-product-card');
+                        // Убираем избранное из карточек продавца (опционально)
+                        const favBtn = card.querySelector('.product-favorite-btn');
+                        if (favBtn) favBtn.remove();
+                        sellerProductsGrid.appendChild(card);
+                        return;
+                    }
+                }
+                
+                // Если функция недоступна, создаем карточку вручную с поддержкой слайдера
+                // Обработка цены
+                const price = parseFloat(product.price) || 0;
+                let discountPrice = null;
+                if (product.discount_price !== null && product.discount_price !== undefined && product.discount_price !== '') {
+                    const parsed = parseFloat(product.discount_price);
+                    if (!isNaN(parsed) && parsed > 0) {
+                        discountPrice = parsed;
+                    }
+                }
+                const hasDiscount = discountPrice !== null && discountPrice < price;
+                
+                // Медиа контент - включаем все медиа (фото и видео)
+                let media = [];
+                if (product.media && Array.isArray(product.media) && product.media.length > 0) {
+                    media = product.media;
+                } else if (product.primary_image) {
+                    media = [{ url: product.primary_image, media_type: 'photo' }];
+                }
+                
+                const hasMultipleImages = media.length > 1;
+                
+                card = document.createElement('div');
+                card.className = 'seller-product-card';
+                card.dataset.productId = product.id;
+                
+                // Генерируем HTML для изображения с поддержкой слайдера
+                let imageHTML = '';
+                if (media.length > 0) {
+                    if (hasMultipleImages) {
+                        imageHTML = `
+                            <div class="product-image-slider" data-product-id="${product.id}">
+                                <div class="product-slider-track">
+                                    ${media.map((m, i) => {
+                                        const mediaUrl = getMediaUrl(m.url);
+                                        return `
+                                        <div class="product-slider-slide" data-index="${i}">
+                                            ${m.media_type === 'video' 
+                                                ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>` 
+                                                : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
+                                            }
+                                        </div>
+                                    `;
+                                    }).join('')}
+                                </div>
+                                <div class="product-slider-dots">
+                                    ${media.map((_, i) => `<span class="slider-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></span>`).join('')}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const mediaUrl = getMediaUrl(media[0].url);
+                        imageHTML = `
+                            <div class="product-single-image">
+                                ${media[0].media_type === 'video'
+                                    ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>`
+                                    : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
+                                }
+                            </div>
+                        `;
+                    }
+                } else {
+                    imageHTML = '<div class="product-image-placeholder">🌸</div>';
+                }
                 
                 card.innerHTML = `
                     <div class="seller-product-image">
-                        ${primaryImage 
-                            ? `<img src="${primaryImage}" alt="${product.name}" loading="lazy">`
-                            : '<div class="product-image-placeholder">🌸</div>'
-                        }
+                        ${imageHTML}
                     </div>
                     <div class="seller-product-info">
                         <div class="seller-product-name">${product.name}</div>
                         <div class="seller-product-price">
-                            <span class="seller-product-current-price">${formatPrice(hasDiscount ? product.discount_price : product.price)}</span>
-                            ${hasDiscount ? `<span class="seller-product-old-price">${formatPrice(product.price)}</span>` : ''}
+                            <span class="seller-product-current-price">${formatPrice(hasDiscount ? discountPrice : price)}</span>
+                            ${hasDiscount ? `<span class="seller-product-old-price">${formatPrice(price)}</span>` : ''}
                         </div>
                     </div>
                 `;
+                
+                // Инициализация слайдера
+                if (media.length > 0 && initProductCardSlider) {
+                    if (hasMultipleImages) {
+                        initProductCardSlider(card, product.id, media.length);
+                    } else if (media[0]?.media_type === 'video') {
+                        // Для одного видео тоже инициализируем слайдер
+                        initProductCardSlider(card, product.id, 1);
+                    }
+                }
+                
+                // Обработчик клика на карточку
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('.product-slider-dots') || 
+                        e.target.closest('.slider-dot')) return;
+                    if (window.openProductPage) window.openProductPage(product.id);
+                });
                 
                 sellerProductsGrid.appendChild(card);
             });
