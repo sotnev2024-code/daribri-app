@@ -1764,7 +1764,6 @@ input {
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     padding: 16px;
-    border: 1px solid var(--border);
 }
 
 /* Объединённая карточка деталей товара */
@@ -2532,7 +2531,6 @@ input {
     border-radius: var(--border-radius-sm);
     padding: 16px;
     margin-bottom: 12px;
-    border: 1px solid var(--border);
 }
 
 .order-header {
@@ -4557,7 +4555,6 @@ input {
     background: var(--bg-secondary);
     border-radius: var(--border-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--border);
     cursor: pointer;
     transition: var(--transition);
 }
@@ -4790,7 +4787,6 @@ input {
     padding: 20px;
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
-    border: 1px solid var(--border);
 }
 
 .shop-description {
@@ -5213,7 +5209,6 @@ input {
     padding: 16px;
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
-    border: 1px solid var(--border);
 }
 
 .phone-icon {
@@ -5715,7 +5710,6 @@ input {
 .filter-tab {
     padding: 8px 16px;
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
     border-radius: 20px;
     font-size: 0.875rem;
     color: var(--text-primary);
@@ -5745,7 +5739,6 @@ input {
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     padding: 16px;
-    border: 1px solid var(--border);
 }
 
 .order-card-header {
