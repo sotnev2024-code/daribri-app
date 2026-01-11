@@ -81,13 +81,21 @@
             elements.productName.textContent = product.name;
             elements.productDescription.textContent = product.description || 'Описание отсутствует';
             
-            // Цена
-            const hasDiscount = product.discount_price !== null && product.discount_price < product.price;
-            elements.productPrice.textContent = formatPrice(hasDiscount ? product.discount_price : product.price);
-            elements.productOldPrice.textContent = hasDiscount ? formatPrice(product.price) : '';
+            // Цена - используем такую же логику, как в каталоге
+            const price = parseFloat(product.price) || 0;
+            let discountPrice = null;
+            if (product.discount_price !== null && product.discount_price !== undefined && product.discount_price !== '') {
+                const parsed = parseFloat(product.discount_price);
+                if (!isNaN(parsed) && parsed > 0) {
+                    discountPrice = parsed;
+                }
+            }
+            const hasDiscount = discountPrice !== null && discountPrice < price;
+            elements.productPrice.textContent = formatPrice(hasDiscount ? discountPrice : price);
+            elements.productOldPrice.textContent = hasDiscount ? formatPrice(price) : '';
             elements.productOldPrice.hidden = !hasDiscount;
             elements.productDiscount.textContent = hasDiscount 
-                ? `-${Math.round((1 - product.discount_price / product.price) * 100)}%` 
+                ? `-${Math.round((1 - discountPrice / price) * 100)}%` 
                 : '';
             elements.productDiscount.hidden = !hasDiscount;
             
