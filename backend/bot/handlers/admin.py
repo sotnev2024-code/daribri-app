@@ -930,9 +930,15 @@ async def process_promo_code(message: Message, state: FSMContext):
     await state.set_state(PromoCreateStates.waiting_for_type)
 
 
-@router.callback_query(F.data.startswith("promo_type:"), PromoCreateStates.waiting_for_type)
+@router.callback_query(F.data.startswith("promo_type:"))
 async def process_promo_type_callback(callback: CallbackQuery, state: FSMContext):
     """Обрабатывает выбор типа промокода через кнопку."""
+    # Проверяем, что мы в правильном состоянии
+    current_state = await state.get_state()
+    if current_state != PromoCreateStates.waiting_for_type:
+        await callback.answer("⚠️ Это действие недоступно в текущем состоянии.", show_alert=True)
+        return
+    
     promo_type = callback.data.split(":")[1]
     await state.update_data(promo_type=promo_type)
     await callback.answer()
@@ -943,12 +949,22 @@ async def process_promo_type_callback(callback: CallbackQuery, state: FSMContext
         "free_delivery": "не требуется (введите 0)"
     }
     
-    await callback.message.edit_text(
-        f"<b>Шаг 3/10: Значение скидки</b>\n\n"
-        f"Выбран тип: <b>{promo_type}</b>\n\n"
-        f"Введите значение скидки в {type_texts[promo_type]}:",
-        reply_markup=get_cancel_keyboard()
-    )
+    try:
+        await callback.message.edit_text(
+            f"<b>Шаг 3/10: Значение скидки</b>\n\n"
+            f"Выбран тип: <b>{promo_type}</b>\n\n"
+            f"Введите значение скидки в {type_texts[promo_type]}:",
+            reply_markup=get_cancel_keyboard()
+        )
+    except Exception as e:
+        print(f"Error editing message: {e}")
+        await callback.message.answer(
+            f"<b>Шаг 3/10: Значение скидки</b>\n\n"
+            f"Выбран тип: <b>{promo_type}</b>\n\n"
+            f"Введите значение скидки в {type_texts[promo_type]}:",
+            reply_markup=get_cancel_keyboard()
+        )
+    
     await state.set_state(PromoCreateStates.waiting_for_value)
 
 
@@ -1033,9 +1049,15 @@ async def process_promo_description(message: Message, state: FSMContext):
     await state.set_state(PromoCreateStates.waiting_for_use_once)
 
 
-@router.callback_query(F.data.startswith("promo_use_once:"), PromoCreateStates.waiting_for_use_once)
+@router.callback_query(F.data.startswith("promo_use_once:"))
 async def process_promo_use_once_callback(callback: CallbackQuery, state: FSMContext):
     """Обрабатывает выбор 'использовать один раз' через кнопку."""
+    # Проверяем, что мы в правильном состоянии
+    current_state = await state.get_state()
+    if current_state != PromoCreateStates.waiting_for_use_once:
+        await callback.answer("⚠️ Это действие недоступно в текущем состоянии.", show_alert=True)
+        return
+    
     use_once = callback.data.split(":")[1] == "1"
     await state.update_data(use_once=use_once)
     await callback.answer()
@@ -1046,11 +1068,20 @@ async def process_promo_use_once_callback(callback: CallbackQuery, state: FSMCon
         [InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")]
     ])
     
-    await callback.message.edit_text(
-        "<b>Шаг 6/10: Только для первого заказа</b>\n\n"
-        "Действует ли промокод только для первого заказа пользователя?",
-        reply_markup=keyboard
-    )
+    try:
+        await callback.message.edit_text(
+            "<b>Шаг 6/10: Только для первого заказа</b>\n\n"
+            "Действует ли промокод только для первого заказа пользователя?",
+            reply_markup=keyboard
+        )
+    except Exception as e:
+        print(f"Error editing message: {e}")
+        await callback.message.answer(
+            "<b>Шаг 6/10: Только для первого заказа</b>\n\n"
+            "Действует ли промокод только для первого заказа пользователя?",
+            reply_markup=keyboard
+        )
+    
     await state.set_state(PromoCreateStates.waiting_for_first_order_only)
 
 
@@ -1076,20 +1107,37 @@ async def process_promo_use_once(message: Message, state: FSMContext):
     await state.set_state(PromoCreateStates.waiting_for_first_order_only)
 
 
-@router.callback_query(F.data.startswith("promo_first_order:"), PromoCreateStates.waiting_for_first_order_only)
+@router.callback_query(F.data.startswith("promo_first_order:"))
 async def process_promo_first_order_callback(callback: CallbackQuery, state: FSMContext):
     """Обрабатывает выбор 'только для первого заказа' через кнопку."""
+    # Проверяем, что мы в правильном состоянии
+    current_state = await state.get_state()
+    if current_state != PromoCreateStates.waiting_for_first_order_only:
+        await callback.answer("⚠️ Это действие недоступно в текущем состоянии.", show_alert=True)
+        return
+    
     first_order_only = callback.data.split(":")[1] == "1"
     await state.update_data(first_order_only=first_order_only)
     await callback.answer()
     
-    await callback.message.edit_text(
-        "<b>Шаг 7/10: Для определенного магазина</b>\n\n"
-        "Действует ли промокод только для определенного магазина?\n"
-        "Если нет, введите '-'\n"
-        "Если да, введите ID магазина (число):",
-        reply_markup=get_cancel_keyboard()
-    )
+    try:
+        await callback.message.edit_text(
+            "<b>Шаг 7/10: Для определенного магазина</b>\n\n"
+            "Действует ли промокод только для определенного магазина?\n"
+            "Если нет, введите '-'\n"
+            "Если да, введите ID магазина (число):",
+            reply_markup=get_cancel_keyboard()
+        )
+    except Exception as e:
+        print(f"Error editing message: {e}")
+        await callback.message.answer(
+            "<b>Шаг 7/10: Для определенного магазина</b>\n\n"
+            "Действует ли промокод только для определенного магазина?\n"
+            "Если нет, введите '-'\n"
+            "Если да, введите ID магазина (число):",
+            reply_markup=get_cancel_keyboard()
+        )
+    
     await state.set_state(PromoCreateStates.waiting_for_shop_id)
 
 
@@ -1192,7 +1240,7 @@ async def process_promo_min_amount(message: Message, state: FSMContext):
     await state.set_state(PromoCreateStates.waiting_for_valid_from)
 
 
-@router.callback_query(F.data.startswith("promo_date:"), PromoCreateStates.waiting_for_valid_from)
+@router.callback_query(F.data.startswith("promo_date:") & F.data.endswith(":from"))
 async def process_promo_valid_from_callback(callback: CallbackQuery, state: FSMContext):
     """Обрабатывает выбор даты начала через кнопку."""
     parts = callback.data.split(":")
@@ -1279,7 +1327,7 @@ async def process_promo_valid_from(message: Message, state: FSMContext):
     await state.set_state(PromoCreateStates.waiting_for_valid_until)
 
 
-@router.callback_query(F.data.startswith("promo_date:"), PromoCreateStates.waiting_for_valid_until)
+@router.callback_query(F.data.startswith("promo_date:") & F.data.endswith(":until"))
 async def process_promo_valid_until_callback(callback: CallbackQuery, state: FSMContext):
     """Обрабатывает выбор даты окончания через кнопку и сохраняет промокод."""
     parts = callback.data.split(":")
