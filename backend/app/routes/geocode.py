@@ -56,7 +56,27 @@ async def autocomplete_address(
                     suggest_data = suggest_response.json()
                     results = suggest_data.get("results", [])
                     
-                    # Фильтруем результаты по городу
+                    # Варианты написания городов для более гибкой проверки
+                    city_aliases = {
+                        'санкт-петербург': ['санкт-петербург', 'спб', 'с.-петербург', 'с-петербург', 'петербург', 'питер', 'ленинград'],
+                        'москва': ['москва', 'мск', 'moscow'],
+                        'казань': ['казань', 'kazan'],
+                        'новосибирск': ['новосибирск'],
+                        'екатеринбург': ['екатеринбург', 'свердловск', 'ekaterinburg'],
+                        'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород', 'нижний'],
+                        'краснодар': ['краснодар'],
+                        'сочи': ['сочи'],
+                        'ростов-на-дону': ['ростов-на-дону', 'ростов на дону', 'ростов'],
+                    }
+                    
+                    # Находим все допустимые варианты для текущего города
+                    allowed_variants = [city_lower]
+                    for main_city, aliases in city_aliases.items():
+                        if city_lower == main_city or city_lower in aliases or main_city in city_lower or any(alias in city_lower for alias in aliases):
+                            allowed_variants.extend([main_city] + aliases)
+                            break
+                    
+                    # Фильтруем результаты по городу (с учетом вариантов написания)
                     filtered_results = []
                     for item in results:
                         title = item.get("title", {}).get("text", "")
@@ -64,7 +84,8 @@ async def autocomplete_address(
                         address = f"{title}, {subtitle}".strip(", ")
                         
                         # Проверяем, что адрес в нужном городе
-                        if city_lower in address.lower():
+                        address_lower = address.lower()
+                        if any(variant in address_lower for variant in allowed_variants):
                             filtered_results.append({
                                 "text": address,
                                 "title": title,
@@ -78,6 +99,26 @@ async def autocomplete_address(
             data = response.json()
             feature_members = data.get("response", {}).get("GeoObjectCollection", {}).get("featureMember", [])
             
+            # Варианты написания городов для более гибкой проверки
+            city_aliases = {
+                'санкт-петербург': ['санкт-петербург', 'спб', 'с.-петербург', 'с-петербург', 'петербург', 'питер', 'ленинград'],
+                'москва': ['москва', 'мск', 'moscow'],
+                'казань': ['казань', 'kazan'],
+                'новосибирск': ['новосибирск'],
+                'екатеринбург': ['екатеринбург', 'свердловск', 'ekaterinburg'],
+                'нижний новгород': ['нижний новгород', 'н.новгород', 'н. новгород', 'нижний'],
+                'краснодар': ['краснодар'],
+                'сочи': ['сочи'],
+                'ростов-на-дону': ['ростов-на-дону', 'ростов на дону', 'ростов'],
+            }
+            
+            # Находим все допустимые варианты для текущего города
+            allowed_variants = [city_lower]
+            for main_city, aliases in city_aliases.items():
+                if city_lower == main_city or city_lower in aliases or main_city in city_lower or any(alias in city_lower for alias in aliases):
+                    allowed_variants.extend([main_city] + aliases)
+                    break
+            
             suggestions = []
             for fm in feature_members:
                 geo_object = fm.get("GeoObject", {})
@@ -85,9 +126,9 @@ async def autocomplete_address(
                 address_text = meta_data.get("text", "")
                 description = geo_object.get("description", "")
                 
-                # Проверяем, что адрес в нужном городе
+                # Проверяем, что адрес в нужном городе (с учетом вариантов написания)
                 address_lower = address_text.lower()
-                if city_lower in address_lower:
+                if any(variant in address_lower for variant in allowed_variants):
                     suggestions.append({
                         "text": address_text,
                         "title": address_text,
