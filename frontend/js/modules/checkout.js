@@ -569,8 +569,15 @@
                     deliveryTypePickup.classList.add('active');
                     deliveryTypePickup.style.borderColor = 'var(--primary)';
                 }
-                if (deliveryCommentLabel) {
-                    deliveryCommentLabel.textContent = 'Комментарий (опционально)';
+                // Скрываем поле комментария для самовывоза
+                const commentLabel = document.getElementById('deliveryCommentLabel');
+                const commentInput = document.getElementById('deliveryComment');
+                if (commentLabel) {
+                    // Скрываем label и textarea (они находятся в разных элементах)
+                    commentLabel.style.display = 'none';
+                }
+                if (commentInput) {
+                    commentInput.style.display = 'none';
                 }
                 
                 // Устанавливаем адрес магазина
@@ -617,8 +624,15 @@
                     deliveryTypePickup.classList.remove('active');
                     deliveryTypePickup.style.borderColor = 'var(--border)';
                 }
-                if (deliveryCommentLabel) {
-                    deliveryCommentLabel.textContent = 'Комментарий к адресу (опционально)';
+                // Показываем поле комментария для доставки
+                const commentLabel = document.getElementById('deliveryCommentLabel');
+                const commentInput = document.getElementById('deliveryComment');
+                if (commentLabel) {
+                    commentLabel.textContent = 'Комментарий к адресу (опционально)';
+                    commentLabel.style.display = '';
+                }
+                if (commentInput) {
+                    commentInput.style.display = '';
                 }
                 
                 // Загружаем карту доставки
@@ -636,14 +650,21 @@
         
         // Обработчики кнопок выбора типа
         if (deliveryTypeDelivery) {
-            deliveryTypeDelivery.onclick = () => switchDeliveryType('delivery');
+            deliveryTypeDelivery.onclick = () => {
+                switchDeliveryType('delivery');
+                validate(); // Вызываем валидацию после переключения
+            };
         }
         if (deliveryTypePickup) {
-            deliveryTypePickup.onclick = () => switchDeliveryType('pickup');
+            deliveryTypePickup.onclick = () => {
+                switchDeliveryType('pickup');
+                validate(); // Вызываем валидацию после переключения
+            };
         }
         
         // Инициализируем тип по умолчанию
         switchDeliveryType(checkoutState.deliveryType || 'delivery');
+        validate(); // Вызываем валидацию после инициализации
         
         // Показываем уведомление о зоне доставки
         const existingNotice = document.getElementById('deliveryZoneNotice');
@@ -712,34 +733,45 @@
         
         // Валидация формы
         function validate() {
-            const hasAddress = addressInput.value.trim().length > 0;
             const hasRecipient = recipientInput.value.trim().length > 0;
             
-            // Проверяем адрес на соответствие городу
+            let isValid = false;
             let addressOk = true;
-            if (checkoutState.addressIsValid === false) {
-                addressOk = false;
-            } else if (hasAddress && !validateAddress(addressInput.value)) {
-                // Текстовая проверка, если API не проверил
-                addressOk = false;
-                checkoutState.addressIsValid = false;
+            const hasAddress = addressInput.value.trim().length > 0;
+            
+            if (checkoutState.deliveryType === 'pickup') {
+                // Для самовывоза нужен только получатель и адрес магазина
+                isValid = hasRecipient && checkoutState.shopAddress;
+            } else {
+                // Для доставки нужен адрес и получатель
+                // Проверяем адрес на соответствие городу
+                if (checkoutState.addressIsValid === false) {
+                    addressOk = false;
+                } else if (hasAddress && !validateAddress(addressInput.value)) {
+                    // Текстовая проверка, если API не проверил
+                    addressOk = false;
+                    checkoutState.addressIsValid = false;
+                }
+                
+                isValid = hasAddress && hasRecipient && addressOk;
             }
             
-            const isValid = hasAddress && hasRecipient && addressOk;
             nextBtn.disabled = !isValid;
             
-            // Показываем предупреждение если адрес не в том городе
-            const warningEl = document.getElementById('addressWarning');
-            if (!addressOk && hasAddress) {
-                if (!warningEl) {
-                    const warning = document.createElement('div');
-                    warning.id = 'addressWarning';
-                    warning.style.cssText = 'color:#dc3545;font-size:13px;margin-top:6px;display:flex;align-items:center;gap:6px;';
-                    warning.innerHTML = `⚠️ Адрес должен быть в городе ${checkoutState.shopCity}`;
-                    addressInput.parentElement.appendChild(warning);
+            // Показываем предупреждение если адрес не в том городе (только для доставки)
+            if (checkoutState.deliveryType === 'delivery') {
+                const warningEl = document.getElementById('addressWarning');
+                if (!addressOk && hasAddress) {
+                    if (!warningEl) {
+                        const warning = document.createElement('div');
+                        warning.id = 'addressWarning';
+                        warning.style.cssText = 'color:#dc3545;font-size:13px;margin-top:6px;display:flex;align-items:center;gap:6px;';
+                        warning.innerHTML = `⚠️ Адрес должен быть в городе ${checkoutState.shopCity}`;
+                        addressInput.parentElement.appendChild(warning);
+                    }
+                } else if (warningEl) {
+                    warningEl.remove();
                 }
-            } else if (warningEl) {
-                warningEl.remove();
             }
             
             return isValid;
