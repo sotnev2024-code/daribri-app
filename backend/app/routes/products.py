@@ -63,29 +63,56 @@ async def get_products(
         search_normalized = search.strip()
         words = [w.strip() for w in search_normalized.split() if len(w.strip()) >= 1]  # Минимум 1 символ
         
+        # Используем простой LIKE без COLLATE NOCASE в WHERE (может не работать с кириллицей)
+        # Фильтрацию по регистру будем делать в Python после получения результатов
         if len(words) == 1:
             # Одно слово - ищем в любом месте названия, описания или магазина
             word = words[0]
+            # Ищем слово в любом регистре (используем несколько вариантов)
             conditions.append(
-                "(p.name LIKE ? COLLATE NOCASE OR p.description LIKE ? COLLATE NOCASE OR s.name LIKE ? COLLATE NOCASE)"
+                "(p.name LIKE ? OR p.name LIKE ? OR p.name LIKE ? OR "
+                "p.description LIKE ? OR p.description LIKE ? OR p.description LIKE ? OR "
+                "s.name LIKE ? OR s.name LIKE ? OR s.name LIKE ?)"
             )
-            params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
+            # Добавляем варианты: как есть, с заглавной, с маленькой
+            word_variants = [word, word.capitalize(), word.upper(), word.lower()]
+            params.extend([
+                f"%{word_variants[0]}%", f"%{word_variants[1]}%", f"%{word_variants[2]}%",
+                f"%{word_variants[0]}%", f"%{word_variants[1]}%", f"%{word_variants[2]}%",
+                f"%{word_variants[0]}%", f"%{word_variants[1]}%", f"%{word_variants[2]}%"
+            ])
         elif len(words) > 1:
             # Несколько слов - ищем все слова (AND между словами)
             word_conditions = []
             for word in words:
                 # Ищем слово в названии, описании или названии магазина
+                word_variants = [word, word.capitalize(), word.upper(), word.lower()]
                 word_conditions.append(
-                    "(p.name LIKE ? COLLATE NOCASE OR p.description LIKE ? COLLATE NOCASE OR s.name LIKE ? COLLATE NOCASE)"
+                    "(p.name LIKE ? OR p.name LIKE ? OR p.name LIKE ? OR "
+                    "p.description LIKE ? OR p.description LIKE ? OR p.description LIKE ? OR "
+                    "s.name LIKE ? OR s.name LIKE ? OR s.name LIKE ?)"
                 )
-                params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
+                params.extend([
+                    f"%{word_variants[0]}%", f"%{word_variants[1]}%", f"%{word_variants[2]}%",
+                    f"%{word_variants[0]}%", f"%{word_variants[1]}%", f"%{word_variants[2]}%",
+                    f"%{word_variants[0]}%", f"%{word_variants[1]}%", f"%{word_variants[2]}%"
+                ])
             
             # Объединяем условия слов через AND (найти все слова)
             conditions.append(f"({' AND '.join(word_conditions)})")
         else:
             # Если запрос пустой после обработки, ищем всю фразу
-            conditions.append("(p.name LIKE ? COLLATE NOCASE OR p.description LIKE ? COLLATE NOCASE OR s.name LIKE ? COLLATE NOCASE)")
-            params.extend([f"%{search_normalized}%", f"%{search_normalized}%", f"%{search_normalized}%"])
+            search_variants = [search_normalized, search_normalized.capitalize(), search_normalized.upper(), search_normalized.lower()]
+            conditions.append(
+                "(p.name LIKE ? OR p.name LIKE ? OR p.name LIKE ? OR "
+                "p.description LIKE ? OR p.description LIKE ? OR p.description LIKE ? OR "
+                "s.name LIKE ? OR s.name LIKE ? OR s.name LIKE ?)"
+            )
+            params.extend([
+                f"%{search_variants[0]}%", f"%{search_variants[1]}%", f"%{search_variants[2]}%",
+                f"%{search_variants[0]}%", f"%{search_variants[1]}%", f"%{search_variants[2]}%",
+                f"%{search_variants[0]}%", f"%{search_variants[1]}%", f"%{search_variants[2]}%"
+            ])
     
     if min_price is not None:
         conditions.append("COALESCE(p.discount_price, p.price) >= ?")
@@ -145,6 +172,32 @@ async def get_products(
             LIMIT ? OFFSET ?""",
         tuple(params)
     )
+    
+    # Дополнительная фильтрация в Python для case-insensitive поиска с кириллицей
+    if search:
+        search_lower = search.lower().strip()
+        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 1]
+        
+        def matches_search(product_dict):
+            """Проверяет, соответствует ли товар поисковому запросу (case-insensitive)."""
+            name = (product_dict.get('name') or '').lower()
+            description = (product_dict.get('description') or '').lower()
+            shop_name = (product_dict.get('shop_name') or '').lower()
+            
+            if len(words) == 1:
+                # Одно слово - ищем в любом месте
+                word = words[0]
+                return word in name or word in description or word in shop_name
+            elif len(words) > 1:
+                # Несколько слов - все слова должны быть найдены
+                for word in words:
+                    if word not in name and word not in description and word not in shop_name:
+                        return False
+                return True
+            return False
+        
+        # Фильтруем результаты
+        products = [p for p in products if matches_search(dict(p))]
     
     # Получаем все медиа для каждого товара
     result = []
