@@ -365,34 +365,8 @@
                     const card = catalogModule.createProductCard(product);
                     if (card) productsGrid.appendChild(card);
                 } else {
-                    // Fallback, если модуль каталога не загружен
-                    const card = document.createElement('div');
-                    card.className = 'product-card';
-                    card.onclick = () => {
-                        if (window.openProductPage) window.openProductPage(product.id);
-                    };
-                    
-                    const hasDiscount = product.discount_price !== null && product.discount_price < product.price;
-                    const primaryImage = product.primary_image || product.media?.[0]?.url || '';
-                    const imageUrl = primaryImage ? getMediaUrl(primaryImage) : '';
-                    
-                    card.innerHTML = `
-                        <div class="product-image">
-                            ${imageUrl 
-                                ? `<img src="${imageUrl}" alt="${product.name}" loading="lazy">`
-                                : '<div class="product-image-placeholder">🌸</div>'
-                            }
-                        </div>
-                        <div class="product-content">
-                            <div class="product-name">${product.name}</div>
-                            <div class="product-price-row">
-                                <span class="product-current-price">${formatPrice(hasDiscount ? product.discount_price : product.price)}</span>
-                                ${hasDiscount ? `<span class="product-original-price">${formatPrice(product.price)}</span>` : ''}
-                            </div>
-                        </div>
-                    `;
-                    
-                    productsGrid.appendChild(card);
+                    // Если модуль каталога не загружен, выводим предупреждение
+                    console.error('[SHOP] createProductCard not available, cannot render product:', product.id);
                 }
             });
             
