@@ -773,8 +773,21 @@
         
         if (elements.emptyState) elements.emptyState.hidden = true;
         
-        state.products.forEach((product) => {
+        state.products.forEach((product, index) => {
             // Убеждаемся, что используем правильную функцию создания карточки
+            if (index === 0) {
+                console.log('[RENDER] First product data for card:', {
+                    id: product.id,
+                    name: product.name,
+                    shop_name: product.shop_name,
+                    shop_rating: product.shop_rating,
+                    shop_reviews_count: product.shop_reviews_count,
+                    price: product.price,
+                    discount_price: product.discount_price,
+                    hasMedia: !!product.media,
+                    mediaLength: product.media?.length || 0
+                });
+            }
             const card = createProductCard(product);
             if (card) {
                 grid.appendChild(card);
@@ -786,6 +799,26 @@
         if (window.App?.favorites?.updateFavoriteButtons) {
             window.App.favorites.updateFavoriteButtons();
         }
+        
+        // Убеждаемся, что все слайдеры инициализированы после рендеринга
+        // Небольшая задержка для того, чтобы DOM обновился
+        setTimeout(() => {
+            const allSliders = grid.querySelectorAll('.product-image-slider');
+            allSliders.forEach(slider => {
+                const productId = slider.dataset.productId;
+                if (productId) {
+                    const card = slider.closest('.product-card');
+                    if (card) {
+                        const slides = slider.querySelectorAll('.product-slider-slide');
+                        if (slides.length > 0 && !slider.dataset.initialized) {
+                            // Инициализируем слайдер, если он еще не инициализирован
+                            initProductCardSlider(card, parseInt(productId), slides.length);
+                            slider.dataset.initialized = 'true';
+                        }
+                    }
+                }
+            });
+        }, 100);
     }
     
     // Экспортируем функции
