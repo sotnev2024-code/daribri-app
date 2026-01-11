@@ -210,7 +210,8 @@
             dot.onclick = () => goToGallerySlide(index);
         });
         
-        if (gallery && gallerySlides.length > 1) {
+        // Инициализируем свайп даже если одно медиа (для видео)
+        if (gallery && gallerySlides.length >= 1) {
             let startX = 0;
             let currentX = 0;
             let isDragging = false;
