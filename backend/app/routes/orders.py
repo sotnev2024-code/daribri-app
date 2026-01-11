@@ -365,26 +365,26 @@ async def create_order(
     
     order = await db.fetch_one("SELECT * FROM orders WHERE id = ?", (order_id,))
     
+    # Форматируем дату и время доставки для уведомлений
+    delivery_date_str = None
+    delivery_time_str = None
+    
+    if order_data.delivery_date:
+        from datetime import datetime
+        try:
+            if isinstance(order_data.delivery_date, str):
+                delivery_date_obj = datetime.fromisoformat(order_data.delivery_date)
+            else:
+                delivery_date_obj = order_data.delivery_date
+            delivery_date_str = delivery_date_obj.strftime("%d.%m.%Y")
+        except:
+            delivery_date_str = str(order_data.delivery_date)
+    
+    delivery_time_str = order_data.delivery_time
+    
     # Отправляем уведомление владельцу магазина в Telegram
     if shop.get("telegram_id"):
         try:
-            # Форматируем дату и время доставки для уведомления
-            delivery_date_str = None
-            delivery_time_str = None
-            
-            if order_data.delivery_date:
-                from datetime import datetime
-                try:
-                    if isinstance(order_data.delivery_date, str):
-                        delivery_date_obj = datetime.fromisoformat(order_data.delivery_date)
-                    else:
-                        delivery_date_obj = order_data.delivery_date
-                    delivery_date_str = delivery_date_obj.strftime("%d.%m.%Y")
-                except:
-                    delivery_date_str = str(order_data.delivery_date)
-            
-            delivery_time_str = order_data.delivery_time
-            
             await telegram_notifier.send_order_notification(
                 shop_owner_telegram_id=shop["telegram_id"],
                 order_number=order_dict["order_number"],
@@ -403,7 +403,60 @@ async def create_order(
         except Exception as e:
             # Не прерываем выполнение, если уведомление не отправилось
             import traceback
-            print(f"[ERROR] Failed to send order notification: {e}")
+            print(f"[ERROR] Failed to send order notification to shop owner: {e}")
+            traceback.print_exc()
+    
+    # Отправляем сообщение с подтверждением заказа покупателю
+    if current_user.telegram_id:
+        try:
+            # Получаем email пользователя из базы данных
+            user_data = await db.fetch_one(
+                "SELECT email FROM users WHERE id = ?",
+                (current_user.id,)
+            )
+            customer_email = user_data.get("email") if user_data else None
+            
+            # Вычисляем сервисный сбор (если есть)
+            # Сервисный сбор = общая сумма - (сумма товаров - промокод + доставка)
+            calculated_total = float(subtotal_amount - promo_discount_amount + delivery_fee)
+            service_fee = max(0, float(total_amount) - calculated_total)
+            
+            # Форматируем дату для временного слота
+            delivery_date_for_slot = None
+            if order_data.delivery_date:
+                try:
+                    if isinstance(order_data.delivery_date, str):
+                        from datetime import datetime as dt
+                        try:
+                            date_obj = dt.strptime(order_data.delivery_date, "%Y-%m-%d")
+                        except:
+                            date_obj = dt.strptime(order_data.delivery_date, "%d.%m.%Y")
+                        delivery_date_for_slot = date_obj.strftime("%Y-%m-%d")
+                    else:
+                        delivery_date_for_slot = order_data.delivery_date.strftime("%Y-%m-%d")
+                except:
+                    delivery_date_for_slot = str(order_data.delivery_date)
+            
+            await telegram_notifier.send_order_confirmation_to_customer(
+                customer_telegram_id=current_user.telegram_id,
+                order_number=order_dict["order_number"],
+                customer_name=order_data.recipient_name,
+                customer_phone=order_data.recipient_phone,
+                customer_email=customer_email,
+                delivery_address=order_data.delivery_address,
+                delivery_date=delivery_date_for_slot,
+                delivery_time=delivery_time_str,
+                items=order_items_info,
+                subtotal=float(subtotal_amount),
+                delivery_fee=float(delivery_fee),
+                service_fee=service_fee,
+                promo_discount=float(promo_discount_amount),
+                total_amount=float(total_amount)
+            )
+        except Exception as e:
+            # Не прерываем выполнение, если уведомление не отправилось
+            import traceback
+            print(f"[ERROR] Failed to send order confirmation to customer: {e}")
             traceback.print_exc()
     
     return Order(**order)

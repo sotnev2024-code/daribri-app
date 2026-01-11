@@ -257,6 +257,133 @@ class TelegramNotifier:
             return False
 
 
+    @classmethod
+    async def send_order_confirmation_to_customer(
+        cls,
+        customer_telegram_id: int,
+        order_number: str,
+        customer_name: Optional[str],
+        customer_phone: Optional[str],
+        customer_email: Optional[str],
+        delivery_address: Optional[str],
+        delivery_date: Optional[str],
+        delivery_time: Optional[str],
+        items: list,
+        subtotal: float,
+        delivery_fee: float,
+        service_fee: float = 0.0,
+        promo_discount: float = 0.0,
+        total_amount: float = 0.0
+    ) -> bool:
+        """
+        Отправляет сообщение с подтверждением заказа покупателю.
+        
+        Args:
+            customer_telegram_id: Telegram ID покупателя
+            order_number: Номер заказа
+            customer_name: Имя покупателя
+            customer_phone: Телефон покупателя
+            customer_email: Email покупателя
+            delivery_address: Адрес доставки
+            delivery_date: Дата доставки
+            delivery_time: Время доставки
+            items: Список товаров в заказе
+            subtotal: Сумма товаров
+            delivery_fee: Стоимость доставки
+            service_fee: Сервисный сбор
+            promo_discount: Скидка по промокоду
+            total_amount: Общая сумма заказа
+            
+        Returns:
+            bool: True если сообщение отправлено
+        """
+        bot = cls.get_bot()
+        if not bot:
+            print(f"[WARNING] BOT_TOKEN not configured, order confirmation not sent to {customer_telegram_id}")
+            return False
+        
+        # Форматируем дату и время создания заказа
+        order_time = datetime.now().strftime("%d.%m.%Y, %H:%M")
+        
+        # Форматируем состав заказа
+        items_text = "\n".join([
+            f"{item.get('name', 'Товар')} ({item.get('quantity', 1)} шт) {item.get('total', 0):.2f} ₽ x{item.get('quantity', 1)} ШТ"
+            for item in items
+        ])
+        
+        # Форматируем временной слот доставки
+        delivery_time_slot = ""
+        if delivery_date and delivery_time:
+            # Преобразуем дату в формат YYYY-MM-DD если нужно
+            try:
+                from datetime import datetime as dt
+                if isinstance(delivery_date, str):
+                    # Пробуем разные форматы
+                    try:
+                        date_obj = dt.strptime(delivery_date, "%Y-%m-%d")
+                    except:
+                        date_obj = dt.strptime(delivery_date, "%d.%m.%Y")
+                    delivery_date_formatted = date_obj.strftime("%Y-%m-%d")
+                else:
+                    delivery_date_formatted = delivery_date.strftime("%Y-%m-%d")
+                
+                delivery_time_slot = f"{delivery_date_formatted} {delivery_time}"
+            except:
+                delivery_time_slot = f"{delivery_date} {delivery_time}"
+        elif delivery_date:
+            delivery_time_slot = delivery_date
+        elif delivery_time:
+            delivery_time_slot = delivery_time
+        
+        # Формируем контакты (телефон и email в одной строке)
+        contacts = customer_phone or ""
+        if customer_email:
+            contacts += f", {customer_email}" if contacts else customer_email
+        
+        # Формируем сообщение в формате как на изображении
+        message = f"""<b>Заказ №{order_number} успешно оформлен</b>
+
+<b>Способ оплаты:</b> Ссылка на оплату после заказа
+
+<b>Покупатель:</b> {customer_name or 'Не указано'}
+<b>Номер телефона:</b> {customer_phone or 'Не указан'}
+{f'<b>Email:</b> {customer_email}' if customer_email else ''}
+
+<b>Способ доставки:</b> Доставка
+
+<b>Адрес доставки:</b>
+{delivery_address or 'Не указан'}
+
+{f'<b>Временной слот доставки:</b>\n{delivery_time_slot}' if delivery_time_slot else ''}
+
+<b>Состав заказа:</b>
+{items_text}
+
+<b>Стоимость доставки:</b> {delivery_fee:.2f}RUB
+{f'<b>Сервисный сбор:</b> {service_fee:.2f}RUB' if service_fee > 0 else ''}
+
+<b>Сумма:</b> {total_amount:.2f} ₽
+
+<i>Спасибо за ваш заказ! В ближайшее время с вами свяжется менеджер</i>"""
+        
+        print(f"[TELEGRAM] Sending order confirmation to customer {customer_telegram_id}")
+        print(f"[TELEGRAM] Order: {order_number}, Total: {total_amount:.2f} ₽")
+        
+        try:
+            await bot.send_message(
+                chat_id=customer_telegram_id,
+                text=message,
+                parse_mode=ParseMode.HTML
+            )
+            print(f"[TELEGRAM] Order confirmation sent successfully!")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Failed to send order confirmation to {customer_telegram_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+
 # Глобальный экземпляр
 telegram_notifier = TelegramNotifier()
 
