@@ -102,9 +102,64 @@ async def validate_promo(
         # Для бесплатной доставки скидка считается отдельно
         discount_amount = Decimal("0")
     
+    # Преобразуем данные из БД в формат для модели Promo
+    promo_dict = dict(promo)  # Копируем словарь
+    
+    # Преобразуем boolean поля из INTEGER в bool
+    if "is_active" in promo_dict:
+        promo_dict["is_active"] = bool(promo_dict["is_active"])
+    if "use_once" in promo_dict:
+        promo_dict["use_once"] = bool(promo_dict["use_once"])
+    if "first_order_only" in promo_dict:
+        promo_dict["first_order_only"] = bool(promo_dict["first_order_only"])
+    
+    # Преобразуем Decimal поля
+    if "value" in promo_dict:
+        promo_dict["value"] = Decimal(str(promo_dict["value"]))
+    if "min_order_amount" in promo_dict and promo_dict["min_order_amount"] is not None:
+        promo_dict["min_order_amount"] = Decimal(str(promo_dict["min_order_amount"]))
+    
+    # Преобразуем даты
+    if "valid_from" in promo_dict and promo_dict["valid_from"]:
+        if isinstance(promo_dict["valid_from"], str):
+            promo_dict["valid_from"] = date.fromisoformat(promo_dict["valid_from"])
+    if "valid_until" in promo_dict and promo_dict["valid_until"]:
+        if isinstance(promo_dict["valid_until"], str):
+            promo_dict["valid_until"] = date.fromisoformat(promo_dict["valid_until"])
+    
+    # Преобразуем datetime поля
+    if "created_at" in promo_dict and promo_dict["created_at"]:
+        if isinstance(promo_dict["created_at"], str):
+            promo_dict["created_at"] = datetime.fromisoformat(promo_dict["created_at"].replace("Z", "+00:00"))
+    if "updated_at" in promo_dict and promo_dict["updated_at"]:
+        if isinstance(promo_dict["updated_at"], str):
+            promo_dict["updated_at"] = datetime.fromisoformat(promo_dict["updated_at"].replace("Z", "+00:00"))
+    
+    # Преобразуем promo_type в PromoType enum
+    if "promo_type" in promo_dict:
+        promo_dict["promo_type"] = PromoType(promo_dict["promo_type"])
+    
+    # Преобразуем usage_count в int если нужно
+    if "usage_count" in promo_dict:
+        promo_dict["usage_count"] = int(promo_dict["usage_count"]) if promo_dict["usage_count"] else 0
+    
+    try:
+        promo_model = Promo(**promo_dict)
+    except Exception as e:
+        # Если не удалось создать модель, логируем ошибку и возвращаем результат без promo
+        print(f"[PROMO] Error creating Promo model: {e}")
+        print(f"[PROMO] promo_dict: {promo_dict}")
+        return PromoValidationResult(
+            valid=True,
+            promo=None,  # Не возвращаем promo если не можем его создать
+            discount_amount=discount_amount,
+            discount_type=promo_type.value,
+            message="Промокод применен"
+        )
+    
     return PromoValidationResult(
         valid=True,
-        promo=Promo(**promo),
+        promo=promo_model,
         discount_amount=discount_amount,
         discount_type=promo_type.value,
         message="Промокод применен"
