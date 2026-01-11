@@ -2501,6 +2501,7 @@ input {
     text-align: left;
     border-bottom: 1px solid var(--border);
     color: var(--text-primary);
+    font-size: 1.7rem; /* Увеличен на 70% (1rem * 1.7) */
 }
 
 .menu-item:last-child {
@@ -6247,7 +6248,7 @@ input {
     background: none;
     border: none;
     color: var(--text-primary);
-    font-size: 0.9375rem;
+    font-size: 1.59375rem; /* Увеличен на 70% (0.9375rem * 1.7) */
     cursor: pointer;
 }
 
@@ -6265,7 +6266,7 @@ input {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 1rem;
+    font-size: 1.7rem; /* Увеличен на 70% (1rem * 1.7) */
     font-weight: 500;
     color: var(--primary);
     cursor: pointer;
