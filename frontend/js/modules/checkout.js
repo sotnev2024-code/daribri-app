@@ -1507,16 +1507,11 @@
             if (window.loadCart) await window.loadCart();
             if (window.renderCart) window.renderCart();
             
-            // Закрываем модальное окно
+            // Закрываем модальное окно оформления заказа
             closeCheckoutModal();
             
-            // Показываем успешное сообщение
-            showToast('Заказ успешно оформлен! 🎉', 'success');
-            
-            // Переходим на страницу заказов
-            if (window.navigateTo) {
-                setTimeout(() => window.navigateTo('orders'), 500);
-            }
+            // Показываем модальное окно подтверждения заказа
+            showOrderSuccessModal(result, checkoutState, itemsTotal, deliveryFee);
             
         } catch (error) {
             console.error('[CHECKOUT] Error creating order:', error);
@@ -1576,6 +1571,82 @@
         checkoutState.promoType = null;
         
         console.log('[CHECKOUT] Checkout modal closed, state reset');
+    }
+    
+    // ==================== МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ЗАКАЗА ====================
+    function showOrderSuccessModal(orderResult, checkoutState, itemsTotal, deliveryFee) {
+        console.log('[CHECKOUT] Showing order success modal');
+        
+        const modal = document.getElementById('orderSuccessModal');
+        if (!modal) {
+            console.error('[CHECKOUT] Order success modal not found');
+            showToast('Заказ успешно оформлен! 🎉', 'success');
+            if (window.navigateTo) {
+                setTimeout(() => window.navigateTo('catalog'), 500);
+            }
+            return;
+        }
+        
+        // Форматируем дату создания заказа
+        const now = new Date();
+        const orderDate = now.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const orderTime = now.toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Заполняем данные
+        const dateEl = document.getElementById('orderSuccessDate');
+        if (dateEl) {
+            dateEl.textContent = `${orderDate}, ${orderTime}`;
+        }
+        
+        const totalEl = document.getElementById('orderSuccessTotal');
+        if (totalEl) {
+            const total = itemsTotal - (checkoutState.promoDiscount || 0) + deliveryFee;
+            totalEl.textContent = formatPrice(total);
+        }
+        
+        const recipientEl = document.getElementById('orderSuccessRecipient');
+        if (recipientEl) {
+            recipientEl.textContent = checkoutState.recipientName || 'Не указано';
+        }
+        
+        const contactsEl = document.getElementById('orderSuccessContacts');
+        if (contactsEl) {
+            const phone = checkoutState.phone || '';
+            const email = checkoutState.recipientEmail || '';
+            contactsEl.textContent = phone + (email ? `, ${email}` : '');
+        }
+        
+        const addressEl = document.getElementById('orderSuccessAddress');
+        if (addressEl) {
+            addressEl.textContent = checkoutState.address || 'Не указан';
+        }
+        
+        // Кнопка "Продолжить покупки"
+        const continueBtn = document.getElementById('orderSuccessContinueBtn');
+        if (continueBtn) {
+            continueBtn.onclick = () => {
+                modal.hidden = true;
+                if (window.navigateTo) {
+                    window.navigateTo('catalog');
+                }
+            };
+        }
+        
+        // Показываем модальное окно
+        modal.hidden = false;
+        
+        // Скрываем кнопку "Назад" Telegram
+        const tg = getTg();
+        if (tg && tg.BackButton) {
+            tg.BackButton.hide();
+        }
     }
     
     // ==================== ЭКСПОРТ ====================

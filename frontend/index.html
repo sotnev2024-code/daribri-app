@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="images/icons/icon.png?v=4">
     <link rel="apple-touch-icon" href="images/icons/icon.png?v=4">
     <link rel="shortcut icon" href="images/icons/icon.png?v=4">
-    <link rel="stylesheet" href="css/styles.css?v=66">
+    <link rel="stylesheet" href="css/styles.css?v=67">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -650,6 +650,66 @@
                             <span id="submitOrderBtnLoading" hidden>⏳ Обработка...</span>
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Success Modal -->
+        <div class="modal" id="orderSuccessModal" hidden>
+            <div class="modal-content order-success-modal-content">
+                <div class="order-success-content">
+                    <!-- Иллюстрация -->
+                    <div class="order-success-illustration">
+                        <div class="success-icon">🦆</div>
+                        <div class="success-heart">❤️</div>
+                    </div>
+                    
+                    <!-- Заголовок -->
+                    <h2 class="order-success-title">Заказ завершен</h2>
+                    <p class="order-success-message">
+                        Спасибо за покупку у нас. Мы отправили вам подтверждение в личные сообщения.
+                    </p>
+                    
+                    <!-- Сводка заказа -->
+                    <div class="order-success-section">
+                        <h3 class="order-success-section-title">Сводка заказа</h3>
+                        <div class="order-success-info-row">
+                            <span class="order-info-label">Заказ создан</span>
+                            <span class="order-info-value" id="orderSuccessDate"></span>
+                        </div>
+                        <div class="order-success-info-row">
+                            <span class="order-info-label">Общая сумма заказа</span>
+                            <span class="order-info-value" id="orderSuccessTotal"></span>
+                        </div>
+                        <div class="order-success-info-row">
+                            <span class="order-info-label">Способ оплаты</span>
+                            <span class="order-info-value">Ссылка на оплату после заказа</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Информация о доставке -->
+                    <div class="order-success-section">
+                        <h3 class="order-success-section-title">Информация о доставке</h3>
+                        <div class="order-success-delivery-info">
+                            <div class="order-delivery-item">
+                                <span class="order-delivery-label">Получатель:</span>
+                                <span class="order-delivery-value" id="orderSuccessRecipient"></span>
+                            </div>
+                            <div class="order-delivery-item">
+                                <span class="order-delivery-label">Контакты:</span>
+                                <span class="order-delivery-value" id="orderSuccessContacts"></span>
+                            </div>
+                            <div class="order-delivery-item">
+                                <span class="order-delivery-label">Адрес:</span>
+                                <span class="order-delivery-value" id="orderSuccessAddress"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопка -->
+                    <button class="order-success-continue-btn" id="orderSuccessContinueBtn">
+                        Продолжить покупки
+                    </button>
                 </div>
             </div>
         </div>
@@ -1667,7 +1727,7 @@
     <script src="js/modules/product.js?v=8"></script>
     <script src="js/modules/profile.js?v=1"></script>
     <script src="js/modules/shop.js?v=4"></script>
-    <script src="js/modules/checkout.js?v=15"></script>
+    <script src="js/modules/checkout.js?v=16"></script>
     <script src="js/modules/orders.js?v=2"></script>
     <script src="js/modules/myshop.js?v=11"></script>
     <script src="js/app.js?v=59"></script>
