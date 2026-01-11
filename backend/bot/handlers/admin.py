@@ -113,6 +113,31 @@ async def get_db():
                 "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
             }
             
+            # Проверяем и обновляем старые колонки discount_type и discount_value, если они существуют
+            if "discount_type" in promos_column_names:
+                discount_type_col = next((col for col in promos_columns if col["name"] == "discount_type"), None)
+                if discount_type_col and discount_type_col.get("notnull") == 1:
+                    try:
+                        await db.execute(
+                            "UPDATE promos SET discount_type = promo_type WHERE discount_type IS NULL OR discount_type = ''"
+                        )
+                        await db.commit()
+                        print("[MIGRATION] Updated existing promos with discount_type = promo_type in bot handler")
+                    except Exception as e:
+                        print(f"[MIGRATION] Could not update discount_type in bot handler: {e}")
+            
+            if "discount_value" in promos_column_names:
+                discount_value_col = next((col for col in promos_columns if col["name"] == "discount_value"), None)
+                if discount_value_col and discount_value_col.get("notnull") == 1:
+                    try:
+                        await db.execute(
+                            "UPDATE promos SET discount_value = value WHERE discount_value IS NULL"
+                        )
+                        await db.commit()
+                        print("[MIGRATION] Updated existing promos with discount_value = value in bot handler")
+                    except Exception as e:
+                        print(f"[MIGRATION] Could not update discount_value in bot handler: {e}")
+            
             # Добавляем все недостающие колонки
             for column_name, column_definition in required_columns.items():
                 if column_name not in promos_column_names:
@@ -1348,9 +1373,11 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
             "valid_from", "valid_until", "usage_count"
         ]
         
-        # Если есть колонка discount_type, добавляем её в запрос
+        # Если есть старые колонки discount_type и discount_value, добавляем их в запрос
         if "discount_type" in promos_column_names:
             insert_columns.append("discount_type")
+        if "discount_value" in promos_column_names:
+            insert_columns.append("discount_value")
         
         # Используем явный SQL запрос с правильными типами данных
         # SQLite автоматически конвертирует строки в DECIMAL для колонок типа DECIMAL
@@ -1377,6 +1404,10 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
         # Если есть discount_type, добавляем значение (используем promo_type как discount_type)
         if "discount_type" in promos_column_names:
             params_list.append(promo_data["promo_type"])  # discount_type = promo_type
+        
+        # Если есть discount_value, добавляем значение (используем value как discount_value)
+        if "discount_value" in promos_column_names:
+            params_list.append(promo_data["value"])  # discount_value = value
         
         params = tuple(params_list)
         

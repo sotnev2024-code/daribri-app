@@ -157,13 +157,11 @@ async def lifespan(app: FastAPI):
                 "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
             }
             
-            # Если discount_type существует и имеет NOT NULL без DEFAULT, добавляем DEFAULT
+            # Если discount_type или discount_value существуют и имеют NOT NULL без DEFAULT, обновляем их
             if "discount_type" in promos_column_names:
                 discount_type_col = next((col for col in promos_columns if col["name"] == "discount_type"), None)
                 if discount_type_col and discount_type_col.get("notnull") == 1 and not discount_type_col.get("dflt_value"):
                     print("[MIGRATION] Note: discount_type column exists with NOT NULL constraint")
-                    # SQLite не позволяет напрямую изменить DEFAULT для существующей колонки
-                    # Но мы можем заполнить существующие записи значением по умолчанию
                     try:
                         await database._db_service.execute(
                             "UPDATE promos SET discount_type = promo_type WHERE discount_type IS NULL OR discount_type = ''"
@@ -172,6 +170,19 @@ async def lifespan(app: FastAPI):
                         print("[MIGRATION] Updated existing promos with discount_type = promo_type")
                     except Exception as e:
                         print(f"[MIGRATION] Could not update discount_type: {e}")
+            
+            if "discount_value" in promos_column_names:
+                discount_value_col = next((col for col in promos_columns if col["name"] == "discount_value"), None)
+                if discount_value_col and discount_value_col.get("notnull") == 1 and not discount_value_col.get("dflt_value"):
+                    print("[MIGRATION] Note: discount_value column exists with NOT NULL constraint")
+                    try:
+                        await database._db_service.execute(
+                            "UPDATE promos SET discount_value = value WHERE discount_value IS NULL"
+                        )
+                        await database._db_service.commit()
+                        print("[MIGRATION] Updated existing promos with discount_value = value")
+                    except Exception as e:
+                        print(f"[MIGRATION] Could not update discount_value: {e}")
             
             # Добавляем все недостающие колонки
             for column_name, column_definition in required_columns.items():
