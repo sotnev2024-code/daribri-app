@@ -1111,8 +1111,8 @@ async function init() {
             // Теперь загружаем товары - они будут рендериться с правильными сердечками
             await loadProducts();
             
-            // Инициализируем pull-to-refresh
-            initPullToRefresh();
+            // Pull-to-refresh отключен
+            // initPullToRefresh();
             
             console.log('[INIT] ✅ Данные загружены успешно');
             
