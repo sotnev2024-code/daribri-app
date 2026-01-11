@@ -56,23 +56,33 @@ async def get_products(
         params.extend(cat_ids)
     
     if search:
-        # Умный поиск: разбиваем на слова и ищем любое из них
+        # Умный поиск: разбиваем на слова
+        # Для одного слова - ищем в любом месте
+        # Для нескольких слов - ищем все слова (AND)
         search_lower = search.lower().strip()
-        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 2]
+        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 1]  # Минимум 1 символ
         
-        if words:
-            # Создаём условия для каждого слова (OR между словами)
+        if len(words) == 1:
+            # Одно слово - ищем в любом месте названия, описания или магазина
+            word = words[0]
+            conditions.append(
+                "(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)"
+            )
+            params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
+        elif len(words) > 1:
+            # Несколько слов - ищем все слова (AND между словами)
             word_conditions = []
             for word in words:
+                # Ищем слово в названии, описании или названии магазина
                 word_conditions.append(
                     "(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)"
                 )
                 params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
             
-            # Объединяем условия слов через OR (найти любое слово)
-            conditions.append(f"({' OR '.join(word_conditions)})")
+            # Объединяем условия слов через AND (найти все слова)
+            conditions.append(f"({' AND '.join(word_conditions)})")
         else:
-            # Если слова слишком короткие, ищем всю фразу
+            # Если запрос пустой после обработки, ищем всю фразу
             conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)")
             params.extend([f"%{search_lower}%", f"%{search_lower}%", f"%{search_lower}%"])
     
