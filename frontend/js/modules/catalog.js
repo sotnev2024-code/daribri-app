@@ -398,12 +398,7 @@
         }
         
         // Слайдер показываем если есть больше одного медиа (фото или видео)
-        // Или если есть хотя бы одно видео (даже одно)
         const hasMultipleImages = media.length > 1;
-        const hasVideo = media.some(m => m.media_type === 'video');
-        // Всегда создаем слайдер если есть несколько медиа или хотя бы одно видео
-        const shouldCreateSlider = hasMultipleImages || hasVideo;
-        
         const card = document.createElement('div');
         card.className = 'product-card fade-in';
         card.dataset.productId = product.id;
@@ -414,7 +409,7 @@
         // Генерируем HTML для изображения
         let imageHTML = '';
         if (media.length > 0) {
-            if (shouldCreateSlider) {
+            if (hasMultipleImages) {
                 imageHTML = `
                     <div class="product-image-slider" data-product-id="${product.id}">
                         <div class="product-slider-track">
@@ -430,17 +425,19 @@
                             `;
                             }).join('')}
                         </div>
-                        ${hasMultipleImages ? `<div class="product-slider-dots">
+                        <div class="product-slider-dots">
                             ${media.map((_, i) => `<span class="slider-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></span>`).join('')}
-                        </div>` : ''}
+                        </div>
                     </div>
                 `;
             } else {
-                // Только одно фото - без слайдера
                 const mediaUrl = getMediaUrl(media[0].url);
                 imageHTML = `
                     <div class="product-single-image">
-                        <img src="${mediaUrl}" alt="${product.name}" loading="lazy">
+                        ${media[0].media_type === 'video'
+                            ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>`
+                            : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
+                        }
                     </div>
                 `;
             }
@@ -521,9 +518,14 @@
             </div>
         `;
         
-        // Инициализация слайдера - всегда инициализируем если создан слайдер
-        if (media.length > 0 && shouldCreateSlider) {
-            initProductCardSlider(card, product.id, media.length);
+        // Инициализация слайдера
+        if (media.length > 0) {
+            if (hasMultipleImages) {
+                initProductCardSlider(card, product.id, media.length);
+            } else if (media[0]?.media_type === 'video') {
+                // Для одного видео тоже инициализируем слайдер для управления воспроизведением
+                initProductCardSlider(card, product.id, 1);
+            }
         }
         
         // Обработчик клика на карточку
@@ -577,7 +579,10 @@
         // Если только одно медиа и это не видео, не инициализируем слайдер
         if (imageCount <= 1) {
             const hasVideo = slider.querySelector('video');
-            if (!hasVideo) return;
+            if (!hasVideo) {
+                // Для одного изображения без видео не нужен слайдер
+                return;
+            }
         }
         
         const track = slider.querySelector('.product-slider-track');
