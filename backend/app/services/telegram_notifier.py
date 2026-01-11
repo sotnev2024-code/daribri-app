@@ -316,13 +316,12 @@ class TelegramNotifier:
         if delivery_date and delivery_time:
             # Преобразуем дату в формат YYYY-MM-DD если нужно
             try:
-                from datetime import datetime as dt
                 if isinstance(delivery_date, str):
                     # Пробуем разные форматы
                     try:
-                        date_obj = dt.strptime(delivery_date, "%Y-%m-%d")
+                        date_obj = datetime.strptime(delivery_date, "%Y-%m-%d")
                     except:
-                        date_obj = dt.strptime(delivery_date, "%d.%m.%Y")
+                        date_obj = datetime.strptime(delivery_date, "%d.%m.%Y")
                     delivery_date_formatted = date_obj.strftime("%Y-%m-%d")
                 else:
                     delivery_date_formatted = delivery_date.strftime("%Y-%m-%d")

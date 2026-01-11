@@ -426,11 +426,10 @@ async def create_order(
             if order_data.delivery_date:
                 try:
                     if isinstance(order_data.delivery_date, str):
-                        from datetime import datetime as dt
                         try:
-                            date_obj = dt.strptime(order_data.delivery_date, "%Y-%m-%d")
+                            date_obj = datetime.strptime(order_data.delivery_date, "%Y-%m-%d")
                         except:
-                            date_obj = dt.strptime(order_data.delivery_date, "%d.%m.%Y")
+                            date_obj = datetime.strptime(order_data.delivery_date, "%d.%m.%Y")
                         delivery_date_for_slot = date_obj.strftime("%Y-%m-%d")
                     else:
                         delivery_date_for_slot = order_data.delivery_date.strftime("%Y-%m-%d")
