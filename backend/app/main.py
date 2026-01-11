@@ -135,9 +135,18 @@ async def lifespan(app: FastAPI):
             await database._db_service.commit()
             print("[MIGRATION] promos table created successfully")
         else:
-            # Проверяем, существует ли поле max_uses (добавлено позже)
+            # Проверяем структуру таблицы и добавляем недостающие колонки
             promos_columns = await database._db_service.fetch_all("PRAGMA table_info(promos)")
             promos_column_names = [col["name"] for col in promos_columns]
+            
+            # Добавляем колонку value, если её нет (важно!)
+            if "value" not in promos_column_names:
+                print("[MIGRATION] Adding value column to promos table...")
+                await database._db_service.execute(
+                    "ALTER TABLE promos ADD COLUMN value DECIMAL(10, 2) NOT NULL DEFAULT 0"
+                )
+                await database._db_service.commit()
+                print("[MIGRATION] value column added successfully")
             
             if "max_uses" not in promos_column_names:
                 print("[MIGRATION] Adding max_uses column to promos table...")

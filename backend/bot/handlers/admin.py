@@ -61,7 +61,7 @@ async def get_db():
     db = DatabaseService(db_path=settings.DATABASE_PATH)
     await db.connect()
     
-    # Проверяем и создаем таблицу promos, если её нет
+    # Проверяем и создаем таблицу promos, если её нет, или добавляем недостающие колонки
     try:
         promos_table = await db.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='promos'")
         if not promos_table:
@@ -90,6 +90,19 @@ async def get_db():
             """)
             await db.commit()
             print("[MIGRATION] promos table created successfully in bot handler")
+        else:
+            # Проверяем структуру таблицы и добавляем недостающие колонки
+            promos_columns = await db.fetch_all("PRAGMA table_info(promos)")
+            promos_column_names = [col["name"] for col in promos_columns]
+            
+            # Добавляем колонку value, если её нет (важно!)
+            if "value" not in promos_column_names:
+                print("[MIGRATION] Adding value column to promos table in bot handler...")
+                await db.execute(
+                    "ALTER TABLE promos ADD COLUMN value DECIMAL(10, 2) NOT NULL DEFAULT 0"
+                )
+                await db.commit()
+                print("[MIGRATION] value column added successfully in bot handler")
     except Exception as e:
         print(f"[WARNING] Error checking/creating promos table: {e}")
         # Продолжаем работу, возможно таблица уже существует
