@@ -95,14 +95,36 @@ async def get_db():
             promos_columns = await db.fetch_all("PRAGMA table_info(promos)")
             promos_column_names = [col["name"] for col in promos_columns]
             
-            # Добавляем колонку value, если её нет (важно!)
-            if "value" not in promos_column_names:
-                print("[MIGRATION] Adding value column to promos table in bot handler...")
-                await db.execute(
-                    "ALTER TABLE promos ADD COLUMN value DECIMAL(10, 2) NOT NULL DEFAULT 0"
-                )
-                await db.commit()
-                print("[MIGRATION] value column added successfully in bot handler")
+            # Список обязательных колонок с их определениями
+            required_columns = {
+                "value": "DECIMAL(10, 2) NOT NULL DEFAULT 0",
+                "description": "TEXT",
+                "is_active": "INTEGER DEFAULT 1",
+                "use_once": "INTEGER DEFAULT 0",
+                "first_order_only": "INTEGER DEFAULT 0",
+                "shop_id": "INTEGER",
+                "min_order_amount": "DECIMAL(10, 2)",
+                "valid_from": "DATE",
+                "valid_until": "DATE",
+                "max_uses": "INTEGER",
+                "current_uses": "INTEGER DEFAULT 0",
+                "usage_count": "INTEGER DEFAULT 0",
+                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+                "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            }
+            
+            # Добавляем все недостающие колонки
+            for column_name, column_definition in required_columns.items():
+                if column_name not in promos_column_names:
+                    print(f"[MIGRATION] Adding {column_name} column to promos table in bot handler...")
+                    try:
+                        await db.execute(
+                            f"ALTER TABLE promos ADD COLUMN {column_name} {column_definition}"
+                        )
+                        await db.commit()
+                        print(f"[MIGRATION] {column_name} column added successfully in bot handler")
+                    except Exception as e:
+                        print(f"[MIGRATION] Error adding {column_name} column in bot handler: {e}")
     except Exception as e:
         print(f"[WARNING] Error checking/creating promos table: {e}")
         # Продолжаем работу, возможно таблица уже существует

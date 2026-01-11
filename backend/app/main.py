@@ -139,30 +139,36 @@ async def lifespan(app: FastAPI):
             promos_columns = await database._db_service.fetch_all("PRAGMA table_info(promos)")
             promos_column_names = [col["name"] for col in promos_columns]
             
-            # Добавляем колонку value, если её нет (важно!)
-            if "value" not in promos_column_names:
-                print("[MIGRATION] Adding value column to promos table...")
-                await database._db_service.execute(
-                    "ALTER TABLE promos ADD COLUMN value DECIMAL(10, 2) NOT NULL DEFAULT 0"
-                )
-                await database._db_service.commit()
-                print("[MIGRATION] value column added successfully")
+            # Список обязательных колонок с их определениями
+            required_columns = {
+                "value": "DECIMAL(10, 2) NOT NULL DEFAULT 0",
+                "description": "TEXT",
+                "is_active": "INTEGER DEFAULT 1",
+                "use_once": "INTEGER DEFAULT 0",
+                "first_order_only": "INTEGER DEFAULT 0",
+                "shop_id": "INTEGER",
+                "min_order_amount": "DECIMAL(10, 2)",
+                "valid_from": "DATE",
+                "valid_until": "DATE",
+                "max_uses": "INTEGER",
+                "current_uses": "INTEGER DEFAULT 0",
+                "usage_count": "INTEGER DEFAULT 0",
+                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+                "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            }
             
-            if "max_uses" not in promos_column_names:
-                print("[MIGRATION] Adding max_uses column to promos table...")
-                await database._db_service.execute(
-                    "ALTER TABLE promos ADD COLUMN max_uses INTEGER"
-                )
-                await database._db_service.commit()
-                print("[MIGRATION] max_uses column added successfully")
-            
-            if "current_uses" not in promos_column_names:
-                print("[MIGRATION] Adding current_uses column to promos table...")
-                await database._db_service.execute(
-                    "ALTER TABLE promos ADD COLUMN current_uses INTEGER DEFAULT 0"
-                )
-                await database._db_service.commit()
-                print("[MIGRATION] current_uses column added successfully")
+            # Добавляем все недостающие колонки
+            for column_name, column_definition in required_columns.items():
+                if column_name not in promos_column_names:
+                    print(f"[MIGRATION] Adding {column_name} column to promos table...")
+                    try:
+                        await database._db_service.execute(
+                            f"ALTER TABLE promos ADD COLUMN {column_name} {column_definition}"
+                        )
+                        await database._db_service.commit()
+                        print(f"[MIGRATION] {column_name} column added successfully")
+                    except Exception as e:
+                        print(f"[MIGRATION] Error adding {column_name} column: {e}")
         
         # Проверяем, существует ли таблица shop_requests
         shop_requests_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='shop_requests'")
