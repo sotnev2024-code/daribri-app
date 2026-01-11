@@ -1688,6 +1688,7 @@
                 delivery_comment: checkoutState.deliveryComment || null,
                 delivery_date: checkoutState.deliveryDate,
                 delivery_time: checkoutState.deliveryTime,
+                delivery_type: checkoutState.deliveryType || 'delivery',  // 'delivery' или 'pickup'
                 delivery_fee: deliveryFee,
                 promo_code: checkoutState.promoCode || null,
                 promo_discount: checkoutState.promoDiscount || 0,

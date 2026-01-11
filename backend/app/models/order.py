@@ -38,6 +38,7 @@ class OrderBase(BaseModel):
     delivery_address: Optional[str] = None
     delivery_date: Optional[date] = None
     delivery_time: Optional[str] = None  # Время доставки
+    delivery_type: Optional[str] = "delivery"  # 'delivery' или 'pickup'
     recipient_name: Optional[str] = None
     recipient_phone: Optional[str] = None
     comment: Optional[str] = None

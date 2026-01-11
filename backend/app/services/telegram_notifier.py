@@ -83,7 +83,8 @@ class TelegramNotifier:
         delivery_fee: float = 0.0,
         delivery_date: Optional[str] = None,
         delivery_time: Optional[str] = None,
-        customer_telegram_id: Optional[int] = None
+        customer_telegram_id: Optional[int] = None,
+        delivery_type: str = "delivery"
     ) -> bool:
         """
         Отправляет уведомление о новом заказе владельцу магазина.
@@ -119,14 +120,20 @@ class TelegramNotifier:
         else:
             customer_display = customer_name or 'Не указано'
         
-        # Формируем информацию о дате и времени доставки
-        delivery_info = ""
+        # Определяем тип получения заказа
+        is_pickup = delivery_type == 'pickup'
+        
+        # Формируем информацию о дате и времени
+        time_info = ""
         if delivery_date or delivery_time:
-            delivery_info = "\n<b>📅 Доставка:</b> "
+            if is_pickup:
+                time_info = "\n<b>📅 Забор заказа:</b> "
+            else:
+                time_info = "\n<b>📅 Доставка:</b> "
             if delivery_date:
-                delivery_info += delivery_date
+                time_info += delivery_date
             if delivery_time:
-                delivery_info += f" в {delivery_time}"
+                time_info += f" в {delivery_time}"
         
         # Формируем информацию о промокоде
         promo_info = ""
@@ -138,6 +145,12 @@ class TelegramNotifier:
         # Текущее время
         order_time = datetime.now().strftime("%d.%m.%Y %H:%M")
         
+        # Определяем заголовок адреса
+        if is_pickup:
+            address_label = "Адрес магазина (самовывоз)"
+        else:
+            address_label = "Адрес доставки"
+        
         message = f"""
 <b>🛒 Новый заказ!</b>
 
@@ -145,14 +158,14 @@ class TelegramNotifier:
 <b>Номер заказа:</b> {order_number}
 <b>Клиент:</b> {customer_display}
 <b>Телефон:</b> {customer_phone or 'Не указан'}
-<b>Адрес доставки:</b> {delivery_address or 'Не указан'}{delivery_info}
+<b>{address_label}:</b> {delivery_address or 'Не указан'}{time_info}
 
 <b>Товары:</b>
 {items_text}
 """
         
         # Добавляем информацию о стоимости
-        if delivery_fee > 0:
+        if not is_pickup and delivery_fee > 0:
             message += f"\n<b>🚚 Доставка:</b> {delivery_fee:.2f} ₽"
         
         if promo_info:
@@ -269,7 +282,8 @@ class TelegramNotifier:
         delivery_time: Optional[str],
         items: list,
         delivery_fee: float,
-        total_amount: float = 0.0
+        total_amount: float = 0.0,
+        delivery_type: str = "delivery"
     ) -> bool:
         """
         Отправляет сообщение с подтверждением заказа покупателю.
@@ -306,27 +320,38 @@ class TelegramNotifier:
             for item in items
         ])
         
-        # Форматируем временной слот доставки
-        delivery_slot = ""
-        if delivery_date and delivery_time:
-            delivery_slot = f"{delivery_date} в {delivery_time}"
-        elif delivery_date:
-            delivery_slot = delivery_date
-        elif delivery_time:
-            delivery_slot = delivery_time
+        # Определяем тип получения заказа
+        is_pickup = delivery_type == 'pickup'
         
-        # Формируем сообщение
-        delivery_slot_line = f'\n📅 Доставка: {delivery_slot}' if delivery_slot else ''
+        # Формируем временной слот
+        time_slot = ""
+        if delivery_date and delivery_time:
+            time_slot = f"{delivery_date} в {delivery_time}"
+        elif delivery_date:
+            time_slot = delivery_date
+        elif delivery_time:
+            time_slot = delivery_time
+        
+        # Формируем сообщение в зависимости от типа получения
+        if is_pickup:
+            # Самовывоз
+            time_slot_line = f'\n📅 Забор заказа: {time_slot}' if time_slot else ''
+            address_label = 'Адрес магазина'
+            delivery_fee_line = ''  # Для самовывоза не показываем стоимость доставки
+        else:
+            # Доставка
+            time_slot_line = f'\n📅 Доставка: {time_slot}' if time_slot else ''
+            address_label = 'Адрес доставки'
+            delivery_fee_line = f'\n🚚 Доставка: {delivery_fee:.2f} ₽' if delivery_fee > 0 else ''
         
         message = f"""<b>Заказ {order_number} успешно оформлен</b>
 Клиент: {customer_display}
 Телефон: {customer_phone or 'Не указан'}
-Адрес доставки: {delivery_address or 'Не указан'}{delivery_slot_line}
+{address_label}: {delivery_address or 'Не указан'}{time_slot_line}
 
 Товары:
 {items_text}
-
-🚚 Доставка: {delivery_fee:.2f} ₽
+{delivery_fee_line}
 💰 Итого: {total_amount:.2f} ₽
 
 Спасибо за ваш заказ! В ближайшее время с вами свяжется менеджер"""
