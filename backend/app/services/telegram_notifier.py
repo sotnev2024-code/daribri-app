@@ -264,15 +264,11 @@ class TelegramNotifier:
         order_number: str,
         customer_name: Optional[str],
         customer_phone: Optional[str],
-        customer_email: Optional[str],
         delivery_address: Optional[str],
         delivery_date: Optional[str],
         delivery_time: Optional[str],
         items: list,
-        subtotal: float,
         delivery_fee: float,
-        service_fee: float = 0.0,
-        promo_discount: float = 0.0,
         total_amount: float = 0.0
     ) -> bool:
         """
@@ -283,15 +279,11 @@ class TelegramNotifier:
             order_number: Номер заказа
             customer_name: Имя покупателя
             customer_phone: Телефон покупателя
-            customer_email: Email покупателя
             delivery_address: Адрес доставки
             delivery_date: Дата доставки
             delivery_time: Время доставки
             items: Список товаров в заказе
-            subtotal: Сумма товаров
             delivery_fee: Стоимость доставки
-            service_fee: Сервисный сбор
-            promo_discount: Скидка по промокоду
             total_amount: Общая сумма заказа
             
         Returns:
@@ -302,73 +294,41 @@ class TelegramNotifier:
             print(f"[WARNING] BOT_TOKEN not configured, order confirmation not sent to {customer_telegram_id}")
             return False
         
-        # Форматируем дату и время создания заказа
-        order_time = datetime.now().strftime("%d.%m.%Y, %H:%M")
+        # Формируем имя клиента со ссылкой на Telegram профиль
+        if customer_name:
+            customer_display = f'<a href="tg://user?id={customer_telegram_id}">{customer_name}</a>'
+        else:
+            customer_display = '<a href="tg://user?id={customer_telegram_id}">Клиент</a>'
         
         # Форматируем состав заказа
         items_text = "\n".join([
-            f"{item.get('name', 'Товар')} ({item.get('quantity', 1)} шт) {item.get('total', 0):.2f} ₽ x{item.get('quantity', 1)} ШТ"
+            f"• {item.get('name', 'Товар')} × {item.get('quantity', 1)} — {item.get('total', 0):.2f} ₽"
             for item in items
         ])
         
         # Форматируем временной слот доставки
-        delivery_time_slot = ""
+        delivery_slot = ""
         if delivery_date and delivery_time:
-            # Преобразуем дату в формат YYYY-MM-DD если нужно
-            try:
-                if isinstance(delivery_date, str):
-                    # Пробуем разные форматы
-                    try:
-                        date_obj = datetime.strptime(delivery_date, "%Y-%m-%d")
-                    except:
-                        date_obj = datetime.strptime(delivery_date, "%d.%m.%Y")
-                    delivery_date_formatted = date_obj.strftime("%Y-%m-%d")
-                else:
-                    delivery_date_formatted = delivery_date.strftime("%Y-%m-%d")
-                
-                delivery_time_slot = f"{delivery_date_formatted} {delivery_time}"
-            except:
-                delivery_time_slot = f"{delivery_date} {delivery_time}"
+            delivery_slot = f"{delivery_date} в {delivery_time}"
         elif delivery_date:
-            delivery_time_slot = delivery_date
+            delivery_slot = delivery_date
         elif delivery_time:
-            delivery_time_slot = delivery_time
+            delivery_slot = delivery_time
         
-        # Формируем контакты (телефон и email в одной строке)
-        contacts = customer_phone or ""
-        if customer_email:
-            contacts += f", {customer_email}" if contacts else customer_email
-        
-        # Формируем сообщение в формате как на изображении
-        # Формируем части сообщения отдельно, чтобы избежать проблем с обратными слешами в f-string
-        email_line = f'<b>Email:</b> {customer_email}' if customer_email else ''
-        delivery_slot_line = f'<b>Временной слот доставки:</b>\n{delivery_time_slot}' if delivery_time_slot else ''
-        service_fee_line = f'<b>Сервисный сбор:</b> {service_fee:.2f}RUB' if service_fee > 0 else ''
-        
-        message = f"""<b>Заказ №{order_number} успешно оформлен</b>
+        # Формируем сообщение
+        message = f"""<b>Заказ {order_number} успешно оформлен</b>
+Клиент: {customer_display}
+Телефон: {customer_phone or 'Не указан'}
+Адрес доставки: {delivery_address or 'Не указан'}
+{f'📅 Доставка: {delivery_slot}' if delivery_slot else ''}
 
-<b>Способ оплаты:</b> Ссылка на оплату после заказа
-
-<b>Покупатель:</b> {customer_name or 'Не указано'}
-<b>Номер телефона:</b> {customer_phone or 'Не указан'}
-{email_line}
-
-<b>Способ доставки:</b> Доставка
-
-<b>Адрес доставки:</b>
-{delivery_address or 'Не указан'}
-
-{delivery_slot_line}
-
-<b>Состав заказа:</b>
+Товары:
 {items_text}
 
-<b>Стоимость доставки:</b> {delivery_fee:.2f}RUB
-{service_fee_line}
+🚚 Доставка: {delivery_fee:.2f} ₽
+💰 Итого: {total_amount:.2f} ₽
 
-<b>Сумма:</b> {total_amount:.2f} ₽
-
-<i>Спасибо за ваш заказ! В ближайшее время с вами свяжется менеджер</i>"""
+Спасибо за ваш заказ! В ближайшее время с вами свяжется менеджер"""
         
         print(f"[TELEGRAM] Sending order confirmation to customer {customer_telegram_id}")
         print(f"[TELEGRAM] Order: {order_number}, Total: {total_amount:.2f} ₽")

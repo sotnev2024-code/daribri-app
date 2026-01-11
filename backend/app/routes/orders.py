@@ -409,18 +409,6 @@ async def create_order(
     # Отправляем сообщение с подтверждением заказа покупателю
     if current_user.telegram_id:
         try:
-            # Получаем email пользователя из базы данных
-            user_data = await db.fetch_one(
-                "SELECT email FROM users WHERE id = ?",
-                (current_user.id,)
-            )
-            customer_email = user_data.get("email") if user_data else None
-            
-            # Вычисляем сервисный сбор (если есть)
-            # Сервисный сбор = общая сумма - (сумма товаров - промокод + доставка)
-            calculated_total = float(subtotal_amount - promo_discount_amount + delivery_fee)
-            service_fee = max(0, float(total_amount) - calculated_total)
-            
             # Форматируем дату для временного слота
             delivery_date_for_slot = None
             if order_data.delivery_date:
@@ -430,9 +418,9 @@ async def create_order(
                             date_obj = datetime.strptime(order_data.delivery_date, "%Y-%m-%d")
                         except:
                             date_obj = datetime.strptime(order_data.delivery_date, "%d.%m.%Y")
-                        delivery_date_for_slot = date_obj.strftime("%Y-%m-%d")
+                        delivery_date_for_slot = date_obj.strftime("%d.%m.%Y")
                     else:
-                        delivery_date_for_slot = order_data.delivery_date.strftime("%Y-%m-%d")
+                        delivery_date_for_slot = order_data.delivery_date.strftime("%d.%m.%Y")
                 except:
                     delivery_date_for_slot = str(order_data.delivery_date)
             
@@ -441,15 +429,11 @@ async def create_order(
                 order_number=order_dict["order_number"],
                 customer_name=order_data.recipient_name,
                 customer_phone=order_data.recipient_phone,
-                customer_email=customer_email,
                 delivery_address=order_data.delivery_address,
                 delivery_date=delivery_date_for_slot,
                 delivery_time=delivery_time_str,
                 items=order_items_info,
-                subtotal=float(subtotal_amount),
                 delivery_fee=float(delivery_fee),
-                service_fee=service_fee,
-                promo_discount=float(promo_discount_amount),
                 total_amount=float(total_amount)
             )
         except Exception as e:
