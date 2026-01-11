@@ -2364,6 +2364,10 @@ input {
     text-align: center;
 }
 
+.cart-empty .primary-btn {
+    color: #000000;
+}
+
 .cart-summary {
     padding: 20px;
     background: var(--bg-secondary);
