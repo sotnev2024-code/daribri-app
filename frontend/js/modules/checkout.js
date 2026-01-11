@@ -73,6 +73,10 @@
             deliveryTime: null,  // Дата и время не сохраняем
             shopId: null,
             shopCity: null,
+            shopAddress: null,  // Адрес магазина для самовывоза
+            shopLatitude: null,  // Координаты магазина
+            shopLongitude: null,
+            deliveryType: 'delivery',  // 'delivery' или 'pickup'
             items: [],
             promoCode: null,
             promoDiscount: 0,
@@ -234,13 +238,19 @@
             (item.shop_id || item.shopId) === checkoutState.shopId
         );
         
-        // Получаем город магазина для проверки адреса
+        // Получаем данные магазина (город и адрес)
         try {
             const shop = await api.getShop(checkoutState.shopId);
             checkoutState.shopCity = shop.city || shop.city_name || 'Екатеринбург';
+            checkoutState.shopAddress = shop.address || null;
+            checkoutState.shopLatitude = shop.latitude || null;
+            checkoutState.shopLongitude = shop.longitude || null;
         } catch (error) {
             console.error('[CHECKOUT] Error loading shop:', error);
             checkoutState.shopCity = 'Екатеринбург';
+            checkoutState.shopAddress = null;
+            checkoutState.shopLatitude = null;
+            checkoutState.shopLongitude = null;
         }
         
         // Открываем модальное окно
@@ -526,14 +536,114 @@
         const recipientInput = document.getElementById('recipientName');
         const commentInput = document.getElementById('deliveryComment');
         const mapContainer = document.getElementById('deliveryMapContainer');
+        const pickupMapContainer = document.getElementById('pickupMapContainer');
         const nextBtn = document.getElementById('checkoutNext2');
         const useLocationBtn = document.getElementById('useCurrentLocationBtn');
         const stepContent = document.querySelector('#checkoutStep2 .checkout-step-content');
+        const deliverySection = document.getElementById('deliverySection');
+        const pickupSection = document.getElementById('pickupSection');
+        const shopAddressDisplay = document.getElementById('shopAddressDisplay');
+        const shopAddressText = document.getElementById('shopAddressText');
+        const deliveryTypeDelivery = document.getElementById('deliveryTypeDelivery');
+        const deliveryTypePickup = document.getElementById('deliveryTypePickup');
+        const deliveryCommentLabel = document.getElementById('deliveryCommentLabel');
         
         if (!addressInput || !recipientInput || !nextBtn) {
             console.error('[CHECKOUT STEP 2] Elements not found');
             return;
         }
+        
+        // Функция переключения типа получения заказа
+        function switchDeliveryType(type) {
+            checkoutState.deliveryType = type;
+            
+            if (type === 'pickup') {
+                // Самовывоз
+                if (deliverySection) deliverySection.hidden = true;
+                if (pickupSection) pickupSection.hidden = false;
+                if (deliveryTypeDelivery) {
+                    deliveryTypeDelivery.classList.remove('active');
+                    deliveryTypeDelivery.style.borderColor = 'var(--border)';
+                }
+                if (deliveryTypePickup) {
+                    deliveryTypePickup.classList.add('active');
+                    deliveryTypePickup.style.borderColor = 'var(--primary)';
+                }
+                if (deliveryCommentLabel) {
+                    deliveryCommentLabel.textContent = 'Комментарий (опционально)';
+                }
+                
+                // Устанавливаем адрес магазина
+                if (checkoutState.shopAddress) {
+                    const city = checkoutState.shopCity || '';
+                    const fullAddress = checkoutState.shopAddress.toLowerCase().includes(city.toLowerCase()) 
+                        ? checkoutState.shopAddress 
+                        : `г. ${city}, ${checkoutState.shopAddress}`;
+                    checkoutState.address = fullAddress;
+                    if (shopAddressText) shopAddressText.textContent = fullAddress;
+                    
+                    // Загружаем карту с адресом магазина
+                    if (pickupMapContainer) {
+                        if (checkoutState.shopLatitude && checkoutState.shopLongitude) {
+                            loadShopPickupMap(pickupMapContainer, checkoutState.shopLatitude, checkoutState.shopLongitude, fullAddress);
+                        } else {
+                            // Если координат нет, пытаемся геокодировать адрес
+                            fetch(`/api/geocode/geocode?address=${encodeURIComponent(fullAddress)}&city=${encodeURIComponent(city)}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.coordinates && data.coordinates.lat && data.coordinates.lng) {
+                                        checkoutState.shopLatitude = data.coordinates.lat;
+                                        checkoutState.shopLongitude = data.coordinates.lng;
+                                        loadShopPickupMap(pickupMapContainer, data.coordinates.lat, data.coordinates.lng, fullAddress);
+                                    }
+                                })
+                                .catch(err => console.error('[PICKUP MAP] Geocoding error:', err));
+                        }
+                    }
+                }
+                
+                // Обновляем заголовок шага
+                const step2Title = document.getElementById('checkoutStep2Title');
+                if (step2Title) step2Title.textContent = 'Способ получения заказа';
+            } else {
+                // Доставка
+                if (deliverySection) deliverySection.hidden = false;
+                if (pickupSection) pickupSection.hidden = true;
+                if (deliveryTypeDelivery) {
+                    deliveryTypeDelivery.classList.add('active');
+                    deliveryTypeDelivery.style.borderColor = 'var(--primary)';
+                }
+                if (deliveryTypePickup) {
+                    deliveryTypePickup.classList.remove('active');
+                    deliveryTypePickup.style.borderColor = 'var(--border)';
+                }
+                if (deliveryCommentLabel) {
+                    deliveryCommentLabel.textContent = 'Комментарий к адресу (опционально)';
+                }
+                
+                // Загружаем карту доставки
+                if (mapContainer) {
+                    loadDeliveryMap(mapContainer, addressInput, validate);
+                }
+                
+                // Обновляем заголовок шага
+                const step2Title = document.getElementById('checkoutStep2Title');
+                if (step2Title) step2Title.textContent = 'Адрес доставки';
+            }
+            
+            validate();
+        }
+        
+        // Обработчики кнопок выбора типа
+        if (deliveryTypeDelivery) {
+            deliveryTypeDelivery.onclick = () => switchDeliveryType('delivery');
+        }
+        if (deliveryTypePickup) {
+            deliveryTypePickup.onclick = () => switchDeliveryType('pickup');
+        }
+        
+        // Инициализируем тип по умолчанию
+        switchDeliveryType(checkoutState.deliveryType || 'delivery');
         
         // Показываем уведомление о зоне доставки
         const existingNotice = document.getElementById('deliveryZoneNotice');
@@ -708,18 +818,32 @@
         
         // Кнопка "Далее"
         nextBtn.onclick = () => {
-            checkoutState.address = addressInput.value.trim();
             checkoutState.recipientName = recipientInput.value.trim();
             if (commentInput) checkoutState.deliveryComment = commentInput.value;
             
-            if (!checkoutState.address || !checkoutState.recipientName) {
-                showToast('Заполните все обязательные поля', 'error');
-                return;
-            }
-            
-            if (checkoutState.addressIsValid === false) {
-                showToast(`Доставка возможна только в ${checkoutState.shopCity}`, 'error');
-                return;
+            if (checkoutState.deliveryType === 'delivery') {
+                checkoutState.address = addressInput.value.trim();
+                
+                if (!checkoutState.address || !checkoutState.recipientName) {
+                    showToast('Заполните все обязательные поля', 'error');
+                    return;
+                }
+                
+                if (checkoutState.addressIsValid === false) {
+                    showToast(`Доставка возможна только в ${checkoutState.shopCity}`, 'error');
+                    return;
+                }
+            } else {
+                // Самовывоз
+                if (!checkoutState.recipientName) {
+                    showToast('Укажите имя получателя', 'error');
+                    return;
+                }
+                
+                if (!checkoutState.shopAddress) {
+                    showToast('Адрес магазина не указан', 'error');
+                    return;
+                }
             }
             
             showCheckoutStep(3);
@@ -1142,6 +1266,62 @@
         });
     }
     
+    // Загрузка карты магазина для самовывоза
+    async function loadShopPickupMap(container, lat, lng, address) {
+        container.innerHTML = `
+            <div id="pickupMap" style="width:100%;height:300px;border-radius:12px;overflow:hidden;"></div>
+        `;
+        
+        // Загружаем Yandex Maps API
+        if (typeof ymaps === 'undefined') {
+            try {
+                const configResponse = await fetch('/api/config');
+                let apiKey = '';
+                if (configResponse.ok) {
+                    const config = await configResponse.json();
+                    apiKey = config.yandex_api_key || '';
+                }
+                
+                let scriptUrl = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
+                if (apiKey) scriptUrl += `&apikey=${encodeURIComponent(apiKey)}`;
+                
+                const script = document.createElement('script');
+                script.src = scriptUrl;
+                script.onload = () => initShopPickupMap([lat, lng], address);
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('[MAP] Error loading Yandex Maps:', error);
+            }
+        } else {
+            initShopPickupMap([lat, lng], address);
+        }
+    }
+    
+    // Инициализация карты магазина
+    function initShopPickupMap(center, address) {
+        if (typeof ymaps === 'undefined') return;
+        
+        ymaps.ready(() => {
+            const mapElement = document.getElementById('pickupMap');
+            if (!mapElement) return;
+            
+            const map = new ymaps.Map('pickupMap', {
+                center: center,
+                zoom: 15,
+                controls: ['zoomControl']
+            });
+            
+            const placemark = new ymaps.Placemark(center, {
+                balloonContent: address
+            }, {
+                preset: 'islands#redShopIcon'
+            });
+            
+            map.geoObjects.add(placemark);
+            map.balloon.open(center, address);
+        });
+    }
+    
     // ==================== ШАГ 3: ДАТА И ВРЕМЯ ====================
     function initStep3DateTime() {
         console.log('[CHECKOUT STEP 3] Initializing datetime step...');
@@ -1151,10 +1331,30 @@
         const dateInput = document.getElementById('deliveryDate');
         const timeSelect = document.getElementById('deliveryTime');
         const nextBtn = document.getElementById('checkoutNext3');
+        const titleEl = document.getElementById('deliveryTimeTitle');
+        const subtitleEl = document.getElementById('deliveryTimeSubtitle');
+        const descriptionEl = document.getElementById('deliveryTimeDescription');
+        const dateLabelEl = document.getElementById('deliveryDateLabel');
+        const timeLabelEl = document.getElementById('deliveryTimeLabel');
         
         if (!dateInput || !timeSelect || !nextBtn) {
             console.error('[CHECKOUT STEP 3] Elements not found');
             return;
+        }
+        
+        // Обновляем текст в зависимости от типа получения
+        if (checkoutState.deliveryType === 'pickup') {
+            if (titleEl) titleEl.textContent = 'Дата и время забора заказа';
+            if (subtitleEl) subtitleEl.textContent = 'Выберите дату и время забора заказа';
+            if (descriptionEl) descriptionEl.textContent = 'Укажите удобную дату и время для забора заказа';
+            if (dateLabelEl) dateLabelEl.textContent = 'Дата забора заказа';
+            if (timeLabelEl) timeLabelEl.textContent = 'Время забора заказа';
+        } else {
+            if (titleEl) titleEl.textContent = 'Дата и время доставки';
+            if (subtitleEl) subtitleEl.textContent = 'Выберите дату и время доставки';
+            if (descriptionEl) descriptionEl.textContent = 'Укажите удобную дату и время для доставки заказа';
+            if (dateLabelEl) dateLabelEl.textContent = 'Дата доставки';
+            if (timeLabelEl) timeLabelEl.textContent = 'Время доставки';
         }
         
         // Доступные временные слоты
@@ -1224,7 +1424,10 @@
         // Кнопка "Далее"
         nextBtn.onclick = () => {
             if (!validate()) {
-                showToast('Выберите дату и время доставки', 'error');
+                const message = checkoutState.deliveryType === 'pickup' 
+                    ? 'Выберите дату и время забора заказа' 
+                    : 'Выберите дату и время доставки';
+                showToast(message, 'error');
                 return;
             }
             checkoutState.deliveryDate = dateInput.value;

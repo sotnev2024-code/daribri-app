@@ -316,11 +316,12 @@ class TelegramNotifier:
             delivery_slot = delivery_time
         
         # Формируем сообщение
+        delivery_slot_line = f'\n📅 Доставка: {delivery_slot}' if delivery_slot else ''
+        
         message = f"""<b>Заказ {order_number} успешно оформлен</b>
 Клиент: {customer_display}
 Телефон: {customer_phone or 'Не указан'}
-Адрес доставки: {delivery_address or 'Не указан'}
-{f'📅 Доставка: {delivery_slot}' if delivery_slot else ''}
+Адрес доставки: {delivery_address or 'Не указан'}{delivery_slot_line}
 
 Товары:
 {items_text}

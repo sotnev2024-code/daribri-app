@@ -459,7 +459,7 @@
                                 <polyline points="15 18 9 12 15 6"/>
                             </svg>
                         </button>
-                        <h2>Адрес доставки</h2>
+                        <h2 id="checkoutStep2Title">Адрес доставки</h2>
                         <button class="modal-close" id="closeCheckoutModal2">✕</button>
                     </div>
                     <div class="checkout-progress">
@@ -469,29 +469,57 @@
                         <span class="progress-text">Шаг 2 из 3</span>
                     </div>
                     <div class="checkout-step-content">
-                        <h3>Выберите адрес на карте</h3>
-                        <p class="step-description">Нажмите на карту, чтобы указать адрес доставки</p>
-                        <div class="delivery-map-container" id="deliveryMapContainer">
-                            <!-- Карта будет загружена динамически -->
-                        </div>
-                        <div class="address-input-section">
-                            <label for="deliveryAddress">Адрес доставки</label>
-                            <div class="address-input-wrapper">
-                                <input type="text" id="deliveryAddress" placeholder="Начните вводить адрес..." autocomplete="off" autofill="off">
-                                <div class="address-suggestions" id="addressSuggestions" hidden></div>
-                            </div>
-                            <button class="use-current-location-btn" id="useCurrentLocationBtn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                                Использовать текущее местоположение
+                        <div class="delivery-type-selector" style="margin-bottom: 20px;">
+                            <button class="delivery-type-btn active" id="deliveryTypeDelivery" data-type="delivery" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--primary); background: var(--bg-secondary); margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <span>🚚</span>
+                                <span>Доставка</span>
                             </button>
+                            <button class="delivery-type-btn" id="deliveryTypePickup" data-type="pickup" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <span>🏪</span>
+                                <span>Заберу заказ сам</span>
+                            </button>
+                        </div>
+                        <div id="deliverySection">
+                            <h3>Выберите адрес на карте</h3>
+                            <p class="step-description">Нажмите на карту, чтобы указать адрес доставки</p>
+                            <div class="delivery-map-container" id="deliveryMapContainer">
+                                <!-- Карта будет загружена динамически -->
+                            </div>
+                            <div class="address-input-section">
+                                <label for="deliveryAddress">Адрес доставки</label>
+                                <div class="address-input-wrapper">
+                                    <input type="text" id="deliveryAddress" placeholder="Начните вводить адрес..." autocomplete="off" autofill="off">
+                                    <div class="address-suggestions" id="addressSuggestions" hidden></div>
+                                </div>
+                                <button class="use-current-location-btn" id="useCurrentLocationBtn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    Использовать текущее местоположение
+                                </button>
+                            </div>
+                        </div>
+                        <div id="pickupSection" hidden>
+                            <h3>Адрес магазина</h3>
+                            <p class="step-description">Заберите заказ по адресу магазина</p>
+                            <div class="delivery-map-container" id="pickupMapContainer">
+                                <!-- Карта с адресом магазина будет загружена динамически -->
+                            </div>
+                            <div class="shop-address-display" id="shopAddressDisplay" style="padding: 16px; background: var(--bg-secondary); border-radius: 12px; margin-top: 16px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.5em;">📍</span>
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">Адрес магазина:</div>
+                                        <div id="shopAddressText" style="color: var(--text-secondary);"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="address-details-section">
                             <label for="recipientName">Имя получателя</label>
                             <input type="text" id="recipientName" placeholder="Введите имя">
-                            <label for="deliveryComment">Комментарий к адресу (опционально)</label>
+                            <label for="deliveryComment" id="deliveryCommentLabel">Комментарий к адресу (опционально)</label>
                             <textarea id="deliveryComment" rows="2" placeholder="Подъезд, этаж, домофон и т.д."></textarea>
                         </div>
                         <button class="checkout-next-btn" id="checkoutNext2" disabled>
@@ -511,7 +539,7 @@
                                 <polyline points="15 18 9 12 15 6"/>
                             </svg>
                         </button>
-                        <h2>Дата и время доставки</h2>
+                        <h2 id="deliveryTimeTitle">Дата и время доставки</h2>
                         <button class="modal-close" id="closeCheckoutModal3">✕</button>
                     </div>
                     <div class="checkout-progress">
@@ -521,17 +549,17 @@
                         <span class="progress-text">Шаг 3 из 4</span>
                     </div>
                     <div class="checkout-step-content">
-                        <h3>Выберите дату и время доставки</h3>
-                        <p class="step-description">Укажите удобную дату и время для доставки заказа</p>
+                        <h3 id="deliveryTimeSubtitle">Выберите дату и время доставки</h3>
+                        <p class="step-description" id="deliveryTimeDescription">Укажите удобную дату и время для доставки заказа</p>
                         
                         <div class="delivery-datetime-section">
                             <div class="form-group">
-                                <label for="deliveryDate">Дата доставки</label>
+                                <label for="deliveryDate" id="deliveryDateLabel">Дата доставки</label>
                                 <input type="date" id="deliveryDate" class="form-input" required>
                             </div>
                             
                             <div class="form-group">
-                                <label for="deliveryTime">Время доставки</label>
+                                <label for="deliveryTime" id="deliveryTimeLabel">Время доставки</label>
                                 <select id="deliveryTime" class="form-input" required>
                                     <option value="">Выберите время</option>
                                     <option value="09:00-12:00">09:00 - 12:00</option>
@@ -1727,7 +1755,7 @@
     <script src="js/modules/product.js?v=8"></script>
     <script src="js/modules/profile.js?v=1"></script>
     <script src="js/modules/shop.js?v=4"></script>
-    <script src="js/modules/checkout.js?v=16"></script>
+    <script src="js/modules/checkout.js?v=17"></script>
     <script src="js/modules/orders.js?v=2"></script>
     <script src="js/modules/myshop.js?v=11"></script>
     <script src="js/app.js?v=59"></script>
