@@ -23,8 +23,10 @@ async def get_favorites(
         """SELECT f.id as favorite_id, f.created_at as added_at,
                   p.*,
                   s.name as shop_name,
-                  c.name as category_name,
-                  (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
+                  s.id as shop_id,
+                  s.average_rating as shop_rating,
+                  (SELECT COUNT(*) FROM shop_reviews WHERE shop_id = s.id) as shop_reviews_count,
+                  c.name as category_name
            FROM favorites f
            JOIN products p ON f.product_id = p.id
            JOIN shops s ON p.shop_id = s.id
@@ -33,7 +35,49 @@ async def get_favorites(
            ORDER BY f.created_at DESC""",
         (current_user.id,)
     )
-    return favorites
+    
+    # Получаем все медиа для каждого товара и обрабатываем данные
+    result = []
+    for favorite in favorites:
+        favorite_dict = dict(favorite)
+        
+        # Преобразуем Decimal в float для JSON сериализации
+        if favorite_dict.get("shop_rating") is not None:
+            from decimal import Decimal
+            if isinstance(favorite_dict["shop_rating"], Decimal):
+                favorite_dict["shop_rating"] = float(favorite_dict["shop_rating"])
+            elif isinstance(favorite_dict["shop_rating"], str):
+                try:
+                    favorite_dict["shop_rating"] = float(favorite_dict["shop_rating"])
+                except (ValueError, TypeError):
+                    favorite_dict["shop_rating"] = None
+        
+        # Преобразуем shop_reviews_count в int
+        if favorite_dict.get("shop_reviews_count") is not None:
+            if isinstance(favorite_dict["shop_reviews_count"], str):
+                try:
+                    favorite_dict["shop_reviews_count"] = int(favorite_dict["shop_reviews_count"])
+                except (ValueError, TypeError):
+                    favorite_dict["shop_reviews_count"] = 0
+            elif not isinstance(favorite_dict["shop_reviews_count"], int):
+                favorite_dict["shop_reviews_count"] = int(favorite_dict["shop_reviews_count"]) if favorite_dict["shop_reviews_count"] else 0
+        
+        # Получаем все медиа для товара
+        media = await db.fetch_all(
+            """SELECT id, media_type, url, is_primary, sort_order 
+               FROM product_media 
+               WHERE product_id = ? 
+               ORDER BY 
+                   CASE WHEN media_type = 'video' THEN 0 ELSE 1 END,
+                   is_primary DESC, 
+                   sort_order""",
+            (favorite["id"],)
+        )
+        favorite_dict["media"] = [dict(m) for m in media]
+        favorite_dict["primary_image"] = media[0]["url"] if media else None
+        result.append(favorite_dict)
+    
+    return result
 
 
 @router.post("/", response_model=Favorite)

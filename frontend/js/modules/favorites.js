@@ -217,6 +217,13 @@
             if (catalogModule?.createProductCard) {
                 validFavorites.forEach(fav => {
                     try {
+                        // Нормализуем данные - убеждаемся, что у всех есть media
+                        if (!fav.media || !Array.isArray(fav.media) || fav.media.length === 0) {
+                            if (fav.primary_image) {
+                                fav.media = [{ url: fav.primary_image, media_type: 'photo' }];
+                            }
+                        }
+                        
                         const card = catalogModule.createProductCard(fav);
                         if (card) {
                             elements.favoritesGrid.appendChild(card);
@@ -227,6 +234,29 @@
                         console.error('[FAVORITES] Error creating product card:', error, fav);
                     }
                 });
+                
+                // Убеждаемся, что все слайдеры инициализированы после рендеринга
+                setTimeout(() => {
+                    const allSliders = elements.favoritesGrid.querySelectorAll('.product-image-slider');
+                    const initProductCardSlider = catalogModule?.initProductCardSlider || window.initProductCardSlider;
+                    
+                    if (initProductCardSlider) {
+                        allSliders.forEach(slider => {
+                            const productId = slider.dataset.productId;
+                            if (productId) {
+                                const card = slider.closest('.product-card');
+                                if (card) {
+                                    const slides = slider.querySelectorAll('.product-slider-slide');
+                                    if (slides.length > 0 && !slider.dataset.initialized) {
+                                        // Инициализируем слайдер, если он еще не инициализирован
+                                        initProductCardSlider(card, parseInt(productId), slides.length);
+                                        slider.dataset.initialized = 'true';
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }, 100);
             }
         }
         
