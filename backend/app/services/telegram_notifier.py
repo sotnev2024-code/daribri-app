@@ -340,26 +340,31 @@ class TelegramNotifier:
             contacts += f", {customer_email}" if contacts else customer_email
         
         # Формируем сообщение в формате как на изображении
+        # Формируем части сообщения отдельно, чтобы избежать проблем с обратными слешами в f-string
+        email_line = f'<b>Email:</b> {customer_email}' if customer_email else ''
+        delivery_slot_line = f'<b>Временной слот доставки:</b>\n{delivery_time_slot}' if delivery_time_slot else ''
+        service_fee_line = f'<b>Сервисный сбор:</b> {service_fee:.2f}RUB' if service_fee > 0 else ''
+        
         message = f"""<b>Заказ №{order_number} успешно оформлен</b>
 
 <b>Способ оплаты:</b> Ссылка на оплату после заказа
 
 <b>Покупатель:</b> {customer_name or 'Не указано'}
 <b>Номер телефона:</b> {customer_phone or 'Не указан'}
-{f'<b>Email:</b> {customer_email}' if customer_email else ''}
+{email_line}
 
 <b>Способ доставки:</b> Доставка
 
 <b>Адрес доставки:</b>
 {delivery_address or 'Не указан'}
 
-{f'<b>Временной слот доставки:</b>\n{delivery_time_slot}' if delivery_time_slot else ''}
+{delivery_slot_line}
 
 <b>Состав заказа:</b>
 {items_text}
 
 <b>Стоимость доставки:</b> {delivery_fee:.2f}RUB
-{f'<b>Сервисный сбор:</b> {service_fee:.2f}RUB' if service_fee > 0 else ''}
+{service_fee_line}
 
 <b>Сумма:</b> {total_amount:.2f} ₽
 
