@@ -157,6 +157,22 @@ async def lifespan(app: FastAPI):
                 "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
             }
             
+            # Если discount_type существует и имеет NOT NULL без DEFAULT, добавляем DEFAULT
+            if "discount_type" in promos_column_names:
+                discount_type_col = next((col for col in promos_columns if col["name"] == "discount_type"), None)
+                if discount_type_col and discount_type_col.get("notnull") == 1 and not discount_type_col.get("dflt_value"):
+                    print("[MIGRATION] Note: discount_type column exists with NOT NULL constraint")
+                    # SQLite не позволяет напрямую изменить DEFAULT для существующей колонки
+                    # Но мы можем заполнить существующие записи значением по умолчанию
+                    try:
+                        await database._db_service.execute(
+                            "UPDATE promos SET discount_type = promo_type WHERE discount_type IS NULL OR discount_type = ''"
+                        )
+                        await database._db_service.commit()
+                        print("[MIGRATION] Updated existing promos with discount_type = promo_type")
+                    except Exception as e:
+                        print(f"[MIGRATION] Could not update discount_type: {e}")
+            
             # Добавляем все недостающие колонки
             for column_name, column_definition in required_columns.items():
                 if column_name not in promos_column_names:

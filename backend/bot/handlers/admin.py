@@ -1337,17 +1337,29 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
             "usage_count": 0
         }
         
+        # Сначала проверяем структуру таблицы, чтобы определить, какие колонки есть
+        promos_columns_info = await db.fetch_all("PRAGMA table_info(promos)")
+        promos_column_names = [col["name"] for col in promos_columns_info]
+        
+        # Формируем список колонок для INSERT
+        insert_columns = [
+            "code", "promo_type", "value", "description", "is_active",
+            "use_once", "first_order_only", "shop_id", "min_order_amount",
+            "valid_from", "valid_until", "usage_count"
+        ]
+        
+        # Если есть колонка discount_type, добавляем её в запрос
+        if "discount_type" in promos_column_names:
+            insert_columns.append("discount_type")
+        
         # Используем явный SQL запрос с правильными типами данных
         # SQLite автоматически конвертирует строки в DECIMAL для колонок типа DECIMAL
-        query = """
-            INSERT INTO promos (
-                code, promo_type, value, description, is_active, 
-                use_once, first_order_only, shop_id, min_order_amount,
-                valid_from, valid_until, usage_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """
+        columns_str = ", ".join(insert_columns)
+        placeholders_str = ", ".join(["?" for _ in insert_columns])
+        query = f"INSERT INTO promos ({columns_str}) VALUES ({placeholders_str})"
         
-        params = (
+        # Формируем параметры
+        params_list = [
             promo_data["code"],
             promo_data["promo_type"],
             promo_data["value"],  # Строка, SQLite автоматически конвертирует в DECIMAL
@@ -1360,7 +1372,13 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
             promo_data.get("valid_from"),
             promo_data.get("valid_until"),
             promo_data["usage_count"]
-        )
+        ]
+        
+        # Если есть discount_type, добавляем значение (используем promo_type как discount_type)
+        if "discount_type" in promos_column_names:
+            params_list.append(promo_data["promo_type"])  # discount_type = promo_type
+        
+        params = tuple(params_list)
         
         cursor = await db.execute(query, params)
         await db.commit()
