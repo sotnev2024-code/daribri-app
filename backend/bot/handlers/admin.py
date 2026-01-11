@@ -1210,77 +1210,14 @@ async def process_promo_min_amount(message: Message, state: FSMContext):
     
     await state.update_data(min_order_amount=min_amount)
     
-    # Создаем простой календарь для выбора даты
-    from datetime import date, timedelta
-    today = date.today()
-    calendar_keyboard = []
-    
-    # Кнопки для быстрого выбора (сегодня, завтра, через неделю, через месяц)
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="📅 Сегодня", callback_data=f"promo_date:{today.isoformat()}:from"),
-        InlineKeyboardButton(text="📅 Завтра", callback_data=f"promo_date:{(today + timedelta(days=1)).isoformat()}:from")
-    ])
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="📅 Через неделю", callback_data=f"promo_date:{(today + timedelta(days=7)).isoformat()}:from"),
-        InlineKeyboardButton(text="📅 Через месяц", callback_data=f"promo_date:{(today + timedelta(days=30)).isoformat()}:from")
-    ])
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="⏭ Пропустить", callback_data="promo_date:skip:from"),
-        InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")
-    ])
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=calendar_keyboard)
-    
     await message.answer(
         "<b>Шаг 9/10: Дата начала действия</b>\n\n"
-        "Выберите дату начала действия промокода или введите в формате ДД.ММ.ГГГГ\n"
-        "Например: 01.12.2024",
-        reply_markup=keyboard
+        "Введите дату начала действия промокода в формате ДД.ММ.ГГГГ\n"
+        "Например: 01.12.2024\n"
+        "Если начинается сразу, введите '-':",
+        reply_markup=get_cancel_keyboard()
     )
     await state.set_state(PromoCreateStates.waiting_for_valid_from)
-
-
-@router.callback_query(F.data.startswith("promo_date:") & F.data.endswith(":from"))
-async def process_promo_valid_from_callback(callback: CallbackQuery, state: FSMContext):
-    """Обрабатывает выбор даты начала через кнопку."""
-    parts = callback.data.split(":")
-    if parts[1] == "skip":
-        valid_from = None
-    else:
-        valid_from = date.fromisoformat(parts[1])
-    
-    await state.update_data(valid_from=valid_from.isoformat() if valid_from else None)
-    await callback.answer()
-    
-    # Создаем календарь для даты окончания
-    from datetime import date, timedelta
-    today = date.today()
-    calendar_keyboard = []
-    
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="📅 Через неделю", callback_data=f"promo_date:{(today + timedelta(days=7)).isoformat()}:until"),
-        InlineKeyboardButton(text="📅 Через месяц", callback_data=f"promo_date:{(today + timedelta(days=30)).isoformat()}:until")
-    ])
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="📅 Через 3 месяца", callback_data=f"promo_date:{(today + timedelta(days=90)).isoformat()}:until"),
-        InlineKeyboardButton(text="📅 Через год", callback_data=f"promo_date:{(today + timedelta(days=365)).isoformat()}:until")
-    ])
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="⏭ Пропустить", callback_data="promo_date:skip:until"),
-        InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")
-    ])
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=calendar_keyboard)
-    
-    date_text = valid_from.strftime("%d.%m.%Y") if valid_from else "не указана"
-    await callback.message.edit_text(
-        f"<b>Шаг 10/10: Дата окончания действия</b>\n\n"
-        f"Дата начала: <b>{date_text}</b>\n\n"
-        f"Выберите дату окончания действия промокода или введите в формате ДД.ММ.ГГГГ\n"
-        f"Например: 31.12.2024",
-        reply_markup=keyboard
-    )
-    await state.set_state(PromoCreateStates.waiting_for_valid_until)
 
 
 @router.message(PromoCreateStates.waiting_for_valid_from, F.text != "❌ Отменить")
@@ -1293,143 +1230,19 @@ async def process_promo_valid_from(message: Message, state: FSMContext):
         try:
             valid_from = datetime.strptime(text, "%d.%m.%Y").date()
         except ValueError:
-            await message.answer("❌ Неверный формат даты. Используйте кнопки выше или формат ДД.ММ.ГГГГ (например, 01.12.2024):")
+            await message.answer("❌ Неверный формат даты. Используйте формат ДД.ММ.ГГГГ (например, 01.12.2024) или '-' для пропуска:")
             return
     
     await state.update_data(valid_from=valid_from.isoformat() if valid_from else None)
     
-    # Создаем календарь для даты окончания
-    from datetime import date, timedelta
-    today = date.today()
-    calendar_keyboard = []
-    
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="📅 Через неделю", callback_data=f"promo_date:{(today + timedelta(days=7)).isoformat()}:until"),
-        InlineKeyboardButton(text="📅 Через месяц", callback_data=f"promo_date:{(today + timedelta(days=30)).isoformat()}:until")
-    ])
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="📅 Через 3 месяца", callback_data=f"promo_date:{(today + timedelta(days=90)).isoformat()}:until"),
-        InlineKeyboardButton(text="📅 Через год", callback_data=f"promo_date:{(today + timedelta(days=365)).isoformat()}:until")
-    ])
-    calendar_keyboard.append([
-        InlineKeyboardButton(text="⏭ Пропустить", callback_data="promo_date:skip:until"),
-        InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")
-    ])
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=calendar_keyboard)
-    
     await message.answer(
         "<b>Шаг 10/10: Дата окончания действия</b>\n\n"
-        "Выберите дату окончания действия промокода или введите в формате ДД.ММ.ГГГГ\n"
-        "Например: 31.12.2024",
-        reply_markup=keyboard
+        "Введите дату окончания действия промокода в формате ДД.ММ.ГГГГ\n"
+        "Например: 31.12.2024\n"
+        "Если без ограничения по сроку, введите '-':",
+        reply_markup=get_cancel_keyboard()
     )
     await state.set_state(PromoCreateStates.waiting_for_valid_until)
-
-
-@router.callback_query(F.data.startswith("promo_date:") & F.data.endswith(":until"))
-async def process_promo_valid_until_callback(callback: CallbackQuery, state: FSMContext):
-    """Обрабатывает выбор даты окончания через кнопку и сохраняет промокод."""
-    parts = callback.data.split(":")
-    if parts[1] == "skip":
-        valid_until = None
-    else:
-        valid_until = date.fromisoformat(parts[1])
-    
-    await callback.answer()
-    
-    # Получаем данные из state и сохраняем промокод
-    data = await state.get_data()
-    
-    # Обрабатываем valid_from из state
-    valid_from_date = None
-    valid_from_str = data.get("valid_from")
-    if valid_from_str:
-        try:
-            if isinstance(valid_from_str, str):
-                valid_from_date = datetime.fromisoformat(valid_from_str).date()
-            else:
-                valid_from_date = valid_from_str
-        except:
-            pass
-    
-    # Проверяем даты
-    if valid_from_date and valid_until:
-        if valid_from_date > valid_until:
-            await callback.message.edit_text(
-                "❌ Дата начала не может быть позже даты окончания. Попробуйте еще раз:",
-                reply_markup=callback.message.reply_markup
-            )
-            return
-    
-    # Сохраняем промокод
-    try:
-        db = await get_db()
-        
-        # Преобразуем value в Decimal для правильной вставки
-        from decimal import Decimal
-        value_decimal = Decimal(str(data["value"]))
-        
-        promo_data = {
-            "code": data["code"],
-            "promo_type": data["promo_type"],
-            "value": value_decimal,  # Используем Decimal напрямую
-            "description": data.get("description"),
-            "is_active": 1,  # SQLite использует INTEGER для boolean
-            "use_once": 1 if data.get("use_once", False) else 0,
-            "first_order_only": 1 if data.get("first_order_only", False) else 0,
-            "shop_id": data.get("shop_id"),
-            "min_order_amount": Decimal(str(data.get("min_order_amount"))) if data.get("min_order_amount") else None,
-            "valid_from": valid_from_date.isoformat() if valid_from_date else None,
-            "valid_until": valid_until.isoformat() if valid_until else None,
-            "usage_count": 0
-        }
-        
-        # Удаляем None значения, чтобы не было проблем с вставкой
-        promo_data = {k: v for k, v in promo_data.items() if v is not None or k in ["description", "shop_id", "valid_from", "valid_until"]}
-        
-        promo_id = await db.insert("promos", promo_data)
-        await db.commit()
-        await db.disconnect()
-        
-        # Формируем информацию о промокоде
-        promo_info = f"""
-<b>✅ Промокод успешно создан!</b>
-
-<b>ID:</b> {promo_id}
-<b>Код:</b> {data['code']}
-<b>Тип:</b> {data['promo_type']}
-<b>Значение:</b> {data['value']} {"%" if data['promo_type'] == 'percent' else "₽" if data['promo_type'] == 'fixed' else "(бесплатная доставка)"}
-"""
-        
-        if data.get("description"):
-            promo_info += f"<b>Описание:</b> {data['description']}\n"
-        
-        promo_info += f"\n<b>Условия:</b>\n"
-        promo_info += f"• Использовать один раз: {'Да' if data.get('use_once') else 'Нет'}\n"
-        promo_info += f"• Только для первого заказа: {'Да' if data.get('first_order_only') else 'Нет'}\n"
-        
-        if data.get("shop_id"):
-            promo_info += f"• Для магазина ID: {data['shop_id']}\n"
-        
-        if data.get("min_order_amount"):
-            promo_info += f"• Минимальная сумма заказа: {data['min_order_amount']} ₽\n"
-        
-        if valid_from_date:
-            promo_info += f"• Действует с: {valid_from_date.strftime('%d.%m.%Y')}\n"
-        
-        if valid_until:
-            promo_info += f"• Действует до: {valid_until.strftime('%d.%m.%Y')}\n"
-        
-        await callback.message.edit_text(promo_info)
-        await state.clear()
-        
-    except Exception as e:
-        print(f"Error creating promo: {e}")
-        await callback.message.edit_text(
-            f"❌ Ошибка при создании промокода: {str(e)}\n\nПопробуйте еще раз или обратитесь в поддержку.",
-            reply_markup=get_cancel_keyboard()
-        )
 
 
 @router.message(PromoCreateStates.waiting_for_valid_until, F.text != "❌ Отменить")
@@ -1442,7 +1255,7 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
         try:
             valid_until = datetime.strptime(text, "%d.%m.%Y").date()
         except ValueError:
-            await message.answer("❌ Неверный формат даты. Используйте кнопки выше или формат ДД.ММ.ГГГГ (например, 31.12.2024):")
+            await message.answer("❌ Неверный формат даты. Используйте формат ДД.ММ.ГГГГ (например, 31.12.2024) или '-' для пропуска:")
             return
     
     # Этот код теперь в callback обработчике
@@ -1470,30 +1283,53 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
     try:
         db = await get_db()
         
-        # Преобразуем value в Decimal для правильной вставки
-        from decimal import Decimal
-        value_decimal = Decimal(str(data["value"]))
+        # Преобразуем value в строку для правильной вставки в DECIMAL колонку
+        value_str = str(data["value"])
+        min_order_amount_str = str(data.get("min_order_amount")) if data.get("min_order_amount") else None
         
         promo_data = {
             "code": data["code"],
             "promo_type": data["promo_type"],
-            "value": value_decimal,  # Используем Decimal напрямую
+            "value": value_str,  # Используем строку для DECIMAL колонки
             "description": data.get("description"),
             "is_active": 1,  # SQLite использует INTEGER для boolean
             "use_once": 1 if data.get("use_once", False) else 0,
             "first_order_only": 1 if data.get("first_order_only", False) else 0,
             "shop_id": data.get("shop_id"),
-            "min_order_amount": Decimal(str(data.get("min_order_amount"))) if data.get("min_order_amount") else None,
+            "min_order_amount": min_order_amount_str,
             "valid_from": valid_from_date.isoformat() if valid_from_date else None,
             "valid_until": valid_until.isoformat() if valid_until else None,
             "usage_count": 0
         }
         
-        # Удаляем None значения, чтобы не было проблем с вставкой
-        promo_data = {k: v for k, v in promo_data.items() if v is not None or k in ["description", "shop_id", "valid_from", "valid_until"]}
+        # Используем явный SQL запрос с правильными типами данных
+        # SQLite автоматически конвертирует строки в DECIMAL для колонок типа DECIMAL
+        query = """
+            INSERT INTO promos (
+                code, promo_type, value, description, is_active, 
+                use_once, first_order_only, shop_id, min_order_amount,
+                valid_from, valid_until, usage_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
         
-        promo_id = await db.insert("promos", promo_data)
+        params = (
+            promo_data["code"],
+            promo_data["promo_type"],
+            promo_data["value"],  # Строка, SQLite автоматически конвертирует в DECIMAL
+            promo_data.get("description"),
+            promo_data["is_active"],
+            promo_data["use_once"],
+            promo_data["first_order_only"],
+            promo_data.get("shop_id"),
+            promo_data.get("min_order_amount"),
+            promo_data.get("valid_from"),
+            promo_data.get("valid_until"),
+            promo_data["usage_count"]
+        )
+        
+        cursor = await db.execute(query, params)
         await db.commit()
+        promo_id = cursor.lastrowid
         await db.disconnect()
         
         # Формируем информацию о промокоде
