@@ -154,7 +154,28 @@
                 state.products = [];
             }
             
-            console.log('[LOAD] Products loaded:', state.products.length);
+            // Нормализуем данные товаров - убеждаемся, что у всех есть media
+            state.products = state.products.map(product => {
+                // Если нет media, но есть primary_image, создаем media массив
+                if (!product.media || !Array.isArray(product.media) || product.media.length === 0) {
+                    if (product.primary_image) {
+                        product.media = [{ url: product.primary_image, media_type: 'photo' }];
+                    }
+                }
+                return product;
+            });
+            
+            console.log('[LOAD] Products loaded:', state.products.length, 'category:', state.currentCategory);
+            if (state.products.length > 0) {
+                console.log('[LOAD] Sample product structure:', {
+                    id: state.products[0].id,
+                    name: state.products[0].name,
+                    hasMedia: !!state.products[0].media,
+                    mediaLength: state.products[0].media?.length || 0,
+                    hasPrimaryImage: !!state.products[0].primary_image
+                });
+            }
+            
             renderProducts();
         } catch (error) {
             console.error('[LOAD] Error loading products:', error);
@@ -753,8 +774,13 @@
         if (elements.emptyState) elements.emptyState.hidden = true;
         
         state.products.forEach((product) => {
+            // Убеждаемся, что используем правильную функцию создания карточки
             const card = createProductCard(product);
-            if (card) grid.appendChild(card);
+            if (card) {
+                grid.appendChild(card);
+            } else {
+                console.error('[RENDER] Failed to create card for product:', product.id, product.name);
+            }
         });
         
         if (window.App?.favorites?.updateFavoriteButtons) {
