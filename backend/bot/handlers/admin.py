@@ -915,21 +915,46 @@ async def process_promo_code(message: Message, state: FSMContext):
     
     await state.update_data(code=code)
     
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="1️⃣ Процент (%)", callback_data="promo_type:percent")],
+        [InlineKeyboardButton(text="2️⃣ Фиксированная сумма (₽)", callback_data="promo_type:fixed")],
+        [InlineKeyboardButton(text="3️⃣ Бесплатная доставка", callback_data="promo_type:free_delivery")],
+        [InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")]
+    ])
+    
     await message.answer(
         "<b>Шаг 2/10: Тип промокода</b>\n\n"
-        "Выберите тип промокода:\n\n"
-        "1️⃣ <b>percent</b> - Скидка в процентах (например, 10%)\n"
-        "2️⃣ <b>fixed</b> - Скидка фиксированной суммой (например, 500 ₽)\n"
-        "3️⃣ <b>free_delivery</b> - Бесплатная доставка\n\n"
-        "Введите номер (1, 2 или 3) или название типа:",
-        reply_markup=get_cancel_keyboard()
+        "Выберите тип промокода:",
+        reply_markup=keyboard
     )
     await state.set_state(PromoCreateStates.waiting_for_type)
 
 
+@router.callback_query(F.data.startswith("promo_type:"), PromoCreateStates.waiting_for_type)
+async def process_promo_type_callback(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор типа промокода через кнопку."""
+    promo_type = callback.data.split(":")[1]
+    await state.update_data(promo_type=promo_type)
+    await callback.answer()
+    
+    type_texts = {
+        "percent": "процентов (например, 10 для 10%)",
+        "fixed": "рублей (например, 500 для 500 ₽)",
+        "free_delivery": "не требуется (введите 0)"
+    }
+    
+    await callback.message.edit_text(
+        f"<b>Шаг 3/10: Значение скидки</b>\n\n"
+        f"Выбран тип: <b>{promo_type}</b>\n\n"
+        f"Введите значение скидки в {type_texts[promo_type]}:",
+        reply_markup=get_cancel_keyboard()
+    )
+    await state.set_state(PromoCreateStates.waiting_for_value)
+
+
 @router.message(PromoCreateStates.waiting_for_type, F.text != "❌ Отменить")
 async def process_promo_type(message: Message, state: FSMContext):
-    """Обрабатывает тип промокода."""
+    """Обрабатывает тип промокода (для обратной совместимости)."""
     text = message.text.strip().lower()
     
     type_mapping = {
@@ -949,23 +974,11 @@ async def process_promo_type(message: Message, state: FSMContext):
     promo_type = type_mapping.get(text)
     
     if not promo_type:
-        await message.answer("❌ Неверный тип. Введите 1 (percent), 2 (fixed) или 3 (free_delivery):")
+        await message.answer("❌ Неверный тип. Используйте кнопки выше или введите 1 (percent), 2 (fixed) или 3 (free_delivery):")
         return
     
-    await state.update_data(promo_type=promo_type)
-    
-    type_texts = {
-        "percent": "процентов (например, 10 для 10%)",
-        "fixed": "рублей (например, 500 для 500 ₽)",
-        "free_delivery": "не требуется (введите 0)"
-    }
-    
-    await message.answer(
-        f"<b>Шаг 3/10: Значение скидки</b>\n\n"
-        f"Введите значение скидки в {type_texts[promo_type]}:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await state.set_state(PromoCreateStates.waiting_for_value)
+    # Этот код теперь в callback обработчике
+    pass
 
 
 @router.message(PromoCreateStates.waiting_for_value, F.text != "❌ Отменить")
@@ -1006,35 +1019,83 @@ async def process_promo_description(message: Message, state: FSMContext):
     
     await state.update_data(description=description)
     
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Да", callback_data="promo_use_once:1")],
+        [InlineKeyboardButton(text="❌ Нет", callback_data="promo_use_once:0")],
+        [InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")]
+    ])
+    
     await message.answer(
         "<b>Шаг 5/10: Использование один раз</b>\n\n"
-        "Можно ли использовать промокод только один раз?\n\n"
-        "Введите: да / нет / y / n / 1 / 0",
-        reply_markup=get_cancel_keyboard()
+        "Можно ли использовать промокод только один раз?",
+        reply_markup=keyboard
     )
     await state.set_state(PromoCreateStates.waiting_for_use_once)
 
 
+@router.callback_query(F.data.startswith("promo_use_once:"), PromoCreateStates.waiting_for_use_once)
+async def process_promo_use_once_callback(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор 'использовать один раз' через кнопку."""
+    use_once = callback.data.split(":")[1] == "1"
+    await state.update_data(use_once=use_once)
+    await callback.answer()
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Да", callback_data="promo_first_order:1")],
+        [InlineKeyboardButton(text="❌ Нет", callback_data="promo_first_order:0")],
+        [InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")]
+    ])
+    
+    await callback.message.edit_text(
+        "<b>Шаг 6/10: Только для первого заказа</b>\n\n"
+        "Действует ли промокод только для первого заказа пользователя?",
+        reply_markup=keyboard
+    )
+    await state.set_state(PromoCreateStates.waiting_for_first_order_only)
+
+
 @router.message(PromoCreateStates.waiting_for_use_once, F.text != "❌ Отменить")
 async def process_promo_use_once(message: Message, state: FSMContext):
-    """Обрабатывает флаг 'использовать один раз'."""
+    """Обрабатывает флаг 'использовать один раз' (для обратной совместимости)."""
     text = message.text.strip().lower()
     use_once = text in ["да", "yes", "y", "1", "true", "✓"]
     
     await state.update_data(use_once=use_once)
     
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Да", callback_data="promo_first_order:1")],
+        [InlineKeyboardButton(text="❌ Нет", callback_data="promo_first_order:0")],
+        [InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")]
+    ])
+    
     await message.answer(
         "<b>Шаг 6/10: Только для первого заказа</b>\n\n"
-        "Действует ли промокод только для первого заказа пользователя?\n\n"
-        "Введите: да / нет / y / n / 1 / 0",
-        reply_markup=get_cancel_keyboard()
+        "Действует ли промокод только для первого заказа пользователя?",
+        reply_markup=keyboard
     )
     await state.set_state(PromoCreateStates.waiting_for_first_order_only)
 
 
+@router.callback_query(F.data.startswith("promo_first_order:"), PromoCreateStates.waiting_for_first_order_only)
+async def process_promo_first_order_callback(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор 'только для первого заказа' через кнопку."""
+    first_order_only = callback.data.split(":")[1] == "1"
+    await state.update_data(first_order_only=first_order_only)
+    await callback.answer()
+    
+    await callback.message.edit_text(
+        "<b>Шаг 7/10: Для определенного магазина</b>\n\n"
+        "Действует ли промокод только для определенного магазина?\n"
+        "Если нет, введите '-'\n"
+        "Если да, введите ID магазина (число):",
+        reply_markup=get_cancel_keyboard()
+    )
+    await state.set_state(PromoCreateStates.waiting_for_shop_id)
+
+
 @router.message(PromoCreateStates.waiting_for_first_order_only, F.text != "❌ Отменить")
 async def process_promo_first_order(message: Message, state: FSMContext):
-    """Обрабатывает флаг 'только для первого заказа'."""
+    """Обрабатывает флаг 'только для первого заказа' (для обратной совместимости)."""
     text = message.text.strip().lower()
     first_order_only = text in ["да", "yes", "y", "1", "true", "✓"]
     
@@ -1101,19 +1162,82 @@ async def process_promo_min_amount(message: Message, state: FSMContext):
     
     await state.update_data(min_order_amount=min_amount)
     
+    # Создаем простой календарь для выбора даты
+    from datetime import date, timedelta
+    today = date.today()
+    calendar_keyboard = []
+    
+    # Кнопки для быстрого выбора (сегодня, завтра, через неделю, через месяц)
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="📅 Сегодня", callback_data=f"promo_date:{today.isoformat()}:from"),
+        InlineKeyboardButton(text="📅 Завтра", callback_data=f"promo_date:{(today + timedelta(days=1)).isoformat()}:from")
+    ])
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="📅 Через неделю", callback_data=f"promo_date:{(today + timedelta(days=7)).isoformat()}:from"),
+        InlineKeyboardButton(text="📅 Через месяц", callback_data=f"promo_date:{(today + timedelta(days=30)).isoformat()}:from")
+    ])
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="⏭ Пропустить", callback_data="promo_date:skip:from"),
+        InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=calendar_keyboard)
+    
     await message.answer(
         "<b>Шаг 9/10: Дата начала действия</b>\n\n"
-        "Введите дату начала действия промокода в формате ДД.ММ.ГГГГ\n"
-        "Например: 01.12.2024\n"
-        "Если начинается сразу, введите '-':",
-        reply_markup=get_cancel_keyboard()
+        "Выберите дату начала действия промокода или введите в формате ДД.ММ.ГГГГ\n"
+        "Например: 01.12.2024",
+        reply_markup=keyboard
     )
     await state.set_state(PromoCreateStates.waiting_for_valid_from)
 
 
+@router.callback_query(F.data.startswith("promo_date:"), PromoCreateStates.waiting_for_valid_from)
+async def process_promo_valid_from_callback(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор даты начала через кнопку."""
+    parts = callback.data.split(":")
+    if parts[1] == "skip":
+        valid_from = None
+    else:
+        valid_from = date.fromisoformat(parts[1])
+    
+    await state.update_data(valid_from=valid_from.isoformat() if valid_from else None)
+    await callback.answer()
+    
+    # Создаем календарь для даты окончания
+    from datetime import date, timedelta
+    today = date.today()
+    calendar_keyboard = []
+    
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="📅 Через неделю", callback_data=f"promo_date:{(today + timedelta(days=7)).isoformat()}:until"),
+        InlineKeyboardButton(text="📅 Через месяц", callback_data=f"promo_date:{(today + timedelta(days=30)).isoformat()}:until")
+    ])
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="📅 Через 3 месяца", callback_data=f"promo_date:{(today + timedelta(days=90)).isoformat()}:until"),
+        InlineKeyboardButton(text="📅 Через год", callback_data=f"promo_date:{(today + timedelta(days=365)).isoformat()}:until")
+    ])
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="⏭ Пропустить", callback_data="promo_date:skip:until"),
+        InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=calendar_keyboard)
+    
+    date_text = valid_from.strftime("%d.%m.%Y") if valid_from else "не указана"
+    await callback.message.edit_text(
+        f"<b>Шаг 10/10: Дата окончания действия</b>\n\n"
+        f"Дата начала: <b>{date_text}</b>\n\n"
+        f"Выберите дату окончания действия промокода или введите в формате ДД.ММ.ГГГГ\n"
+        f"Например: 31.12.2024",
+        reply_markup=keyboard
+    )
+    await state.set_state(PromoCreateStates.waiting_for_valid_until)
+
+
 @router.message(PromoCreateStates.waiting_for_valid_from, F.text != "❌ Отменить")
 async def process_promo_valid_from(message: Message, state: FSMContext):
-    """Обрабатывает дату начала действия."""
+    """Обрабатывает дату начала действия (для обратной совместимости)."""
     text = message.text.strip()
     valid_from = None
     
@@ -1121,24 +1245,148 @@ async def process_promo_valid_from(message: Message, state: FSMContext):
         try:
             valid_from = datetime.strptime(text, "%d.%m.%Y").date()
         except ValueError:
-            await message.answer("❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 01.12.2024) или '-' для пропуска:")
+            await message.answer("❌ Неверный формат даты. Используйте кнопки выше или формат ДД.ММ.ГГГГ (например, 01.12.2024):")
             return
     
     await state.update_data(valid_from=valid_from.isoformat() if valid_from else None)
     
+    # Создаем календарь для даты окончания
+    from datetime import date, timedelta
+    today = date.today()
+    calendar_keyboard = []
+    
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="📅 Через неделю", callback_data=f"promo_date:{(today + timedelta(days=7)).isoformat()}:until"),
+        InlineKeyboardButton(text="📅 Через месяц", callback_data=f"promo_date:{(today + timedelta(days=30)).isoformat()}:until")
+    ])
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="📅 Через 3 месяца", callback_data=f"promo_date:{(today + timedelta(days=90)).isoformat()}:until"),
+        InlineKeyboardButton(text="📅 Через год", callback_data=f"promo_date:{(today + timedelta(days=365)).isoformat()}:until")
+    ])
+    calendar_keyboard.append([
+        InlineKeyboardButton(text="⏭ Пропустить", callback_data="promo_date:skip:until"),
+        InlineKeyboardButton(text="❌ Отменить", callback_data="promo_cancel")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=calendar_keyboard)
+    
     await message.answer(
         "<b>Шаг 10/10: Дата окончания действия</b>\n\n"
-        "Введите дату окончания действия промокода в формате ДД.ММ.ГГГГ\n"
-        "Например: 31.12.2024\n"
-        "Если без ограничения по сроку, введите '-':",
-        reply_markup=get_cancel_keyboard()
+        "Выберите дату окончания действия промокода или введите в формате ДД.ММ.ГГГГ\n"
+        "Например: 31.12.2024",
+        reply_markup=keyboard
     )
     await state.set_state(PromoCreateStates.waiting_for_valid_until)
 
 
+@router.callback_query(F.data.startswith("promo_date:"), PromoCreateStates.waiting_for_valid_until)
+async def process_promo_valid_until_callback(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор даты окончания через кнопку и сохраняет промокод."""
+    parts = callback.data.split(":")
+    if parts[1] == "skip":
+        valid_until = None
+    else:
+        valid_until = date.fromisoformat(parts[1])
+    
+    await callback.answer()
+    
+    # Получаем данные из state и сохраняем промокод
+    data = await state.get_data()
+    
+    # Обрабатываем valid_from из state
+    valid_from_date = None
+    valid_from_str = data.get("valid_from")
+    if valid_from_str:
+        try:
+            if isinstance(valid_from_str, str):
+                valid_from_date = datetime.fromisoformat(valid_from_str).date()
+            else:
+                valid_from_date = valid_from_str
+        except:
+            pass
+    
+    # Проверяем даты
+    if valid_from_date and valid_until:
+        if valid_from_date > valid_until:
+            await callback.message.edit_text(
+                "❌ Дата начала не может быть позже даты окончания. Попробуйте еще раз:",
+                reply_markup=callback.message.reply_markup
+            )
+            return
+    
+    # Сохраняем промокод
+    try:
+        db = await get_db()
+        
+        # Преобразуем value в Decimal для правильной вставки
+        from decimal import Decimal
+        value_decimal = Decimal(str(data["value"]))
+        
+        promo_data = {
+            "code": data["code"],
+            "promo_type": data["promo_type"],
+            "value": value_decimal,  # Используем Decimal напрямую
+            "description": data.get("description"),
+            "is_active": 1,  # SQLite использует INTEGER для boolean
+            "use_once": 1 if data.get("use_once", False) else 0,
+            "first_order_only": 1 if data.get("first_order_only", False) else 0,
+            "shop_id": data.get("shop_id"),
+            "min_order_amount": Decimal(str(data.get("min_order_amount"))) if data.get("min_order_amount") else None,
+            "valid_from": valid_from_date.isoformat() if valid_from_date else None,
+            "valid_until": valid_until.isoformat() if valid_until else None,
+            "usage_count": 0
+        }
+        
+        # Удаляем None значения, чтобы не было проблем с вставкой
+        promo_data = {k: v for k, v in promo_data.items() if v is not None or k in ["description", "shop_id", "valid_from", "valid_until"]}
+        
+        promo_id = await db.insert("promos", promo_data)
+        await db.commit()
+        await db.disconnect()
+        
+        # Формируем информацию о промокоде
+        promo_info = f"""
+<b>✅ Промокод успешно создан!</b>
+
+<b>ID:</b> {promo_id}
+<b>Код:</b> {data['code']}
+<b>Тип:</b> {data['promo_type']}
+<b>Значение:</b> {data['value']} {"%" if data['promo_type'] == 'percent' else "₽" if data['promo_type'] == 'fixed' else "(бесплатная доставка)"}
+"""
+        
+        if data.get("description"):
+            promo_info += f"<b>Описание:</b> {data['description']}\n"
+        
+        promo_info += f"\n<b>Условия:</b>\n"
+        promo_info += f"• Использовать один раз: {'Да' if data.get('use_once') else 'Нет'}\n"
+        promo_info += f"• Только для первого заказа: {'Да' if data.get('first_order_only') else 'Нет'}\n"
+        
+        if data.get("shop_id"):
+            promo_info += f"• Для магазина ID: {data['shop_id']}\n"
+        
+        if data.get("min_order_amount"):
+            promo_info += f"• Минимальная сумма заказа: {data['min_order_amount']} ₽\n"
+        
+        if valid_from_date:
+            promo_info += f"• Действует с: {valid_from_date.strftime('%d.%m.%Y')}\n"
+        
+        if valid_until:
+            promo_info += f"• Действует до: {valid_until.strftime('%d.%m.%Y')}\n"
+        
+        await callback.message.edit_text(promo_info)
+        await state.clear()
+        
+    except Exception as e:
+        print(f"Error creating promo: {e}")
+        await callback.message.edit_text(
+            f"❌ Ошибка при создании промокода: {str(e)}\n\nПопробуйте еще раз или обратитесь в поддержку.",
+            reply_markup=get_cancel_keyboard()
+        )
+
+
 @router.message(PromoCreateStates.waiting_for_valid_until, F.text != "❌ Отменить")
 async def process_promo_valid_until(message: Message, state: FSMContext):
-    """Обрабатывает дату окончания действия и сохраняет промокод."""
+    """Обрабатывает дату окончания действия и сохраняет промокод (для обратной совместимости)."""
     text = message.text.strip()
     valid_until = None
     
@@ -1146,9 +1394,10 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
         try:
             valid_until = datetime.strptime(text, "%d.%m.%Y").date()
         except ValueError:
-            await message.answer("❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2024) или '-' для пропуска:")
+            await message.answer("❌ Неверный формат даты. Используйте кнопки выше или формат ДД.ММ.ГГГГ (например, 31.12.2024):")
             return
     
+    # Этот код теперь в callback обработчике
     data = await state.get_data()
     
     # Обрабатываем valid_from из state
@@ -1173,20 +1422,27 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
     try:
         db = await get_db()
         
+        # Преобразуем value в Decimal для правильной вставки
+        from decimal import Decimal
+        value_decimal = Decimal(str(data["value"]))
+        
         promo_data = {
             "code": data["code"],
             "promo_type": data["promo_type"],
-            "value": str(data["value"]),
+            "value": value_decimal,  # Используем Decimal напрямую
             "description": data.get("description"),
-            "is_active": True,
-            "use_once": data.get("use_once", False),
-            "first_order_only": data.get("first_order_only", False),
+            "is_active": 1,  # SQLite использует INTEGER для boolean
+            "use_once": 1 if data.get("use_once", False) else 0,
+            "first_order_only": 1 if data.get("first_order_only", False) else 0,
             "shop_id": data.get("shop_id"),
-            "min_order_amount": str(data.get("min_order_amount")) if data.get("min_order_amount") else None,
+            "min_order_amount": Decimal(str(data.get("min_order_amount"))) if data.get("min_order_amount") else None,
             "valid_from": valid_from_date.isoformat() if valid_from_date else None,
             "valid_until": valid_until.isoformat() if valid_until else None,
             "usage_count": 0
         }
+        
+        # Удаляем None значения, чтобы не было проблем с вставкой
+        promo_data = {k: v for k, v in promo_data.items() if v is not None or k in ["description", "shop_id", "valid_from", "valid_until"]}
         
         promo_id = await db.insert("promos", promo_data)
         await db.commit()
@@ -1293,6 +1549,13 @@ async def show_promos_list(callback: CallbackQuery, bot: Bot):
 
 
 @router.message(F.text == "❌ Отменить")
+@router.callback_query(F.data == "promo_cancel")
+async def cancel_promo_creation_callback(callback: CallbackQuery, state: FSMContext):
+    """Отменяет создание промокода через кнопку."""
+    await state.clear()
+    await callback.message.edit_text("❌ Создание промокода отменено.")
+    await callback.answer()
+
 async def cancel_promo_creation(message: Message, state: FSMContext):
     """Отменяет создание промокода."""
     current_state = await state.get_state()
