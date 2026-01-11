@@ -59,14 +59,15 @@ async def get_products(
         # Умный поиск: разбиваем на слова
         # Для одного слова - ищем в любом месте
         # Для нескольких слов - ищем все слова (AND)
-        search_lower = search.lower().strip()
-        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 1]  # Минимум 1 символ
+        # Используем LIKE с COLLATE NOCASE для case-insensitive поиска (работает с кириллицей)
+        search_normalized = search.strip()
+        words = [w.strip() for w in search_normalized.split() if len(w.strip()) >= 1]  # Минимум 1 символ
         
         if len(words) == 1:
             # Одно слово - ищем в любом месте названия, описания или магазина
             word = words[0]
             conditions.append(
-                "(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)"
+                "(p.name LIKE ? COLLATE NOCASE OR p.description LIKE ? COLLATE NOCASE OR s.name LIKE ? COLLATE NOCASE)"
             )
             params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
         elif len(words) > 1:
@@ -75,7 +76,7 @@ async def get_products(
             for word in words:
                 # Ищем слово в названии, описании или названии магазина
                 word_conditions.append(
-                    "(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)"
+                    "(p.name LIKE ? COLLATE NOCASE OR p.description LIKE ? COLLATE NOCASE OR s.name LIKE ? COLLATE NOCASE)"
                 )
                 params.extend([f"%{word}%", f"%{word}%", f"%{word}%"])
             
@@ -83,8 +84,8 @@ async def get_products(
             conditions.append(f"({' AND '.join(word_conditions)})")
         else:
             # Если запрос пустой после обработки, ищем всю фразу
-            conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(s.name) LIKE ?)")
-            params.extend([f"%{search_lower}%", f"%{search_lower}%", f"%{search_lower}%"])
+            conditions.append("(p.name LIKE ? COLLATE NOCASE OR p.description LIKE ? COLLATE NOCASE OR s.name LIKE ? COLLATE NOCASE)")
+            params.extend([f"%{search_normalized}%", f"%{search_normalized}%", f"%{search_normalized}%"])
     
     if min_price is not None:
         conditions.append("COALESCE(p.discount_price, p.price) >= ?")
@@ -106,22 +107,23 @@ async def get_products(
     order_by = "p.is_trending DESC, p.created_at DESC"
     
     if search:
-        search_lower = search.lower().strip()
-        words = [w.strip() for w in search_lower.split() if len(w.strip()) >= 2]
+        search_normalized = search.strip()
+        words = [w.strip() for w in search_normalized.split() if len(w.strip()) >= 1]
         
         if words:
             # Создаём score для релевантности: чем больше слов совпало, тем выше
             relevance_parts = []
             for word in words:
                 # +10 за совпадение в названии, +5 за совпадение в описании, +3 за магазин
-                relevance_parts.append(f"(CASE WHEN LOWER(p.name) LIKE '%{word}%' THEN 10 ELSE 0 END)")
-                relevance_parts.append(f"(CASE WHEN LOWER(p.description) LIKE '%{word}%' THEN 5 ELSE 0 END)")
-                relevance_parts.append(f"(CASE WHEN LOWER(s.name) LIKE '%{word}%' THEN 3 ELSE 0 END)")
+                # Используем COLLATE NOCASE для case-insensitive поиска
+                relevance_parts.append(f"(CASE WHEN p.name LIKE '%{word}%' COLLATE NOCASE THEN 10 ELSE 0 END)")
+                relevance_parts.append(f"(CASE WHEN p.description LIKE '%{word}%' COLLATE NOCASE THEN 5 ELSE 0 END)")
+                relevance_parts.append(f"(CASE WHEN s.name LIKE '%{word}%' COLLATE NOCASE THEN 3 ELSE 0 END)")
             
             # Дополнительные баллы за точное совпадение названия
-            relevance_parts.append(f"(CASE WHEN LOWER(p.name) = '{search_lower}' THEN 100 ELSE 0 END)")
+            relevance_parts.append(f"(CASE WHEN p.name = '{search_normalized}' COLLATE NOCASE THEN 100 ELSE 0 END)")
             # Баллы если название начинается с поискового запроса
-            relevance_parts.append(f"(CASE WHEN LOWER(p.name) LIKE '{search_lower}%' THEN 50 ELSE 0 END)")
+            relevance_parts.append(f"(CASE WHEN p.name LIKE '{search_normalized}%' COLLATE NOCASE THEN 50 ELSE 0 END)")
             
             relevance_score = " + ".join(relevance_parts)
             order_by = f"({relevance_score}) DESC, p.is_trending DESC, p.created_at DESC"
