@@ -4380,6 +4380,10 @@ input {
 }
 
 /* ========== Product Page Styles ========== */
+#productPage .page-header {
+    display: none !important;
+}
+
 .product-page-content {
     flex: 1;
     overflow-y: auto;
