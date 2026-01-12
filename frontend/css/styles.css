@@ -2398,7 +2398,7 @@ input {
     width: 100%;
     padding: 16px;
     background: var(--gradient-primary);
-    color: white;
+    color: #000000;
     font-size: 1rem;
     font-weight: 600;
     border-radius: var(--border-radius-sm);
@@ -5662,7 +5662,7 @@ input {
     width: 100%;
     padding: 16px;
     background: var(--gradient-primary);
-    color: white;
+    color: #000000;
     border: none;
     border-radius: var(--border-radius);
     font-size: 1rem;
