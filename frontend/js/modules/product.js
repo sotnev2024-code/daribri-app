@@ -93,13 +93,16 @@
                 const galleryShareBtn = document.getElementById('shareProductBtn');
                 
                 if (galleryFavoriteBtn) {
+                    // Устанавливаем начальное состояние кнопки
+                    const favoritesModule = window.App?.favorites;
+                    if (favoritesModule?.isProductFavorite) {
+                        const isFavorite = favoritesModule.isProductFavorite(product.id);
+                        galleryFavoriteBtn.classList.toggle('active', isFavorite);
+                    }
+                    
                     galleryFavoriteBtn.onclick = () => {
-                        const favoritesModule = window.App?.favorites;
                         if (favoritesModule?.toggleFavorite) {
                             favoritesModule.toggleFavorite(product.id);
-                            // Обновляем состояние кнопки
-                            const isFavorite = favoritesModule.isProductFavorite?.(product.id);
-                            galleryFavoriteBtn.classList.toggle('active', isFavorite);
                         }
                     };
                 }
@@ -200,11 +203,14 @@
             // Загружаем товары продавца
             await loadSellerProducts(product.shop_id, product.id);
             
-            // Избранное
+            // Избранное - обновляем кнопку в галерее
             const favoritesModule = window.App?.favorites;
-            if (favoritesModule?.isProductFavorite && elements.productFavoriteBtn) {
-                const isFavorite = favoritesModule.isProductFavorite(product.id);
-                elements.productFavoriteBtn.classList.toggle('active', isFavorite);
+            if (favoritesModule?.isProductFavorite) {
+                const galleryFavoriteBtn = document.getElementById('productFavoriteBtn');
+                if (galleryFavoriteBtn) {
+                    const isFavorite = favoritesModule.isProductFavorite(product.id);
+                    galleryFavoriteBtn.classList.toggle('active', isFavorite);
+                }
             }
             
             // Обновляем заголовок страницы

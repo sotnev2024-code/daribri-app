@@ -59,6 +59,7 @@
         const state = getState();
         if (!state) return;
         
+        // Обновляем кнопки в карточках товаров
         document.querySelectorAll('.product-favorite-btn[data-product-id]').forEach(btn => {
             const productId = parseInt(btn.dataset.productId);
             if (!isNaN(productId)) {
@@ -66,6 +67,16 @@
                 btn.classList.toggle('active', isFavorite);
             }
         });
+        
+        // Обновляем кнопку в галерее товара (если страница товара открыта)
+        const galleryFavoriteBtn = document.getElementById('productFavoriteBtn');
+        if (galleryFavoriteBtn) {
+            const state = getState();
+            if (state?.currentProduct?.id) {
+                const isFavorite = isProductFavorite(state.currentProduct.id);
+                galleryFavoriteBtn.classList.toggle('active', isFavorite);
+            }
+        }
     }
     
     // Переключение избранного
@@ -121,13 +132,9 @@
             }
             
             if (utils.updateFavoritesBadge) utils.updateFavoritesBadge();
-            updateFavoriteButtons();
             
-            // Обновляем кнопку избранного на странице товара
-            const productFavoriteBtn = document.getElementById('productFavoriteBtn');
-            if (productFavoriteBtn) {
-                productFavoriteBtn.classList.toggle('active', !isFavorite);
-            }
+            // Обновляем все кнопки избранного (включая кнопку в галерее товара)
+            updateFavoriteButtons();
         } catch (error) {
             console.error('[FAVORITES] Error toggling favorite:', error);
             if (utils.showToast) utils.showToast('Ошибка', 'error');

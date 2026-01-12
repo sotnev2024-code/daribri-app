@@ -4384,6 +4384,10 @@ input {
     display: none !important;
 }
 
+#productPage.page {
+    padding-top: 0 !important;
+}
+
 .product-page-content {
     flex: 1;
     overflow-y: auto;
