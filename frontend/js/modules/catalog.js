@@ -552,17 +552,49 @@
             }
         }
         
-        // Обработчик клика на карточку (делегирование избранного обрабатывается на уровне контейнера)
+        // Обработчик клика на карточку
         card.addEventListener('click', (e) => {
-            // Пропускаем клики на кнопку избранного - она обрабатывается делегированием
+            // Пропускаем клики на кнопку избранного - она обрабатывается отдельно
             if (e.target.closest('.product-favorite-btn') || 
                 e.target.closest('.product-slider-dots') || 
                 e.target.closest('.slider-dot')) return;
             if (window.openProductPage) window.openProductPage(product.id);
         });
         
-        // Индивидуальный обработчик избранного удален - используется делегирование
-        // Это гарантирует работу на всех карточках, включая динамически добавленные
+        // Прямой обработчик избранного - основной способ
+        const favBtn = card.querySelector('.product-favorite-btn');
+        if (favBtn) {
+            // Убеждаемся, что data-product-id установлен
+            if (!favBtn.dataset.productId) {
+                favBtn.dataset.productId = product.id.toString();
+            }
+            
+            // Удаляем старые обработчики, если есть
+            const newFavBtn = favBtn.cloneNode(true);
+            favBtn.parentNode.replaceChild(newFavBtn, favBtn);
+            
+            // Добавляем прямой обработчик
+            newFavBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const productId = this.dataset.productId || product.id;
+                const id = parseInt(productId);
+                console.log('[FAVORITE BUTTON] Clicked, productId:', id, 'toggleFavorite exists:', !!window.toggleFavorite);
+                
+                // Пробуем разные способы вызова функции
+                if (window.toggleFavorite) {
+                    window.toggleFavorite(id);
+                } else if (window.App?.favorites?.toggleFavorite) {
+                    window.App.favorites.toggleFavorite(id);
+                } else {
+                    console.error('[FAVORITE BUTTON] toggleFavorite function not found! Available:', {
+                        windowToggleFavorite: !!window.toggleFavorite,
+                        appFavorites: !!window.App?.favorites,
+                        appToggleFavorite: !!window.App?.favorites?.toggleFavorite
+                    });
+                }
+            }, { once: false, passive: false });
+        }
         
         return card;
     }
@@ -874,6 +906,8 @@
         if (window.App?.favorites?.updateFavoriteButtons) {
             window.App.favorites.updateFavoriteButtons();
         }
+        
+        // Обработчики уже добавлены в createProductCard, дополнительная проверка не нужна
         
         // Убеждаемся, что все слайдеры инициализированы после рендеринга
         // Небольшая задержка для того, чтобы DOM обновился
