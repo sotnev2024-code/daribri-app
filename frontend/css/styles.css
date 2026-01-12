@@ -5654,7 +5654,13 @@ input {
     border-radius: var(--border-radius-xs);
     font-size: 0.9375rem;
     background: var(--bg-secondary);
+    color: var(--text-primary);
     text-transform: uppercase;
+}
+
+.promo-code-input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
 }
 
 .promo-code-input:focus {
