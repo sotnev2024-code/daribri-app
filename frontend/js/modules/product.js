@@ -157,19 +157,26 @@
                         galleryFavoriteBtn.classList.toggle('active', isFavorite);
                     }
                     
-                    galleryFavoriteBtn.onclick = () => {
+                    // Используем addEventListener вместо onclick для надежности
+                    galleryFavoriteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const favoritesModule = window.App?.favorites;
                         if (favoritesModule?.toggleFavorite) {
                             favoritesModule.toggleFavorite(product.id);
+                        } else if (window.toggleFavorite) {
+                            window.toggleFavorite(product.id);
                         }
-                    };
+                    });
                 }
                 
                 if (galleryShareBtn) {
-                    galleryShareBtn.onclick = () => {
+                    // Используем addEventListener вместо onclick для надежности
+                    galleryShareBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
                         if (window.shareProduct) {
                             window.shareProduct(product);
                         }
-                    };
+                    });
                 }
                 
                 if (media.length > 1) {
@@ -481,7 +488,8 @@
                         card.classList.remove('product-card');
                         card.classList.add('seller-product-card');
                         
-                        // Убеждаемся, что кнопка избранного работает правильно
+                        // Убеждаемся, что кнопка избранного имеет правильное начальное состояние
+                        // Обработчик клика обрабатывается делегированием на уровне контейнера
                         const favBtn = card.querySelector('.product-favorite-btn');
                         if (favBtn) {
                             // Устанавливаем правильное начальное состояние кнопки
@@ -490,20 +498,10 @@
                                 const isFavorite = favoritesModule.isProductFavorite(product.id);
                                 favBtn.classList.toggle('active', isFavorite);
                             }
-                            
-                            // Делегирование событий уже настроено на уровне контейнера,
-                            // но оставляем индивидуальный обработчик как fallback
-                            favBtn.addEventListener('click', (e) => {
-                                e.stopPropagation(); // Предотвращаем открытие карточки товара
-                                if (window.toggleFavorite) {
-                                    window.toggleFavorite(product.id);
-                                } else {
-                                    const favoritesModule = window.App?.favorites;
-                                    if (favoritesModule?.toggleFavorite) {
-                                        favoritesModule.toggleFavorite(product.id);
-                                    }
-                                }
-                            });
+                            // Убеждаемся, что data-product-id установлен
+                            if (!favBtn.dataset.productId) {
+                                favBtn.dataset.productId = product.id;
+                            }
                         }
                         
                         sellerProductsGrid.appendChild(card);

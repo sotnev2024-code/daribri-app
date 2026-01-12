@@ -552,22 +552,17 @@
             }
         }
         
-        // Обработчик клика на карточку
+        // Обработчик клика на карточку (делегирование избранного обрабатывается на уровне контейнера)
         card.addEventListener('click', (e) => {
+            // Пропускаем клики на кнопку избранного - она обрабатывается делегированием
             if (e.target.closest('.product-favorite-btn') || 
                 e.target.closest('.product-slider-dots') || 
                 e.target.closest('.slider-dot')) return;
             if (window.openProductPage) window.openProductPage(product.id);
         });
         
-        // Обработчик избранного
-        const favBtn = card.querySelector('.product-favorite-btn');
-        if (favBtn) {
-            favBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (window.toggleFavorite) window.toggleFavorite(product.id);
-            });
-        }
+        // Индивидуальный обработчик избранного удален - используется делегирование
+        // Это гарантирует работу на всех карточках, включая динамически добавленные
         
         return card;
     }
@@ -764,62 +759,75 @@
         const elements = getElements();
         if (!elements) return;
         
+        // Функция обработки клика на кнопку избранного
+        const handleFavoriteClick = (e) => {
+            const favBtn = e.target.closest('.product-favorite-btn');
+            if (favBtn) {
+                e.stopPropagation();
+                e.preventDefault();
+                const productId = favBtn.dataset.productId;
+                if (productId) {
+                    const id = parseInt(productId);
+                    console.log('[FAVORITE DELEGATION] Button clicked, productId:', id);
+                    if (window.toggleFavorite) {
+                        window.toggleFavorite(id);
+                    } else {
+                        const favoritesModule = window.App?.favorites;
+                        if (favoritesModule?.toggleFavorite) {
+                            favoritesModule.toggleFavorite(id);
+                        }
+                    }
+                } else {
+                    console.warn('[FAVORITE DELEGATION] No product-id found on button:', favBtn);
+                }
+            }
+        };
+        
         // Делегирование для основной сетки товаров
         if (elements.productsGrid) {
-            elements.productsGrid.addEventListener('click', (e) => {
-                const favBtn = e.target.closest('.product-favorite-btn');
-                if (favBtn) {
-                    e.stopPropagation();
-                    const productId = favBtn.dataset.productId;
-                    if (productId && window.toggleFavorite) {
-                        window.toggleFavorite(parseInt(productId));
-                    }
-                }
-            });
+            // Удаляем старый обработчик, если есть (для избежания дублирования)
+            const oldHandler = elements.productsGrid._favoriteHandler;
+            if (oldHandler) {
+                elements.productsGrid.removeEventListener('click', oldHandler, true);
+            }
+            elements.productsGrid.addEventListener('click', handleFavoriteClick, true); // useCapture для раннего перехвата
+            elements.productsGrid._favoriteHandler = handleFavoriteClick; // Сохраняем ссылку для возможного удаления
+            console.log('[FAVORITE DELEGATION] Initialized for productsGrid');
         }
         
         // Делегирование для сетки избранного
         if (elements.favoritesGrid) {
-            elements.favoritesGrid.addEventListener('click', (e) => {
-                const favBtn = e.target.closest('.product-favorite-btn');
-                if (favBtn) {
-                    e.stopPropagation();
-                    const productId = favBtn.dataset.productId;
-                    if (productId && window.toggleFavorite) {
-                        window.toggleFavorite(parseInt(productId));
-                    }
-                }
-            });
+            const oldHandler = elements.favoritesGrid._favoriteHandler;
+            if (oldHandler) {
+                elements.favoritesGrid.removeEventListener('click', oldHandler, true);
+            }
+            elements.favoritesGrid.addEventListener('click', handleFavoriteClick, true);
+            elements.favoritesGrid._favoriteHandler = handleFavoriteClick;
+            console.log('[FAVORITE DELEGATION] Initialized for favoritesGrid');
         }
         
         // Делегирование для товаров продавца
         const sellerProductsGrid = document.getElementById('sellerProductsGrid');
         if (sellerProductsGrid) {
-            sellerProductsGrid.addEventListener('click', (e) => {
-                const favBtn = e.target.closest('.product-favorite-btn');
-                if (favBtn) {
-                    e.stopPropagation();
-                    const productId = favBtn.dataset.productId;
-                    if (productId && window.toggleFavorite) {
-                        window.toggleFavorite(parseInt(productId));
-                    }
-                }
-            });
+            const oldHandler = sellerProductsGrid._favoriteHandler;
+            if (oldHandler) {
+                sellerProductsGrid.removeEventListener('click', oldHandler, true);
+            }
+            sellerProductsGrid.addEventListener('click', handleFavoriteClick, true);
+            sellerProductsGrid._favoriteHandler = handleFavoriteClick;
+            console.log('[FAVORITE DELEGATION] Initialized for sellerProductsGrid');
         }
         
         // Делегирование для товаров магазина
         const shopProductsGrid = document.getElementById('shopProductsGrid');
         if (shopProductsGrid) {
-            shopProductsGrid.addEventListener('click', (e) => {
-                const favBtn = e.target.closest('.product-favorite-btn');
-                if (favBtn) {
-                    e.stopPropagation();
-                    const productId = favBtn.dataset.productId;
-                    if (productId && window.toggleFavorite) {
-                        window.toggleFavorite(parseInt(productId));
-                    }
-                }
-            });
+            const oldHandler = shopProductsGrid._favoriteHandler;
+            if (oldHandler) {
+                shopProductsGrid.removeEventListener('click', oldHandler, true);
+            }
+            shopProductsGrid.addEventListener('click', handleFavoriteClick, true);
+            shopProductsGrid._favoriteHandler = handleFavoriteClick;
+            console.log('[FAVORITE DELEGATION] Initialized for shopProductsGrid');
         }
     }
     
