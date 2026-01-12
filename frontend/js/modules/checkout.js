@@ -1435,14 +1435,58 @@
         function validate() {
             const hasDate = !!dateInput.value;
             const hasTime = !!timeSelect.value;
-            nextBtn.disabled = !(hasDate && hasTime);
-            return hasDate && hasTime;
+            
+            // Проверяем, что дата не прошедшая
+            let isDateValid = true;
+            if (hasDate) {
+                const selectedDate = new Date(dateInput.value + 'T00:00:00');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDate < today) {
+                    isDateValid = false;
+                    // Очищаем выбранную дату, если она прошедшая
+                    dateInput.value = '';
+                    checkoutState.deliveryDate = null;
+                    timeSelect.innerHTML = '<option value="">Выберите время</option>';
+                    checkoutState.deliveryTime = null;
+                    timeSelect.value = '';
+                    
+                    const message = checkoutState.deliveryType === 'pickup' 
+                        ? 'Нельзя выбрать прошедшую дату для забора заказа' 
+                        : 'Нельзя выбрать прошедшую дату для доставки';
+                    showToast(message, 'error');
+                }
+            }
+            
+            const isValid = hasDate && hasTime && isDateValid;
+            nextBtn.disabled = !isValid;
+            return isValid;
         }
         
         // Обработчики
         dateInput.addEventListener('change', () => {
-            checkoutState.deliveryDate = dateInput.value;
+            const selectedDate = new Date(dateInput.value + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Проверяем, что выбранная дата не прошедшая
+            if (selectedDate < today) {
+                dateInput.value = '';
+                checkoutState.deliveryDate = null;
+                timeSelect.innerHTML = '<option value="">Выберите время</option>';
+                checkoutState.deliveryTime = null;
+                timeSelect.value = '';
+                
+                const message = checkoutState.deliveryType === 'pickup' 
+                    ? 'Нельзя выбрать прошедшую дату для забора заказа' 
+                    : 'Нельзя выбрать прошедшую дату для доставки';
+                showToast(message, 'error');
+            } else {
+                checkoutState.deliveryDate = dateInput.value;
+            }
             updateTimeSlots();
+            validate();
         });
         
         timeSelect.addEventListener('change', () => {
@@ -1455,6 +1499,27 @@
         
         // Кнопка "Далее"
         nextBtn.onclick = () => {
+            // Дополнительная проверка перед переходом
+            if (dateInput.value) {
+                const selectedDate = new Date(dateInput.value + 'T00:00:00');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDate < today) {
+                    const message = checkoutState.deliveryType === 'pickup' 
+                        ? 'Нельзя выбрать прошедшую дату для забора заказа' 
+                        : 'Нельзя выбрать прошедшую дату для доставки';
+                    showToast(message, 'error');
+                    dateInput.value = '';
+                    checkoutState.deliveryDate = null;
+                    timeSelect.innerHTML = '<option value="">Выберите время</option>';
+                    checkoutState.deliveryTime = null;
+                    timeSelect.value = '';
+                    validate();
+                    return;
+                }
+            }
+            
             if (!validate()) {
                 const message = checkoutState.deliveryType === 'pickup' 
                     ? 'Выберите дату и время забора заказа' 
