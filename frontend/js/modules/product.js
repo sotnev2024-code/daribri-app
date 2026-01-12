@@ -40,6 +40,37 @@
         return '📦';
     }
     
+    // Функция для определения высоты панели Telegram и обновления отступа
+    function updateGalleryHeaderPadding() {
+        const headerBar = document.querySelector('.product-gallery-header-bar');
+        if (!headerBar) return;
+        
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            // Пытаемся определить высоту панели Telegram
+            // Обычно это около 56-60px, но может варьироваться
+            // Используем viewportHeight для расчета, если доступно
+            let telegramPanelHeight = 56; // Базовая высота панели Telegram
+            
+            if (tg.viewportHeight) {
+                // Если viewportHeight доступен, можем попробовать вычислить
+                // Но обычно лучше использовать фиксированное значение
+                telegramPanelHeight = 56;
+            }
+            
+            // Добавляем отступ сверху с учетом панели Telegram и safe area
+            const safeAreaTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0;
+            const additionalPadding = 12; // Дополнительный отступ после панели
+            const totalPadding = telegramPanelHeight + safeAreaTop + additionalPadding;
+            
+            headerBar.style.paddingTop = `${totalPadding}px`;
+        } else {
+            // Если Telegram не доступен, используем стандартный отступ
+            const safeAreaTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0;
+            headerBar.style.paddingTop = `${60 + safeAreaTop}px`;
+        }
+    }
+    
     // Открытие страницы товара
     async function openProductPage(productId) {
         const state = getState();
@@ -228,6 +259,11 @@
             
             // Загружаем товары продавца
             await loadSellerProducts(product.shop_id, product.id);
+            
+            // Обновляем отступ шапки с учетом панели Telegram
+            setTimeout(() => {
+                updateGalleryHeaderPadding();
+            }, 100);
             
             // Избранное - обновляем кнопку в галерее
             const favoritesModule = window.App?.favorites;
@@ -636,6 +672,14 @@
         });
     }
     
+    // Слушаем изменения viewport для обновления отступа
+    const tg = window.Telegram?.WebApp;
+    if (tg && tg.onEvent) {
+        tg.onEvent('viewportChanged', () => {
+            updateGalleryHeaderPadding();
+        });
+    }
+    
     // Экспортируем функции
     window.App = window.App || {};
     window.App.product = {
@@ -646,7 +690,8 @@
         changeGallerySlide,
         goToGallerySlide,
         updateQuantity,
-        addToCart
+        addToCart,
+        updateGalleryHeaderPadding
     };
     
     // Экспортируем как глобальные функции для обратной совместимости
@@ -658,4 +703,5 @@
     window.goToGallerySlide = goToGallerySlide;
     window.updateQuantity = updateQuantity;
     window.addToCart = addToCart;
+    window.updateGalleryHeaderPadding = updateGalleryHeaderPadding;
 })();

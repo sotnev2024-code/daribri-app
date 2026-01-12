@@ -4429,7 +4429,7 @@ input {
 .product-gallery-header-bar {
     background: var(--bg-primary);
     padding: 12px 16px;
-    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-top: calc(60px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--border);
