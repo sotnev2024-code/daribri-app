@@ -898,7 +898,21 @@
         
         if (elements.emptyState) elements.emptyState.hidden = true;
         
-        state.products.forEach((product, index) => {
+        // Применяем клиентские фильтры перед рендерингом
+        let filteredProducts = applyClientFilters(state.products);
+        console.log('[RENDER] Products after client filters:', { 
+            original: state.products.length, 
+            filtered: filteredProducts.length,
+            filters: state.filters 
+        });
+        
+        // Если после фильтрации товаров не осталось, показываем пустое состояние
+        if (filteredProducts.length === 0 && state.products.length > 0) {
+            if (elements.emptyState) elements.emptyState.hidden = false;
+            return;
+        }
+        
+        filteredProducts.forEach((product, index) => {
             // Убеждаемся, что используем правильную функцию создания карточки
             if (index === 0) {
                 console.log('[RENDER] First product data for card:', {
