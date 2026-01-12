@@ -14,6 +14,32 @@
     let currentGallerySlide = 0;
     let gallerySlides = [];
     
+    // Функция для получения иконки категории по названию
+    function getCategoryIcon(categoryName) {
+        if (!categoryName) return '📦';
+        const categoryIcons = {
+            'цветы': '🌸',
+            'кондитерские': '🍰',
+            'подарки': '🎁',
+            'украшения': '💍',
+            'одежда': '👕',
+            'косметика': '💄',
+            'книги': '📚',
+            'игрушки': '🧸',
+            'электроника': '📱',
+            'спорт': '⚽',
+            'дом': '🏠',
+            'авто': '🚗'
+        };
+        const nameLower = categoryName.toLowerCase();
+        for (const [key, icon] of Object.entries(categoryIcons)) {
+            if (nameLower.includes(key)) {
+                return icon;
+            }
+        }
+        return '📦';
+    }
+    
     // Открытие страницы товара
     async function openProductPage(productId) {
         const state = getState();
@@ -33,6 +59,21 @@
             const media = product.media || [];
             if (media.length > 0) {
                 let galleryHTML = '<div class="product-gallery-slider">';
+                
+                // Плашка с названием товара и иконкой
+                // Пытаемся получить иконку категории из разных источников
+                const categoryIcon = product.category_icon || 
+                                    (product.category && product.category.icon) || 
+                                    (product.category_name && getCategoryIcon(product.category_name)) || 
+                                    '📦';
+                galleryHTML += `
+                    <div class="product-gallery-title-bar">
+                        <div class="product-gallery-title-content">
+                            <span class="product-gallery-category-icon">${categoryIcon}</span>
+                            <span class="product-gallery-title">${product.name || ''}</span>
+                        </div>
+                    </div>
+                `;
                 
                 // Кнопки избранное и поделиться в правом верхнем углу
                 galleryHTML += `
