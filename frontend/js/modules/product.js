@@ -491,14 +491,19 @@
                                 favBtn.classList.toggle('active', isFavorite);
                             }
                             
-                            // Переопределяем обработчик клика для правильной работы
-                            favBtn.onclick = (e) => {
+                            // Делегирование событий уже настроено на уровне контейнера,
+                            // но оставляем индивидуальный обработчик как fallback
+                            favBtn.addEventListener('click', (e) => {
                                 e.stopPropagation(); // Предотвращаем открытие карточки товара
-                                const favoritesModule = window.App?.favorites;
-                                if (favoritesModule?.toggleFavorite) {
-                                    favoritesModule.toggleFavorite(product.id);
+                                if (window.toggleFavorite) {
+                                    window.toggleFavorite(product.id);
+                                } else {
+                                    const favoritesModule = window.App?.favorites;
+                                    if (favoritesModule?.toggleFavorite) {
+                                        favoritesModule.toggleFavorite(product.id);
+                                    }
                                 }
-                            };
+                            });
                         }
                         
                         sellerProductsGrid.appendChild(card);

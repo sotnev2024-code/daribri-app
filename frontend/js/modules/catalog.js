@@ -759,6 +759,70 @@
         observer.observe(slider);
     }
     
+    // Инициализация делегирования событий для кнопок избранного
+    function initFavoriteButtonsDelegation() {
+        const elements = getElements();
+        if (!elements) return;
+        
+        // Делегирование для основной сетки товаров
+        if (elements.productsGrid) {
+            elements.productsGrid.addEventListener('click', (e) => {
+                const favBtn = e.target.closest('.product-favorite-btn');
+                if (favBtn) {
+                    e.stopPropagation();
+                    const productId = favBtn.dataset.productId;
+                    if (productId && window.toggleFavorite) {
+                        window.toggleFavorite(parseInt(productId));
+                    }
+                }
+            });
+        }
+        
+        // Делегирование для сетки избранного
+        if (elements.favoritesGrid) {
+            elements.favoritesGrid.addEventListener('click', (e) => {
+                const favBtn = e.target.closest('.product-favorite-btn');
+                if (favBtn) {
+                    e.stopPropagation();
+                    const productId = favBtn.dataset.productId;
+                    if (productId && window.toggleFavorite) {
+                        window.toggleFavorite(parseInt(productId));
+                    }
+                }
+            });
+        }
+        
+        // Делегирование для товаров продавца
+        const sellerProductsGrid = document.getElementById('sellerProductsGrid');
+        if (sellerProductsGrid) {
+            sellerProductsGrid.addEventListener('click', (e) => {
+                const favBtn = e.target.closest('.product-favorite-btn');
+                if (favBtn) {
+                    e.stopPropagation();
+                    const productId = favBtn.dataset.productId;
+                    if (productId && window.toggleFavorite) {
+                        window.toggleFavorite(parseInt(productId));
+                    }
+                }
+            });
+        }
+        
+        // Делегирование для товаров магазина
+        const shopProductsGrid = document.getElementById('shopProductsGrid');
+        if (shopProductsGrid) {
+            shopProductsGrid.addEventListener('click', (e) => {
+                const favBtn = e.target.closest('.product-favorite-btn');
+                if (favBtn) {
+                    e.stopPropagation();
+                    const productId = favBtn.dataset.productId;
+                    if (productId && window.toggleFavorite) {
+                        window.toggleFavorite(parseInt(productId));
+                    }
+                }
+            });
+        }
+    }
+    
     // Рендеринг продуктов
     function renderProducts() {
         const state = getState();
@@ -857,5 +921,12 @@
     window.applyFilters = applyFilters;
     window.resetFilters = resetFilters;
     window.createProductCard = createProductCard;
+    window.initFavoriteButtonsDelegation = initFavoriteButtonsDelegation;
+    
+    // Экспорт для модуля
+    if (window.App) {
+        window.App.catalog = window.App.catalog || {};
+        window.App.catalog.initFavoriteButtonsDelegation = initFavoriteButtonsDelegation;
+    }
 })();
 

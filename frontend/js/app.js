@@ -1088,6 +1088,16 @@ async function init() {
             return;
         }
         
+        // Инициализируем делегирование событий для кнопок избранного
+        const catalogModule = window.App?.catalog;
+        if (catalogModule?.initFavoriteButtonsDelegation) {
+            catalogModule.initFavoriteButtonsDelegation();
+            console.log('[INIT] ✅ Favorite buttons delegation initialized');
+        } else if (window.initFavoriteButtonsDelegation) {
+            window.initFavoriteButtonsDelegation();
+            console.log('[INIT] ✅ Favorite buttons delegation initialized (global)');
+        }
+        
         // Загружаем данные (для всех пользователей)
         console.log('[INIT] Loading categories and products...');
         console.log('[INIT] API baseUrl:', api.baseUrl);
