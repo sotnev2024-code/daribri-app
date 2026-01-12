@@ -312,6 +312,7 @@ function initElements() {
     myShopBtn: document.getElementById('myShopBtn'),
     settingsBtn: document.getElementById('settingsBtn'),
     helpBtn: document.getElementById('helpBtn'),
+    supportBtn: document.getElementById('supportBtn'),
     
     // My Orders
     myOrdersPage: document.getElementById('myOrdersPage'),
@@ -1583,6 +1584,17 @@ function initEventListeners() {
     
     // Помощь
     elements.helpBtn?.addEventListener('click', () => navigateTo('help'));
+    
+    // Поддержка - открыть чат с @SergeyMusinskiy
+    elements.supportBtn?.addEventListener('click', () => {
+        const tg = window.tg || window.Telegram?.WebApp;
+        if (tg && tg.openTelegramLink) {
+            tg.openTelegramLink('https://t.me/SergeyMusinskiy');
+        } else {
+            // Fallback для тестирования вне Telegram
+            window.open('https://t.me/SergeyMusinskiy', '_blank');
+        }
+    });
     
     // Сохранение настроек
     elements.saveSettingsBtn?.addEventListener('click', saveSettings);

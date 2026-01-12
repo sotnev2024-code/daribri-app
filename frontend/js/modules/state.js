@@ -224,6 +224,7 @@ function initElements() {
         myShopBtn: document.getElementById('myShopBtn'),
         settingsBtn: document.getElementById('settingsBtn'),
         helpBtn: document.getElementById('helpBtn'),
+        supportBtn: document.getElementById('supportBtn'),
         
         // Shop Reviews
         shopReviewsPage: document.getElementById('shopReviewsPage'),
