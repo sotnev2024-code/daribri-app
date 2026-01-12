@@ -95,9 +95,10 @@
             
             if (shopSinceDateEl && shop.created_at) {
                 const createdDate = new Date(shop.created_at);
-                shopSinceDateEl.textContent = `Работает с ${createdDate.toLocaleDateString('ru-RU', {
-                    year: 'numeric',
-                    month: 'long'
+                shopSinceDateEl.textContent = `На Дарибри с ${createdDate.toLocaleDateString('ru-RU', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
                 })}`;
             }
             
