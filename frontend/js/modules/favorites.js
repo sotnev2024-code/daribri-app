@@ -65,6 +65,11 @@
             if (!isNaN(productId)) {
                 const isFavorite = isProductFavorite(productId);
                 btn.classList.toggle('active', isFavorite);
+                // Обновляем fill в SVG
+                const svg = btn.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('fill', isFavorite ? '#EF4444' : 'none');
+                }
             }
         });
         
@@ -75,6 +80,11 @@
             if (state?.currentProduct?.id) {
                 const isFavorite = isProductFavorite(state.currentProduct.id);
                 galleryFavoriteBtn.classList.toggle('active', isFavorite);
+                // Обновляем fill в SVG
+                const svg = galleryFavoriteBtn.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('fill', isFavorite ? '#EF4444' : 'none');
+                }
             }
         }
     }
