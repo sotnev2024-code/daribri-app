@@ -127,7 +127,7 @@ class TelegramNotifier:
         time_info = ""
         if delivery_date or delivery_time:
             if is_pickup:
-                time_info = "\n<b>📅 Забор заказа:</b> "
+                time_info = "\n<b>📅 Получение заказа:</b> "
             else:
                 time_info = "\n<b>📅 Доставка:</b> "
             if delivery_date:
@@ -335,7 +335,7 @@ class TelegramNotifier:
         # Формируем сообщение в зависимости от типа получения
         if is_pickup:
             # Самовывоз
-            time_slot_line = f'\n📅 Забор заказа: {time_slot}' if time_slot else ''
+            time_slot_line = f'\n📅 Получение заказа: {time_slot}' if time_slot else ''
             address_label = 'Адрес магазина'
             delivery_fee_line = ''  # Для самовывоза не показываем стоимость доставки
         else:

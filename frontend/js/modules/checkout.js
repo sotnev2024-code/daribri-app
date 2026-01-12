@@ -1376,11 +1376,11 @@
         
         // Обновляем текст в зависимости от типа получения
         if (checkoutState.deliveryType === 'pickup') {
-            if (titleEl) titleEl.textContent = 'Дата и время забора заказа';
-            if (subtitleEl) subtitleEl.textContent = 'Выберите дату и время забора заказа';
-            if (descriptionEl) descriptionEl.textContent = 'Укажите удобную дату и время для забора заказа';
-            if (dateLabelEl) dateLabelEl.textContent = 'Дата забора заказа';
-            if (timeLabelEl) timeLabelEl.textContent = 'Время забора заказа';
+            if (titleEl) titleEl.textContent = 'Дата и время получения заказа';
+            if (subtitleEl) subtitleEl.textContent = 'Выберите дату и время получения заказа';
+            if (descriptionEl) descriptionEl.textContent = 'Укажите удобную дату и время для получения заказа';
+            if (dateLabelEl) dateLabelEl.textContent = 'Дата получения заказа';
+            if (timeLabelEl) timeLabelEl.textContent = 'Время получения заказа';
         } else {
             if (titleEl) titleEl.textContent = 'Дата и время доставки';
             if (subtitleEl) subtitleEl.textContent = 'Выберите дату и время доставки';
@@ -1453,7 +1453,7 @@
                     timeSelect.value = '';
                     
                     const message = checkoutState.deliveryType === 'pickup' 
-                        ? 'Нельзя выбрать прошедшую дату для забора заказа' 
+                        ? 'Нельзя выбрать прошедшую дату для получения заказа' 
                         : 'Нельзя выбрать прошедшую дату для доставки';
                     showToast(message, 'error');
                 }
@@ -1507,7 +1507,7 @@
                 
                 if (selectedDate < today) {
                     const message = checkoutState.deliveryType === 'pickup' 
-                        ? 'Нельзя выбрать прошедшую дату для забора заказа' 
+                        ? 'Нельзя выбрать прошедшую дату для получения заказа' 
                         : 'Нельзя выбрать прошедшую дату для доставки';
                     showToast(message, 'error');
                     dateInput.value = '';
@@ -1522,7 +1522,7 @@
             
             if (!validate()) {
                 const message = checkoutState.deliveryType === 'pickup' 
-                    ? 'Выберите дату и время забора заказа' 
+                    ? 'Выберите дату и время получения заказа' 
                     : 'Выберите дату и время доставки';
                 showToast(message, 'error');
                 return;
@@ -1926,7 +1926,32 @@
         
         const addressEl = document.getElementById('orderSuccessAddress');
         if (addressEl) {
-            addressEl.textContent = checkoutState.address || 'Не указан';
+            // Для самовывоза показываем адрес магазина, для доставки - адрес доставки
+            if (checkoutState.deliveryType === 'pickup') {
+                addressEl.textContent = checkoutState.shopAddress || 'Адрес магазина не указан';
+            } else {
+                addressEl.textContent = checkoutState.address || 'Не указан';
+            }
+        }
+        
+        // Обновляем заголовок секции в зависимости от типа доставки
+        const deliverySectionTitle = document.querySelector('#orderSuccessModal .order-success-section:last-of-type .order-success-section-title');
+        if (deliverySectionTitle) {
+            if (checkoutState.deliveryType === 'pickup') {
+                deliverySectionTitle.textContent = 'Информация о получении заказа';
+            } else {
+                deliverySectionTitle.textContent = 'Информация о доставке';
+            }
+        }
+        
+        // Обновляем label для адреса
+        const addressLabel = document.querySelector('#orderSuccessModal .order-delivery-item:last-child .order-delivery-label');
+        if (addressLabel) {
+            if (checkoutState.deliveryType === 'pickup') {
+                addressLabel.textContent = 'Адрес получения:';
+            } else {
+                addressLabel.textContent = 'Адрес:';
+            }
         }
         
         // Кнопка "Продолжить покупки"
