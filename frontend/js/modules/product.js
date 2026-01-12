@@ -157,26 +157,54 @@
                         galleryFavoriteBtn.classList.toggle('active', isFavorite);
                     }
                     
-                    // Используем addEventListener вместо onclick для надежности
-                    galleryFavoriteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const favoritesModule = window.App?.favorites;
-                        if (favoritesModule?.toggleFavorite) {
-                            favoritesModule.toggleFavorite(product.id);
-                        } else if (window.toggleFavorite) {
-                            window.toggleFavorite(product.id);
-                        }
-                    });
+                    // Удаляем старые обработчики через замену элемента
+                    const newFavBtn = galleryFavoriteBtn.cloneNode(true);
+                    galleryFavoriteBtn.parentNode.replaceChild(newFavBtn, galleryFavoriteBtn);
+                    
+                    // Привязываем обработчик с capture для раннего перехвата
+                    const attachFavoriteHandler = (element) => {
+                        element.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            console.log('[GALLERY FAVORITE] Clicked, productId:', product.id);
+                            const favoritesModule = window.App?.favorites;
+                            if (favoritesModule?.toggleFavorite) {
+                                favoritesModule.toggleFavorite(product.id);
+                            } else if (window.toggleFavorite) {
+                                window.toggleFavorite(product.id);
+                            } else {
+                                console.error('[GALLERY FAVORITE] toggleFavorite not found!');
+                            }
+                        }, { capture: true, passive: false });
+                    };
+                    
+                    attachFavoriteHandler(newFavBtn);
+                    const svg = newFavBtn.querySelector('svg');
+                    if (svg) attachFavoriteHandler(svg);
                 }
                 
                 if (galleryShareBtn) {
-                    // Используем addEventListener вместо onclick для надежности
-                    galleryShareBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (window.shareProduct) {
-                            window.shareProduct(product);
-                        }
-                    });
+                    // Удаляем старые обработчики через замену элемента
+                    const newShareBtn = galleryShareBtn.cloneNode(true);
+                    galleryShareBtn.parentNode.replaceChild(newShareBtn, galleryShareBtn);
+                    
+                    // Привязываем обработчик с capture для раннего перехвата
+                    const attachShareHandler = (element) => {
+                        element.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            console.log('[GALLERY SHARE] Clicked, productId:', product.id);
+                            if (window.shareProduct) {
+                                window.shareProduct(product);
+                            } else {
+                                console.error('[GALLERY SHARE] shareProduct not found!');
+                            }
+                        }, { capture: true, passive: false });
+                    };
+                    
+                    attachShareHandler(newShareBtn);
+                    const svg = newShareBtn.querySelector('svg');
+                    if (svg) attachShareHandler(svg);
                 }
                 
                 if (media.length > 1) {

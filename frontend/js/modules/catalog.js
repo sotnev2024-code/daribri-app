@@ -569,31 +569,49 @@
                 favBtn.dataset.productId = product.id.toString();
             }
             
-            // Удаляем старые обработчики, если есть
+            // Сохраняем productId для использования в обработчике
+            const productId = product.id;
+            
+            // Удаляем все старые обработчики через замену элемента
             const newFavBtn = favBtn.cloneNode(true);
             favBtn.parentNode.replaceChild(newFavBtn, favBtn);
             
-            // Добавляем прямой обработчик
-            newFavBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                const productId = this.dataset.productId || product.id;
-                const id = parseInt(productId);
-                console.log('[FAVORITE BUTTON] Clicked, productId:', id, 'toggleFavorite exists:', !!window.toggleFavorite);
-                
-                // Пробуем разные способы вызова функции
-                if (window.toggleFavorite) {
-                    window.toggleFavorite(id);
-                } else if (window.App?.favorites?.toggleFavorite) {
-                    window.App.favorites.toggleFavorite(id);
-                } else {
-                    console.error('[FAVORITE BUTTON] toggleFavorite function not found! Available:', {
-                        windowToggleFavorite: !!window.toggleFavorite,
-                        appFavorites: !!window.App?.favorites,
-                        appToggleFavorite: !!window.App?.favorites?.toggleFavorite
-                    });
+            // Добавляем обработчик на сам элемент и на SVG внутри
+            const attachHandler = (element) => {
+                element.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const btn = e.currentTarget.closest('.product-favorite-btn') || e.currentTarget;
+                    const id = parseInt(btn.dataset.productId || productId);
+                    console.log('[FAVORITE BUTTON] Clicked, productId:', id, 'toggleFavorite exists:', !!window.toggleFavorite, 'target:', e.target.tagName);
+                    
+                    // Пробуем разные способы вызова функции
+                    if (window.toggleFavorite) {
+                        window.toggleFavorite(id);
+                    } else if (window.App?.favorites?.toggleFavorite) {
+                        window.App.favorites.toggleFavorite(id);
+                    } else {
+                        console.error('[FAVORITE BUTTON] toggleFavorite function not found! Available:', {
+                            windowToggleFavorite: !!window.toggleFavorite,
+                            appFavorites: !!window.App?.favorites,
+                            appToggleFavorite: !!window.App?.favorites?.toggleFavorite
+                        });
+                    }
+                }, { capture: true, passive: false });
+            };
+            
+            // Привязываем обработчик к кнопке
+            attachHandler(newFavBtn);
+            
+            // Также привязываем к SVG и path внутри (на случай клика по иконке)
+            const svg = newFavBtn.querySelector('svg');
+            if (svg) {
+                attachHandler(svg);
+                const path = svg.querySelector('path');
+                if (path) {
+                    attachHandler(path);
                 }
-            }, { once: false, passive: false });
+            }
         }
         
         return card;
