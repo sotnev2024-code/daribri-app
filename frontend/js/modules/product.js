@@ -444,9 +444,27 @@
                         // Меняем класс для стилизации товаров продавца
                         card.classList.remove('product-card');
                         card.classList.add('seller-product-card');
-                        // Убираем избранное из карточек продавца (опционально)
+                        
+                        // Убеждаемся, что кнопка избранного работает правильно
                         const favBtn = card.querySelector('.product-favorite-btn');
-                        if (favBtn) favBtn.remove();
+                        if (favBtn) {
+                            // Устанавливаем правильное начальное состояние кнопки
+                            const favoritesModule = window.App?.favorites;
+                            if (favoritesModule?.isProductFavorite) {
+                                const isFavorite = favoritesModule.isProductFavorite(product.id);
+                                favBtn.classList.toggle('active', isFavorite);
+                            }
+                            
+                            // Переопределяем обработчик клика для правильной работы
+                            favBtn.onclick = (e) => {
+                                e.stopPropagation(); // Предотвращаем открытие карточки товара
+                                const favoritesModule = window.App?.favorites;
+                                if (favoritesModule?.toggleFavorite) {
+                                    favoritesModule.toggleFavorite(product.id);
+                                }
+                            };
+                        }
+                        
                         sellerProductsGrid.appendChild(card);
                         return;
                     }
@@ -456,6 +474,12 @@
                 console.error('[PRODUCT] createProductCard not available, cannot render seller product:', product.id);
                 return;
             });
+            
+            // Обновляем все кнопки избранного после загрузки товаров продавца
+            const favoritesModule = window.App?.favorites;
+            if (favoritesModule?.updateFavoriteButtons) {
+                favoritesModule.updateFavoriteButtons();
+            }
         } catch (error) {
             console.error('Error loading seller products:', error);
             const sellerProductsSection = document.getElementById('sellerProductsSection');
