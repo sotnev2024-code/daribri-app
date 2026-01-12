@@ -4477,8 +4477,8 @@ input {
 
 .product-gallery-share-btn,
 .product-gallery-favorite-btn {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.9);
     border: none;
@@ -4486,9 +4486,8 @@ input {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: white;
+    color: var(--text-muted);
     transition: var(--transition);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .product-gallery-share-btn:active,
@@ -4505,6 +4504,7 @@ input {
 .product-gallery-favorite-btn.active svg {
     fill: #EF4444 !important;
     stroke: #EF4444;
+    stroke-width: 2;
 }
 
 .product-gallery-favorite-btn:not(.active) svg {
