@@ -1032,15 +1032,14 @@ input {
 
 .product-favorite-btn.active {
     color: #EF4444;
-    background: rgba(239, 68, 68, 0.15);
-    border: 2px solid #EF4444;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
 }
 
 .product-favorite-btn.active svg {
     fill: #EF4444 !important;
     stroke: #EF4444;
     stroke-width: 2;
-    filter: drop-shadow(0 1px 2px rgba(239, 68, 68, 0.3));
 }
 
 .product-favorite-btn:not(.active) svg {
@@ -4481,7 +4480,7 @@ input {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(128, 128, 128, 0.7);
+    background: rgba(255, 255, 255, 0.9);
     border: none;
     display: flex;
     align-items: center;
@@ -4495,12 +4494,12 @@ input {
 .product-gallery-share-btn:active,
 .product-gallery-favorite-btn:active {
     transform: scale(0.95);
-    background: rgba(128, 128, 128, 0.9);
+    background: rgba(255, 255, 255, 0.95);
 }
 
 .product-gallery-favorite-btn.active {
     color: #EF4444;
-    background: rgba(239, 68, 68, 0.7);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 .product-gallery-favorite-btn.active svg {
