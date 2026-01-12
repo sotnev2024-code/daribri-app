@@ -60,17 +60,12 @@
             if (media.length > 0) {
                 let galleryHTML = '<div class="product-gallery-slider">';
                 
-                // Плашка с названием товара и иконкой
-                // Пытаемся получить иконку категории из разных источников
-                const categoryIcon = product.category_icon || 
-                                    (product.category && product.category.icon) || 
-                                    (product.category_name && getCategoryIcon(product.category_name)) || 
-                                    '📦';
+                // Мини-шапка с логотипом и иконкой
                 galleryHTML += `
-                    <div class="product-gallery-title-bar">
-                        <div class="product-gallery-title-content">
-                            <span class="product-gallery-category-icon">${categoryIcon}</span>
-                            <span class="product-gallery-title">${product.name || ''}</span>
+                    <div class="product-gallery-header">
+                        <div class="product-gallery-logo">
+                            <img src="images/icons/icon.png" alt="Дарибри" class="product-gallery-logo-icon">
+                            <span class="product-gallery-logo-text">Дарибри</span>
                         </div>
                     </div>
                 `;
