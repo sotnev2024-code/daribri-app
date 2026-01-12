@@ -26,7 +26,6 @@ const state = {
         minPrice: null,
         maxPrice: null,
         discounted: false,
-        inStock: true,
         trending: false,
     },
 };
@@ -56,7 +55,8 @@ function initElements() {
         closeFilterModal: document.getElementById('closeFilterModal'),
         filterMinPrice: document.getElementById('filterMinPrice'),
         filterMaxPrice: document.getElementById('filterMaxPrice'),
-        filterInStock: document.getElementById('filterInStock'),
+        filterDiscounted: document.getElementById('filterDiscounted'),
+        filterTrending: document.getElementById('filterTrending'),
         resetFilters: document.getElementById('resetFilters'),
         applyFilters: document.getElementById('applyFilters'),
         

@@ -130,7 +130,8 @@
                 ...options,
                 minPrice: state.filters.minPrice,
                 maxPrice: state.filters.maxPrice,
-                inStock: state.filters.inStock !== false,
+                discounted: state.filters.discounted,
+                trending: state.filters.trending,
             };
             
             let products;
@@ -193,10 +194,6 @@
         if (!state) return products;
         
         return products.filter(product => {
-            if (state.filters.inStock && (!product.quantity || product.quantity <= 0)) {
-                return false;
-            }
-            
             const price = parseFloat(product.discount_price || product.price);
             if (state.filters.minPrice !== null && price < state.filters.minPrice) {
                 return false;
@@ -229,8 +226,11 @@
         if (elements.filterMaxPrice) {
             elements.filterMaxPrice.value = state.filters.maxPrice || '';
         }
-        if (elements.filterInStock) {
-            elements.filterInStock.checked = state.filters.inStock !== false;
+        if (elements.filterDiscounted) {
+            elements.filterDiscounted.checked = state.filters.discounted || false;
+        }
+        if (elements.filterTrending) {
+            elements.filterTrending.checked = state.filters.trending || false;
         }
         
         elements.filterModal.hidden = false;
@@ -250,7 +250,8 @@
         
         state.filters.minPrice = elements.filterMinPrice?.value ? parseFloat(elements.filterMinPrice.value) : null;
         state.filters.maxPrice = elements.filterMaxPrice?.value ? parseFloat(elements.filterMaxPrice.value) : null;
-        state.filters.inStock = elements.filterInStock?.checked !== false;
+        state.filters.discounted = elements.filterDiscounted?.checked || false;
+        state.filters.trending = elements.filterTrending?.checked || false;
         
         console.log('[FILTERS] Applied filters:', state.filters);
         
@@ -266,12 +267,14 @@
         state.filters = {
             minPrice: null,
             maxPrice: null,
-            inStock: true,
+            discounted: false,
+            trending: false,
         };
         
         if (elements.filterMinPrice) elements.filterMinPrice.value = '';
         if (elements.filterMaxPrice) elements.filterMaxPrice.value = '';
-        if (elements.filterInStock) elements.filterInStock.checked = true;
+        if (elements.filterDiscounted) elements.filterDiscounted.checked = false;
+        if (elements.filterTrending) elements.filterTrending.checked = false;
         
         console.log('[FILTERS] Filters reset');
         

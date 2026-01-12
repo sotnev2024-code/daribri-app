@@ -23,7 +23,8 @@ const state = {
         minPrice: null,
         maxPrice: null,
         discounted: false,
-        inStock: true,
+        discounted: false,
+        trending: false,
         trending: false,
     },
 };
@@ -240,7 +241,8 @@ function initElements() {
     closeFilterModal: document.getElementById('closeFilterModal'),
     filterMinPrice: document.getElementById('filterMinPrice'),
     filterMaxPrice: document.getElementById('filterMaxPrice'),
-    filterInStock: document.getElementById('filterInStock'),
+    filterDiscounted: document.getElementById('filterDiscounted'),
+    filterTrending: document.getElementById('filterTrending'),
     resetFilters: document.getElementById('resetFilters'),
     applyFilters: document.getElementById('applyFilters'),
     
@@ -1265,8 +1267,11 @@ function openFilterModal() {
     if (elements.filterMaxPrice) {
         elements.filterMaxPrice.value = state.filters.maxPrice || '';
     }
-    if (elements.filterInStock) {
-        elements.filterInStock.checked = state.filters.inStock !== false;
+    if (elements.filterDiscounted) {
+        elements.filterDiscounted.checked = state.filters.discounted || false;
+    }
+    if (elements.filterTrending) {
+        elements.filterTrending.checked = state.filters.trending || false;
     }
     
     elements.filterModal.hidden = false;
@@ -1285,7 +1290,8 @@ function applyFilters() {
     // Сохраняем значения из формы в state
     state.filters.minPrice = elements.filterMinPrice?.value ? parseFloat(elements.filterMinPrice.value) : null;
     state.filters.maxPrice = elements.filterMaxPrice?.value ? parseFloat(elements.filterMaxPrice.value) : null;
-    state.filters.inStock = elements.filterInStock?.checked !== false;
+    state.filters.discounted = elements.filterDiscounted?.checked || false;
+    state.filters.trending = elements.filterTrending?.checked || false;
     
     console.log('[FILTERS] Applied filters:', state.filters);
     
@@ -1300,13 +1306,15 @@ function resetFilters() {
     state.filters = {
         minPrice: null,
         maxPrice: null,
-        inStock: true,
+        discounted: false,
+        trending: false,
     };
     
     // Очищаем поля формы
     if (elements.filterMinPrice) elements.filterMinPrice.value = '';
     if (elements.filterMaxPrice) elements.filterMaxPrice.value = '';
-    if (elements.filterInStock) elements.filterInStock.checked = true;
+    if (elements.filterDiscounted) elements.filterDiscounted.checked = false;
+    if (elements.filterTrending) elements.filterTrending.checked = false;
     
     console.log('[FILTERS] Filters reset');
     
