@@ -260,7 +260,6 @@ function initElements() {
     // Product Page
     productPage: document.getElementById('productPage'),
     productBackBtn: document.getElementById('productBackBtn'),
-    productPageTitle: document.getElementById('productPageTitle'),
     productGallery: document.getElementById('productGallery'),
     productName: document.getElementById('productName'),
     productShop: document.getElementById('productShop'),
