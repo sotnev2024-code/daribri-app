@@ -87,7 +87,7 @@
                     const productIdNum = typeof productId === 'string' ? parseInt(productId) : productId;
                     return favIdNum !== productIdNum;
                 });
-                if (utils.showToast) utils.showToast('Удалено из избранного', 'info');
+                // Уведомление убрано по запросу пользователя
             } else {
                 // Добавляем в избранное
                 // Сначала загружаем полные данные товара
@@ -112,7 +112,7 @@
                     };
                     await api.addToFavorites(productId);
                     state.favorites.push(favoriteProduct);
-                    if (utils.showToast) utils.showToast('Добавлено в избранное', 'success');
+                    // Уведомление убрано по запросу пользователя
                 } catch (error) {
                     console.error('[FAVORITES] Error adding to favorites:', error);
                     if (utils.showToast) utils.showToast('Ошибка добавления в избранное', 'error');

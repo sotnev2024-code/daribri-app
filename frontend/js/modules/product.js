@@ -449,7 +449,7 @@
         
         try {
             await api.addToCart(currentProduct.id, quantity);
-            if (utils.showToast) utils.showToast('Товар добавлен в корзину', 'success');
+            // Уведомление убрано по запросу пользователя
             
             // Перезагружаем корзину
             const cartModule = window.App?.cart;
@@ -511,7 +511,7 @@
                     
                     // Добавляем новый товар
                     await api.addToCart(newProduct.id, quantity);
-                    if (utils.showToast) utils.showToast('Корзина очищена, товар добавлен', 'success');
+                    // Уведомление убрано по запросу пользователя
                     
                     // Перезагружаем корзину
                     const cartModule = window.App?.cart;

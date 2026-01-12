@@ -137,7 +137,7 @@
             await api.removeFromCart(itemId);
             await loadCart();
             renderCart();
-            if (utils.showToast) utils.showToast('Товар удалён из корзины', 'success');
+            // Уведомление убрано по запросу пользователя
         } catch (error) {
             console.error('Error removing from cart:', error);
             if (utils.showToast) utils.showToast('Ошибка удаления товара', 'error');
@@ -157,7 +157,7 @@
             await api.clearCart();
             await loadCart();
             renderCart();
-            if (utils.showToast) utils.showToast('Корзина очищена', 'success');
+            // Уведомление убрано по запросу пользователя
         } catch (error) {
             console.error('Error clearing cart:', error);
             if (utils.showToast) utils.showToast('Ошибка очистки корзины', 'error');
@@ -199,7 +199,7 @@
         
         try {
             await api.addToCart(currentProduct.id, quantity);
-            if (utils.showToast) utils.showToast('Товар добавлен в корзину', 'success');
+            // Уведомление убрано по запросу пользователя
             await loadCart();
             
             // Обновляем UI кнопок
@@ -261,7 +261,7 @@
                 await api.removeFromCart(cartItem.id);
                 await loadCart();
                 updateProductPageCartUI(productId);
-                if (utils.showToast) utils.showToast('Товар удалён из корзины', 'success');
+                // Уведомление убрано по запросу пользователя
             } catch (error) {
                 console.error('Error removing from cart:', error);
             }
@@ -322,7 +322,7 @@
                     
                     // Добавляем новый товар
                     await api.addToCart(newProduct.id, quantity);
-                    if (utils.showToast) utils.showToast('Корзина очищена, товар добавлен', 'success');
+                    // Уведомление убрано по запросу пользователя
                     
                     // Перезагружаем корзину
                     await loadCart();
