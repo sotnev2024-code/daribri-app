@@ -60,16 +60,6 @@
             if (media.length > 0) {
                 let galleryHTML = '<div class="product-gallery-slider">';
                 
-                // Мини-шапка с логотипом и иконкой
-                galleryHTML += `
-                    <div class="product-gallery-header">
-                        <div class="product-gallery-logo">
-                            <img src="images/icons/icon.png" alt="Дарибри" class="product-gallery-logo-icon">
-                            <span class="product-gallery-logo-text">Дарибри</span>
-                        </div>
-                    </div>
-                `;
-                
                 // Кнопки избранное и поделиться в правом верхнем углу
                 galleryHTML += `
                     <div class="product-gallery-actions">
