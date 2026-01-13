@@ -67,8 +67,12 @@ async def get_shop_orders(
     for order in orders:
         items = await db.fetch_all(
             """SELECT oi.*, 
-                      COALESCE(oi.product_name, p.name) as product_name,
-                      (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as product_image_url
+                      COALESCE(oi.product_name, p.name, 'Товар удалён') as product_name,
+                      CASE 
+                          WHEN p.id IS NOT NULL THEN 
+                              (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1)
+                          ELSE NULL
+                      END as product_image_url
                FROM order_items oi
                LEFT JOIN products p ON oi.product_id = p.id
                WHERE oi.order_id = ?""",
@@ -116,10 +120,14 @@ async def get_orders(
     for order in orders:
         items = await db.fetch_all(
             """SELECT oi.*, 
-                      p.name as product_name,
-                      (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as product_image_url
+                      COALESCE(oi.product_name, p.name, 'Товар удалён') as product_name,
+                      CASE 
+                          WHEN p.id IS NOT NULL THEN 
+                              (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1)
+                          ELSE NULL
+                      END as product_image_url
                FROM order_items oi
-               JOIN products p ON oi.product_id = p.id
+               LEFT JOIN products p ON oi.product_id = p.id
                WHERE oi.order_id = ?""",
             (order["id"],)
         )
@@ -149,9 +157,13 @@ async def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
     
     items = await db.fetch_all(
-        """SELECT oi.*, 
-                  COALESCE(oi.product_name, p.name) as product_name,
-                  (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as product_image_url
+            """SELECT oi.*, 
+                  COALESCE(oi.product_name, p.name, 'Товар удалён') as product_name,
+                  CASE 
+                      WHEN p.id IS NOT NULL THEN 
+                          (SELECT url FROM product_media WHERE product_id = p.id AND is_primary = 1 LIMIT 1)
+                      ELSE NULL
+                  END as product_image_url
            FROM order_items oi
            LEFT JOIN products p ON oi.product_id = p.id
            WHERE oi.order_id = ?""",
