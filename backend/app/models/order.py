@@ -19,10 +19,12 @@ class OrderItemCreate(OrderItemBase):
     pass
 
 
-class OrderItem(OrderItemBase):
+class OrderItem(BaseModel):
     """Полная модель товара в заказе."""
     id: int
     order_id: int
+    product_id: Optional[int] = None  # Может быть None если товар удален
+    quantity: int = Field(..., ge=1)
     price: Decimal
     discount_price: Optional[Decimal] = None
     # Дополнительные поля для отображения

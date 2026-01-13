@@ -78,9 +78,37 @@ async def get_shop_orders(
                WHERE oi.order_id = ?""",
             (order["id"],)
         )
+        
+        # Безопасное создание OrderItem с обработкой ошибок
+        order_items = []
+        for item in items:
+            try:
+                item_data = dict(item)
+                # Убеждаемся, что product_id может быть None
+                if 'product_id' not in item_data or item_data['product_id'] is None:
+                    item_data['product_id'] = None
+                order_items.append(OrderItem(**item_data))
+            except Exception as e:
+                print(f"[ERROR] Failed to create OrderItem: {e}, item data: {item}")
+                # Пропускаем проблемный товар или создаем с минимальными данными
+                try:
+                    order_items.append(OrderItem(
+                        id=item.get('id', 0),
+                        order_id=item.get('order_id', order["id"]),
+                        product_id=item.get('product_id'),
+                        quantity=item.get('quantity', 1),
+                        price=item.get('price', 0),
+                        discount_price=item.get('discount_price'),
+                        product_name=item.get('product_name', 'Товар удалён'),
+                        product_image_url=item.get('product_image_url')
+                    ))
+                except Exception as e2:
+                    print(f"[ERROR] Failed to create fallback OrderItem: {e2}")
+                    continue
+        
         result.append(OrderWithItems(
             **order,
-            items=[OrderItem(**item) for item in items]
+            items=order_items
         ))
     
     return result
@@ -131,9 +159,35 @@ async def get_orders(
                WHERE oi.order_id = ?""",
             (order["id"],)
         )
+        
+        # Безопасное создание OrderItem с обработкой ошибок
+        order_items = []
+        for item in items:
+            try:
+                item_data = dict(item)
+                if 'product_id' not in item_data or item_data['product_id'] is None:
+                    item_data['product_id'] = None
+                order_items.append(OrderItem(**item_data))
+            except Exception as e:
+                print(f"[ERROR] Failed to create OrderItem: {e}, item data: {item}")
+                try:
+                    order_items.append(OrderItem(
+                        id=item.get('id', 0),
+                        order_id=item.get('order_id', order["id"]),
+                        product_id=item.get('product_id'),
+                        quantity=item.get('quantity', 1),
+                        price=item.get('price', 0),
+                        discount_price=item.get('discount_price'),
+                        product_name=item.get('product_name', 'Товар удалён'),
+                        product_image_url=item.get('product_image_url')
+                    ))
+                except Exception as e2:
+                    print(f"[ERROR] Failed to create fallback OrderItem: {e2}")
+                    continue
+        
         result.append(OrderWithItems(
             **order,
-            items=[OrderItem(**item) for item in items]
+            items=order_items
         ))
     
     return result
@@ -158,6 +212,7 @@ async def get_order(
     
     items = await db.fetch_all(
             """SELECT oi.*, 
+                  oi.product_id as product_id,
                   COALESCE(oi.product_name, p.name, 'Товар удалён') as product_name,
                   CASE 
                       WHEN p.id IS NOT NULL THEN 
@@ -170,9 +225,34 @@ async def get_order(
         (order_id,)
     )
     
+    # Безопасное создание OrderItem с обработкой ошибок
+    order_items = []
+    for item in items:
+        try:
+            item_data = dict(item)
+            if item_data.get('product_id') is None:
+                item_data['product_id'] = None
+            order_items.append(OrderItem(**item_data))
+        except Exception as e:
+            print(f"[ERROR] Failed to create OrderItem: {e}, item data: {item}")
+            try:
+                order_items.append(OrderItem(
+                    id=item.get('id', 0),
+                    order_id=item.get('order_id', order_id),
+                    product_id=item.get('product_id'),
+                    quantity=item.get('quantity', 1),
+                    price=item.get('price', 0),
+                    discount_price=item.get('discount_price'),
+                    product_name=item.get('product_name', 'Товар удалён'),
+                    product_image_url=item.get('product_image_url')
+                ))
+            except Exception as e2:
+                print(f"[ERROR] Failed to create fallback OrderItem: {e2}")
+                continue
+    
     return OrderWithItems(
         **order,
-        items=[OrderItem(**item) for item in items]
+        items=order_items
     )
 
 
