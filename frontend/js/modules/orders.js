@@ -61,7 +61,14 @@
                 limit: 50
             });
             
-            console.log('[SHOP ORDERS] Loaded orders:', orders.length);
+            console.log('[SHOP ORDERS] Loaded orders:', orders?.length || 0);
+            
+            // Проверяем, что orders - массив
+            if (!Array.isArray(orders)) {
+                console.error('[SHOP ORDERS] Invalid orders format:', orders);
+                throw new Error('Неверный формат данных заказов');
+            }
+            
             shopOrdersState.orders = orders;
             
             if (orders.length === 0) {
@@ -96,8 +103,19 @@
                 });
             }
         } catch (error) {
-            console.error('Error loading shop orders:', error);
-            if (utils.showToast) utils.showToast('Ошибка загрузки заказов', 'error');
+            console.error('[SHOP ORDERS] Error loading shop orders:', error);
+            console.error('[SHOP ORDERS] Error details:', {
+                message: error.message,
+                stack: error.stack,
+                shopId: state.myShop?.id
+            });
+            
+            if (utils.showToast) {
+                const errorMessage = error.message || 'Ошибка загрузки заказов';
+                utils.showToast(errorMessage, 'error');
+            }
+            
+            if (ordersList) ordersList.innerHTML = '';
             if (ordersEmpty) ordersEmpty.hidden = false;
         } finally {
             shopOrdersState.loading = false;
@@ -170,15 +188,19 @@
             minute: '2-digit'
         });
         
-        const itemsList = order.items.map(item => {
-            const itemPrice = item.discount_price || item.price;
-            return `
-                <div class="order-item-mini">
-                    <span class="order-item-name">${item.product_name || 'Товар'} × ${item.quantity}</span>
-                    <span class="order-item-price">${formatPrice(parseFloat(itemPrice) * item.quantity)}</span>
-                </div>
-            `;
-        }).join('');
+        // Безопасная обработка items - проверяем, что items существует и является массивом
+        const itemsList = (order.items && Array.isArray(order.items) && order.items.length > 0)
+            ? order.items.map(item => {
+                const itemPrice = item.discount_price || item.price;
+                const quantity = item.quantity || 1;
+                return `
+                    <div class="order-item-mini">
+                        <span class="order-item-name">${item.product_name || 'Товар удалён'} × ${quantity}</span>
+                        <span class="order-item-price">${formatPrice(parseFloat(itemPrice || 0) * quantity)}</span>
+                    </div>
+                `;
+            }).join('')
+            : '<div class="order-item-mini"><span class="order-item-name">Товары недоступны</span></div>';
         
         return `
             <div class="shop-order-card" data-order-id="${order.id}">
