@@ -305,7 +305,7 @@ async def process_description(message: Message, state: FSMContext):
     await state.update_data(description=description)
     
     await message.answer(
-        "<b>Шаг 4/8: Адрес магазина</b>\n\nВведите адрес магазина:",
+        "<b>Шаг 4/8: Адрес магазина</b>\n\nВведите адрес магазина:\n\nПример: г. Екатеринбург, ул. Фучика 3",
         reply_markup=get_cancel_keyboard()
     )
     await state.set_state(ShopRequestStates.waiting_for_address)
@@ -378,7 +378,7 @@ async def process_owner_phone(message: Message, state: FSMContext):
     await state.update_data(owner_phone=owner_phone)
     
     await message.answer(
-        "<b>Шаг 8/8: Telegram владельца</b>\n\nВведите Telegram аккаунт владельца (например, @username или username):",
+        "<b>Шаг 8/8: Telegram менеджера</b>\n\nВведите Telegram аккаунт менеджера (например, @username или username):",
         reply_markup=get_cancel_keyboard()
     )
     await state.set_state(ShopRequestStates.waiting_for_owner_telegram)
@@ -386,7 +386,7 @@ async def process_owner_phone(message: Message, state: FSMContext):
 
 @router.message(ShopRequestStates.waiting_for_owner_telegram, F.text != "❌ Отменить")
 async def process_owner_telegram(message: Message, state: FSMContext, bot: Bot):
-    """Обрабатывает Telegram владельца и сохраняет заявку."""
+    """Обрабатывает Telegram менеджера и сохраняет заявку."""
     owner_telegram = message.text.strip()
     
     # Убираем @ если есть
