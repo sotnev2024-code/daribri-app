@@ -418,7 +418,7 @@ class API {
 
     async uploadShopPhoto(shopId, file) {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('photo', file);
         
         const url = `${this.baseUrl}/api/shops/${shopId}/photo`;
         const headers = {};
