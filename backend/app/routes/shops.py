@@ -345,7 +345,7 @@ async def update_shop(
 @router.post("/{shop_id}/photo")
 async def upload_shop_photo(
     shop_id: int,
-    photo: UploadFile = File(...),
+    photo: UploadFile = File(..., description="Shop photo file"),
     current_user: User = Depends(get_current_user),
     db: DatabaseService = Depends(get_db)
 ):
@@ -358,8 +358,15 @@ async def upload_shop_photo(
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found or access denied")
     
+    # Проверяем, что файл был передан
+    if not photo:
+        raise HTTPException(status_code=400, detail="Photo file is required")
+    
+    # Логируем информацию о файле для отладки
+    print(f"[SHOP PHOTO] Received file: filename={photo.filename}, content_type={photo.content_type}, size={photo.size if hasattr(photo, 'size') else 'unknown'}")
+    
     media_service = get_media_service()
-    photo_url = await media_service.save_shop_photo(photo, shop_id)
+    photo_url, _ = await media_service.save_shop_photo(photo, shop_id)
     
     # Обновляем URL фото в базе данных
     await db.execute(
