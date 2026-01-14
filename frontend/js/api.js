@@ -422,7 +422,7 @@ class API {
         }
         
         const formData = new FormData();
-        formData.append('photo', file);
+        formData.append('file', file);
         
         const url = `${this.baseUrl}/api/shops/${shopId}/photo`;
         const headers = {};
