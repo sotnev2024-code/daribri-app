@@ -417,6 +417,10 @@ class API {
     }
 
     async uploadShopPhoto(shopId, file) {
+        if (!file) {
+            throw new Error('File is required');
+        }
+        
         const formData = new FormData();
         formData.append('photo', file);
         
@@ -427,7 +431,12 @@ class API {
             headers['X-Telegram-ID'] = String(this.telegramId);
         }
         
+        // НЕ устанавливаем Content-Type вручную - браузер должен установить его автоматически с boundary
+        // для multipart/form-data
+        
         console.log(`🌐 API Request: POST ${url}`);
+        console.log(`🌐 File info: name=${file.name}, type=${file.type}, size=${file.size}`);
+        console.log(`🌐 FormData entries:`, Array.from(formData.entries()).map(([k, v]) => [k, v instanceof File ? `File(${v.name})` : v]));
         
         try {
             const response = await fetch(url, {

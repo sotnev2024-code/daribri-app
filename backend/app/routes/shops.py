@@ -2,7 +2,7 @@
 API Routes для магазинов.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request, Form
 from typing import List, Optional
 from datetime import datetime, date
 from pydantic import BaseModel
@@ -359,11 +359,11 @@ async def upload_shop_photo(
         raise HTTPException(status_code=404, detail="Shop not found or access denied")
     
     # Проверяем, что файл был передан
-    if not photo:
+    if not photo or not photo.filename:
         raise HTTPException(status_code=400, detail="Photo file is required")
     
     # Логируем информацию о файле для отладки
-    print(f"[SHOP PHOTO] Received file: filename={photo.filename}, content_type={photo.content_type}, size={photo.size if hasattr(photo, 'size') else 'unknown'}")
+    print(f"[SHOP PHOTO] Received file: filename={photo.filename}, content_type={photo.content_type}")
     
     media_service = get_media_service()
     photo_url, _ = await media_service.save_shop_photo(photo, shop_id)
