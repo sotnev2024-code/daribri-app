@@ -1372,13 +1372,95 @@ function initEventListeners() {
     elements.searchInput?.addEventListener('input', debounce(handleSearch, 300));
     
     // Категории
+    let categorySliderHasMoved = false; // Флаг для отслеживания drag в обработчике клика
+    
     elements.categoriesSlider.addEventListener('click', (e) => {
+        // Не обрабатываем клик, если был drag
+        if (categorySliderHasMoved) {
+            categorySliderHasMoved = false;
+            return;
+        }
+        
         const chip = e.target.closest('.category-chip');
         if (chip) {
             const category = chip.dataset.category;
             selectCategory(category);
         }
     });
+    
+    // Прокрутка категорий мышью
+    if (elements.categoriesSlider) {
+        const slider = elements.categoriesSlider;
+        
+        // Прокрутка колесиком мыши
+        slider.addEventListener('wheel', (e) => {
+            // Прокручиваем горизонтально при вертикальном скролле колесиком
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                e.preventDefault();
+                slider.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
+        
+        // Drag-to-scroll (перетаскивание мышью)
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let hasMoved = false; // Флаг для отслеживания движения мыши
+        
+        slider.addEventListener('mousedown', (e) => {
+            // Не начинаем drag, если кликнули на кнопку категории
+            if (e.target.closest('.category-chip')) {
+                // Разрешаем клик, но также разрешаем drag если пользователь начнет двигать мышь
+                isDown = true;
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+                hasMoved = false;
+            } else {
+                // Клик на пустое место - сразу начинаем drag
+                isDown = true;
+                slider.style.cursor = 'grabbing';
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+                hasMoved = false;
+            }
+        });
+        
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            hasMoved = false;
+            slider.style.cursor = 'grab';
+        });
+        
+        slider.addEventListener('mouseup', (e) => {
+            isDown = false;
+            hasMoved = false;
+            slider.style.cursor = 'grab';
+            // Сбрасываем флаг через небольшую задержку, чтобы обработчик клика успел проверить его
+            setTimeout(() => {
+                categorySliderHasMoved = false;
+            }, 100);
+        });
+        
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // Скорость прокрутки
+            
+            // Если движение больше 5px, считаем это drag
+            if (Math.abs(walk) > 5) {
+                hasMoved = true;
+                categorySliderHasMoved = true; // Устанавливаем флаг для обработчика клика
+                e.preventDefault();
+                slider.style.cursor = 'grabbing';
+                slider.scrollLeft = scrollLeft - walk;
+            }
+        });
+        
+        // Устанавливаем курсор grab по умолчанию
+        slider.style.cursor = 'grab';
+        slider.style.userSelect = 'none'; // Предотвращаем выделение текста при перетаскивании
+    }
     
     // Кнопка назад на странице товара
     elements.productBackBtn?.addEventListener('click', () => {

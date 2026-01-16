@@ -661,8 +661,15 @@ input {
     gap: 10px;
     padding: 0 16px;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    cursor: grab;
+    scroll-behavior: smooth;
+}
+
+.categories-slider:active {
+    cursor: grabbing;
 }
 
 .categories-slider::-webkit-scrollbar {
