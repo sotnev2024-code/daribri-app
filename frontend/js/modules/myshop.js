@@ -11,6 +11,51 @@
     const getApi = () => window.api;
     const getUtils = () => window.App?.utils || {};
     
+    // Константа города (приложение работает только в Екатеринбурге)
+    const APP_CITY = 'Екатеринбург';
+    
+    /**
+     * Нормализует адрес магазина для отображения
+     * Убирает любые упоминания города из адреса и добавляет "г. Екатеринбург" в начало
+     * @param {string} address - исходный адрес
+     * @returns {string} - нормализованный адрес в формате "г. Екатеринбург, {адрес}"
+     */
+    function normalizeShopAddress(address) {
+        if (!address || !address.trim()) {
+            return `г. ${APP_CITY}`;
+        }
+        
+        let cleanedAddress = address.trim();
+        
+        // Шаг 1: Убираем все упоминания "г. Екатеринбург" или "Екатеринбург" из адреса (в любом месте)
+        const cityPatterns = [
+            new RegExp(`г\\.?\\s*${APP_CITY}\\s*,?\\s*`, 'gi'),
+            new RegExp(`г\\.?\\s*${APP_CITY.toLowerCase()}\\s*,?\\s*`, 'gi'),
+            new RegExp(`\\s*,?\\s*${APP_CITY}\\s*,?\\s*`, 'gi'),
+            new RegExp(`\\s*,?\\s*${APP_CITY.toLowerCase()}\\s*,?\\s*`, 'gi'),
+        ];
+        
+        for (const pattern of cityPatterns) {
+            cleanedAddress = cleanedAddress.replace(pattern, ' ').trim();
+        }
+        
+        // Шаг 2: Убираем любые упоминания "г. " в начале адреса (независимо от города)
+        cleanedAddress = cleanedAddress.replace(/^г\.?\s*[^,]+,\s*/i, '').trim();
+        cleanedAddress = cleanedAddress.replace(/^г\.?\s*[^,гул]+(?=\s*(г\.|ул\.|улица|,))/i, '').trim();
+        
+        // Шаг 3: Убираем лишние запятые, пробелы и двойные пробелы
+        cleanedAddress = cleanedAddress.replace(/^,\s*|\s*,/g, '').trim();
+        cleanedAddress = cleanedAddress.replace(/\s+/g, ' ').trim();
+        
+        // Если адрес стал пустым, возвращаем только город
+        if (!cleanedAddress) {
+            return `г. ${APP_CITY}`;
+        }
+        
+        // Всегда добавляем город в начало
+        return `г. ${APP_CITY}, ${cleanedAddress}`;
+    }
+    
     // Глобальная переменная для хранения экземпляров графиков Chart.js
     let statisticsCharts = {
         revenue: null,
@@ -675,6 +720,45 @@
             if (utils.showToast) utils.showToast('Магазин обновлён', 'success');
             if (elements?.editShopModal) elements.editShopModal.hidden = true;
             renderShopPage();
+            
+            // Перезагружаем данные магазина, если открыта страница магазина
+            if (state.currentShopId === state.myShop.id) {
+                console.log('[SHOP UPDATE] Reloading shop page data...');
+                try {
+                    if (window.loadShopData && typeof window.loadShopData === 'function') {
+                        await window.loadShopData(state.myShop.id);
+                    } else if (window.App?.shop?.loadShopData) {
+                        await window.App.shop.loadShopData(state.myShop.id);
+                    }
+                } catch (error) {
+                    console.error('[SHOP UPDATE] Error reloading shop page:', error);
+                }
+            }
+            
+            // Обновляем данные в checkout, если checkout открыт
+            const checkoutState = window.checkoutState;
+            if (checkoutState && checkoutState.shopId === state.myShop.id) {
+                console.log('[SHOP UPDATE] Updating checkout shop data...');
+                try {
+                    // Обновляем данные магазина в checkout
+                    checkoutState.shopCity = 'Екатеринбург'; // Всегда Екатеринбург
+                    checkoutState.shopAddress = shop.address || null;
+                    checkoutState.shopLatitude = shop.latitude || null;
+                    checkoutState.shopLongitude = shop.longitude || null;
+                    
+                    // Если открыт шаг 2 (адрес) и выбран самовывоз, обновляем отображение
+                    if (checkoutState.step === 2 && checkoutState.deliveryType === 'pickup') {
+                        const shopAddressText = document.getElementById('shopAddressText');
+                        if (shopAddressText && checkoutState.shopAddress) {
+                            // Нормализуем адрес для отображения
+                            const normalizedAddress = normalizeShopAddress(checkoutState.shopAddress);
+                            shopAddressText.textContent = normalizedAddress;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[SHOP UPDATE] Error updating checkout data:', error);
+                }
+            }
         } catch (error) {
             console.error('Error updating shop:', error);
             let errorMessage = 'Ошибка обновления';
