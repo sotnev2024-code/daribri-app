@@ -21,6 +21,54 @@
     // Константа стоимости доставки
     const DELIVERY_FEE = 500;
     
+    // Константа города (приложение работает только в Екатеринбурге)
+    const APP_CITY = 'Екатеринбург';
+    
+    /**
+     * Нормализует адрес для отображения
+     * Убирает любые упоминания города из адреса и добавляет "г. Екатеринбург" в начало
+     * @param {string} address - исходный адрес
+     * @returns {string} - нормализованный адрес в формате "г. Екатеринбург, {адрес}"
+     */
+    function normalizeAddress(address) {
+        if (!address || !address.trim()) {
+            return `г. ${APP_CITY}`;
+        }
+        
+        let cleanedAddress = address.trim();
+        
+        // Шаг 1: Убираем все упоминания "г. Екатеринбург" или "Екатеринбург" из адреса (в любом месте)
+        const cityPatterns = [
+            new RegExp(`г\\.?\\s*${APP_CITY}\\s*,?\\s*`, 'gi'),
+            new RegExp(`г\\.?\\s*${APP_CITY.toLowerCase()}\\s*,?\\s*`, 'gi'),
+            new RegExp(`\\s*,?\\s*${APP_CITY}\\s*,?\\s*`, 'gi'),
+            new RegExp(`\\s*,?\\s*${APP_CITY.toLowerCase()}\\s*,?\\s*`, 'gi'),
+        ];
+        
+        for (const pattern of cityPatterns) {
+            cleanedAddress = cleanedAddress.replace(pattern, ' ').trim();
+        }
+        
+        // Шаг 2: Убираем любые упоминания "г. " в начале адреса (независимо от города)
+        // Это обработает случаи типа "г. Шаманский переулок 1, ..." или "г. Шаманский переулок 1 ..."
+        // Сначала пробуем убрать с запятой
+        cleanedAddress = cleanedAddress.replace(/^г\.?\s*[^,]+,\s*/i, '').trim();
+        // Затем пробуем убрать без запятой (если после "г. " идет слово, за которым идет "г. " или "ул. " или "улица")
+        cleanedAddress = cleanedAddress.replace(/^г\.?\s*[^,гул]+(?=\s*(г\.|ул\.|улица|,))/i, '').trim();
+        
+        // Шаг 3: Убираем лишние запятые, пробелы и двойные пробелы
+        cleanedAddress = cleanedAddress.replace(/^,\s*|\s*,/g, '').trim();
+        cleanedAddress = cleanedAddress.replace(/\s+/g, ' ').trim();
+        
+        // Если адрес стал пустым, возвращаем только город
+        if (!cleanedAddress) {
+            return `г. ${APP_CITY}`;
+        }
+        
+        // Всегда добавляем город в начало
+        return `г. ${APP_CITY}, ${cleanedAddress}`;
+    }
+    
     // ==================== Сохранение данных пользователя ====================
     const SAVED_USER_DATA_KEY = 'daribri_checkout_user_data';
     
@@ -239,15 +287,16 @@
         );
         
         // Получаем данные магазина (город и адрес)
+        // ВАЖНО: Всегда используем "Екатеринбург" как город, игнорируя значение из БД
         try {
             const shop = await api.getShop(checkoutState.shopId);
-            checkoutState.shopCity = shop.city || shop.city_name || 'Екатеринбург';
+            checkoutState.shopCity = APP_CITY; // Всегда Екатеринбург
             checkoutState.shopAddress = shop.address || null;
             checkoutState.shopLatitude = shop.latitude || null;
             checkoutState.shopLongitude = shop.longitude || null;
         } catch (error) {
             console.error('[CHECKOUT] Error loading shop:', error);
-            checkoutState.shopCity = 'Екатеринбург';
+            checkoutState.shopCity = APP_CITY; // Всегда Екатеринбург
             checkoutState.shopAddress = null;
             checkoutState.shopLatitude = null;
             checkoutState.shopLongitude = null;
@@ -585,10 +634,8 @@
                 
                 // Устанавливаем адрес магазина
                 if (checkoutState.shopAddress) {
-                    const city = checkoutState.shopCity || '';
-                    const fullAddress = checkoutState.shopAddress.toLowerCase().includes(city.toLowerCase()) 
-                        ? checkoutState.shopAddress 
-                        : `г. ${city}, ${checkoutState.shopAddress}`;
+                    // Нормализуем адрес: всегда используем "Екатеринбург" как город
+                    const fullAddress = normalizeAddress(checkoutState.shopAddress);
                     checkoutState.address = fullAddress;
                     if (shopAddressText) shopAddressText.textContent = fullAddress;
                     
@@ -1994,7 +2041,11 @@
         if (addressEl) {
             // Для самовывоза показываем адрес магазина, для доставки - адрес доставки
             if (checkoutState.deliveryType === 'pickup') {
-                addressEl.textContent = checkoutState.shopAddress || 'Адрес магазина не указан';
+                // Нормализуем адрес магазина для отображения
+                const normalizedAddress = checkoutState.shopAddress 
+                    ? normalizeAddress(checkoutState.shopAddress)
+                    : 'Адрес магазина не указан';
+                addressEl.textContent = normalizedAddress;
             } else {
                 addressEl.textContent = checkoutState.address || 'Не указан';
             }
