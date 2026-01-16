@@ -1621,12 +1621,21 @@
             return sum + (parseFloat(price) * item.quantity);
         }, 0);
         
-        let deliveryFee = DELIVERY_FEE;
-        let promoDiscount = checkoutState.promoDiscount || 0;
+        // Определяем стоимость доставки
+        let deliveryFee = 0;
+        const isPickup = checkoutState.deliveryType === 'pickup';
         
-        if (checkoutState.promoType === 'free_delivery') {
-            deliveryFee = 0;
+        if (!isPickup) {
+            // Для доставки стандартная стоимость
+            deliveryFee = DELIVERY_FEE;
+            // Если есть промокод с бесплатной доставкой, то доставка бесплатна
+            if (checkoutState.promoType === 'free_delivery') {
+                deliveryFee = 0;
+            }
         }
+        // При самовывозе доставка всегда бесплатна
+        
+        let promoDiscount = checkoutState.promoDiscount || 0;
         
         const total = itemsTotal - promoDiscount + deliveryFee;
         
