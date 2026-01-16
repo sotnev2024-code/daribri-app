@@ -310,6 +310,12 @@ async def update_shop(
     db: DatabaseService = Depends(get_db)
 ):
     """Обновляет информацию о магазине."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"[SHOP UPDATE] Received update request for shop_id={shop_id}, user_id={current_user.id}")
+    logger.info(f"[SHOP UPDATE] Shop data received: {shop_data.model_dump(exclude_unset=True)}")
+    
     # Проверяем, что пользователь является владельцем
     shop = await db.fetch_one(
         "SELECT * FROM shops WHERE id = ? AND owner_id = ?",
@@ -319,18 +325,26 @@ async def update_shop(
         raise HTTPException(status_code=404, detail="Shop not found or access denied")
     
     update_data = shop_data.model_dump(exclude_unset=True)
+    logger.info(f"[SHOP UPDATE] Parsed update_data (before processing): {update_data}")
     
     # Заменяем пустые строки на None
     for key, value in update_data.items():
         if isinstance(value, str) and value.strip() == "":
             update_data[key] = None
+            logger.info(f"[SHOP UPDATE] Converted empty string to None for field: {key}")
+    
+    logger.info(f"[SHOP UPDATE] Final update_data: {update_data}")
     
     if not update_data:
+        logger.warning("[SHOP UPDATE] No data to update")
         return Shop(**shop)
     
     # Обновляем данные
     set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
     values = list(update_data.values()) + [shop_id]
+    
+    logger.info(f"[SHOP UPDATE] Executing SQL: UPDATE shops SET {set_clause} WHERE id = ?")
+    logger.info(f"[SHOP UPDATE] Values: {values}")
     
     await db.execute(
         f"UPDATE shops SET {set_clause} WHERE id = ?",
@@ -339,6 +353,7 @@ async def update_shop(
     await db.commit()
     
     updated_shop = await db.fetch_one("SELECT * FROM shops WHERE id = ?", (shop_id,))
+    logger.info(f"[SHOP UPDATE] Shop updated successfully. New address: {updated_shop.get('address')}")
     return Shop(**updated_shop)
 
 

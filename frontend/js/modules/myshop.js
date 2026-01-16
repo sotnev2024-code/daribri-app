@@ -626,10 +626,21 @@
         
         const name = document.getElementById('editShopName')?.value?.trim();
         const description = document.getElementById('editShopDescription')?.value?.trim();
-        const address = document.getElementById('editShopAddress')?.value?.trim();
+        const addressInput = document.getElementById('editShopAddress');
+        const address = addressInput?.value?.trim() || '';
         const phone = document.getElementById('editShopPhone')?.value?.trim();
         const email = document.getElementById('editShopEmail')?.value?.trim();
         const editShopPhoto = document.getElementById('editShopPhoto');
+        
+        console.log('[SHOP UPDATE] Form values:', {
+            name,
+            description,
+            address,
+            phone,
+            email,
+            addressInputValue: addressInput?.value,
+            addressInputExists: !!addressInput
+        });
         
         try {
             // Сначала загружаем фото, если оно выбрано
@@ -645,10 +656,12 @@
             const updateData = {
                 name,
                 description,
-                address,
-                phone,
-                email
+                address: address || null,  // Явно передаем null если пусто
+                phone: phone || null,
+                email: email || null
             };
+            
+            console.log('[SHOP UPDATE] Sending update data:', updateData);
             
             // Если фото было загружено, добавляем photo_url к данным обновления
             if (photoUrl !== state.myShop?.photo_url) {
@@ -656,6 +669,7 @@
             }
             
             const shop = await api.updateShop(state.myShop.id, updateData);
+            console.log('[SHOP UPDATE] Server response:', shop);
             
             state.myShop = { ...state.myShop, ...shop };
             if (utils.showToast) utils.showToast('Магазин обновлён', 'success');

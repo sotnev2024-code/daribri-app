@@ -1734,7 +1734,15 @@ function initEventListeners() {
     elements.closeEditShopModal?.addEventListener('click', () => {
         elements.editShopModal.hidden = true;
     });
-    elements.shopEditForm?.addEventListener('submit', handleUpdateShop);
+    elements.shopEditForm?.addEventListener('submit', (e) => {
+        const updateHandler = window.handleUpdateShop || handleUpdateShop;
+        if (typeof updateHandler === 'function') {
+            updateHandler(e);
+        } else {
+            console.error('[SHOP] handleUpdateShop is not defined');
+            e.preventDefault();
+        }
+    });
     
     // Загрузка фото магазина в форме редактирования
     const editShopPhotoUpload = document.getElementById('editShopPhotoUpload');
