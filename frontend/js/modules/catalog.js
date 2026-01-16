@@ -497,13 +497,24 @@
                 : 0;
         
         const hasRating = shopRating > 0 && !isNaN(shopRating);
+        const hasReviews = shopReviewsCount > 0;
         const ratingText = hasRating ? shopRating.toFixed(1) : '';
-        const reviewsText = shopReviewsCount > 0 
+        const reviewsText = hasReviews 
             ? `(${shopReviewsCount} ${shopReviewsCount === 1 ? 'отзыв' : shopReviewsCount < 5 ? 'отзыва' : 'отзывов'})` 
             : '';
-        const ratingDisplay = hasRating 
-            ? `⭐ ${ratingText} ${reviewsText}` 
-            : 'Нет оценки';
+        
+        // Показываем рейтинг и отзывы, если есть хотя бы одно из них
+        let ratingDisplay;
+        if (hasRating && hasReviews) {
+            ratingDisplay = `⭐ ${ratingText} ${reviewsText}`;
+        } else if (hasRating && !hasReviews) {
+            ratingDisplay = `⭐ ${ratingText}`;
+        } else if (!hasRating && hasReviews) {
+            // Если есть отзывы, но нет рейтинга, показываем только отзывы
+            ratingDisplay = reviewsText;
+        } else {
+            ratingDisplay = 'Нет оценки';
+        }
         
         console.log('[PRODUCT CARD] Parsed rating data:', {
             shopRatingRaw,
