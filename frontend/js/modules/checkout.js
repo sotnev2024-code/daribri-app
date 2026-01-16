@@ -1789,6 +1789,11 @@
             }
             // При самовывозе доставка всегда бесплатна
             
+            const deliveryType = checkoutState.deliveryType || 'delivery';
+            console.log('[CHECKOUT] Delivery type from state:', checkoutState.deliveryType);
+            console.log('[CHECKOUT] Is pickup:', deliveryType === 'pickup');
+            console.log('[CHECKOUT] Calculated delivery fee:', deliveryFee);
+            
             const orderData = {
                 shop_id: checkoutState.shopId,
                 items: items.map(item => ({
@@ -1804,12 +1809,8 @@
                 delivery_comment: checkoutState.deliveryComment || null,
                 delivery_date: checkoutState.deliveryDate,
                 delivery_time: checkoutState.deliveryTime,
-                delivery_type: checkoutState.deliveryType || 'delivery',  // 'delivery' или 'pickup'
-                delivery_fee: deliveryFee,
-                promo_code: checkoutState.promoCode || null,
-                promo_discount: checkoutState.promoDiscount || 0,
-                subtotal: itemsTotal,
-                total: itemsTotal - (checkoutState.promoDiscount || 0) + deliveryFee
+                delivery_type: deliveryType,  // 'delivery' или 'pickup'
+                promo_code: checkoutState.promoCode || null
             };
             
             console.log('[CHECKOUT] Order data:', orderData);

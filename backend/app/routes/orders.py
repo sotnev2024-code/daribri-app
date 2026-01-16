@@ -323,13 +323,22 @@ async def create_order(
     promo_discount_amount = Decimal("0")
     
     # Определяем стоимость доставки в зависимости от типа доставки
-    is_pickup = order_data.delivery_type == "pickup"
+    delivery_type = (order_data.delivery_type or "delivery").strip().lower()  # По умолчанию доставка, нормализуем
+    is_pickup = delivery_type == "pickup"
+    
+    print(f"[ORDER] Delivery type received: '{order_data.delivery_type}'")
+    print(f"[ORDER] Delivery type normalized: '{delivery_type}', is_pickup: {is_pickup}")
+    
     if is_pickup:
         # При самовывозе доставка бесплатна
         delivery_fee = Decimal("0")
+        print(f"[ORDER] Pickup order - delivery fee set to 0")
     else:
         # Стандартная стоимость доставки
         delivery_fee = Decimal("500")
+        print(f"[ORDER] Delivery order - delivery fee set to 500")
+    
+    print(f"[ORDER] Final delivery fee: {delivery_fee}")
     
     if order_data.promo_code:
         from ..models.promo import PromoValidate
