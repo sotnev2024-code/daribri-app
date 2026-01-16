@@ -156,6 +156,42 @@ async def callback_cancel_review(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
+async def update_shop_rating_in_db(shop_id: int, db):
+    """Обновляет рейтинг и количество отзывов магазина."""
+    # Получаем средний рейтинг и количество отзывов
+    stats = await db.fetch_one(
+        """SELECT 
+              COUNT(*) as total_reviews,
+              ROUND(AVG(rating), 2) as average_rating
+           FROM shop_reviews
+           WHERE shop_id = ?""",
+        (shop_id,)
+    )
+    
+    if stats:
+        total_reviews = stats["total_reviews"] or 0
+        average_rating = stats["average_rating"] if stats["average_rating"] is not None else None
+        
+        # Обновляем данные магазина
+        update_data = {
+            "total_reviews": total_reviews
+        }
+        if average_rating is not None:
+            update_data["average_rating"] = average_rating
+        else:
+            update_data["average_rating"] = None
+        
+        # Формируем SQL для обновления
+        set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+        values = list(update_data.values()) + [shop_id]
+        
+        await db.execute(
+            f"UPDATE shops SET {set_clause} WHERE id = ?",
+            tuple(values)
+        )
+        await db.commit()
+
+
 async def save_review(telegram_id: int, state: FSMContext, comment: Optional[str], message_or_callback: Union[Message, CallbackQuery]):
     """Сохраняет отзыв в базу данных."""
     data = await state.get_data()
@@ -206,6 +242,9 @@ async def save_review(telegram_id: int, state: FSMContext, comment: Optional[str
             "is_verified": is_verified
         })
         await db.commit()
+        
+        # Обновляем рейтинг магазина
+        await update_shop_rating_in_db(shop_id, db)
         
         stars = "⭐" * rating
         verified_badge = " ✅" if is_verified else ""

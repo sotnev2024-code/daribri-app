@@ -99,6 +99,9 @@ async def create_review(
         "is_verified": is_verified
     })
     
+    # Обновляем рейтинг магазина
+    await update_shop_rating(review_data.shop_id, db)
+    
     review = await db.fetch_one(
         """SELECT r.*, 
                   COALESCE(u.first_name, u.username, 'Пользователь') as user_name
@@ -118,14 +121,55 @@ async def delete_review(
 ):
     """Удаляет отзыв."""
     review = await db.fetch_one(
-        "SELECT id FROM shop_reviews WHERE id = ? AND user_id = ?",
+        "SELECT shop_id FROM shop_reviews WHERE id = ? AND user_id = ?",
         (review_id, current_user.id)
     )
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
     
+    shop_id = review["shop_id"]
     await db.delete("shop_reviews", "id = ?", (review_id,))
+    
+    # Обновляем рейтинг магазина
+    await update_shop_rating(shop_id, db)
+    
     return {"message": "Review deleted"}
+
+
+async def update_shop_rating(shop_id: int, db: DatabaseService):
+    """Обновляет рейтинг и количество отзывов магазина."""
+    # Получаем средний рейтинг и количество отзывов
+    stats = await db.fetch_one(
+        """SELECT 
+              COUNT(*) as total_reviews,
+              ROUND(AVG(rating), 2) as average_rating
+           FROM shop_reviews
+           WHERE shop_id = ?""",
+        (shop_id,)
+    )
+    
+    if stats:
+        total_reviews = stats["total_reviews"] or 0
+        average_rating = stats["average_rating"] if stats["average_rating"] is not None else None
+        
+        # Обновляем данные магазина
+        update_data = {
+            "total_reviews": total_reviews
+        }
+        if average_rating is not None:
+            update_data["average_rating"] = average_rating
+        else:
+            update_data["average_rating"] = None
+        
+        # Формируем SQL для обновления
+        set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+        values = list(update_data.values()) + [shop_id]
+        
+        await db.execute(
+            f"UPDATE shops SET {set_clause} WHERE id = ?",
+            tuple(values)
+        )
+        await db.commit()
 
 
 

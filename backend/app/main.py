@@ -103,6 +103,46 @@ async def lifespan(app: FastAPI):
                 await database._db_service.execute(
                     "ALTER TABLE shops ADD COLUMN city TEXT"
                 )
+                
+                # Обновляем рейтинги всех магазинов на основе существующих отзывов
+                try:
+                    shops_with_reviews = await db.fetch_all(
+                        """SELECT DISTINCT shop_id FROM shop_reviews"""
+                    )
+                    for shop_row in shops_with_reviews:
+                        shop_id = shop_row["shop_id"]
+                        stats = await db.fetch_one(
+                            """SELECT 
+                                  COUNT(*) as total_reviews,
+                                  ROUND(AVG(rating), 2) as average_rating
+                               FROM shop_reviews
+                               WHERE shop_id = ?""",
+                            (shop_id,)
+                        )
+                        if stats:
+                            total_reviews = stats["total_reviews"] or 0
+                            average_rating = stats["average_rating"] if stats["average_rating"] is not None else None
+                            
+                            update_data = {
+                                "total_reviews": total_reviews
+                            }
+                            if average_rating is not None:
+                                update_data["average_rating"] = average_rating
+                            else:
+                                update_data["average_rating"] = None
+                            
+                            set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+                            values = list(update_data.values()) + [shop_id]
+                            
+                            await db.execute(
+                                f"UPDATE shops SET {set_clause} WHERE id = ?",
+                                tuple(values)
+                            )
+                    await db.commit()
+                    print("Shop ratings updated successfully")
+                except Exception as e:
+                    print(f"Error updating shop ratings: {e}")
+                )
                 await database._db_service.commit()
                 print("[MIGRATION] city column added successfully")
         
