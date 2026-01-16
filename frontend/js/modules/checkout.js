@@ -1809,6 +1809,7 @@
             console.log('[CHECKOUT] Promo discount:', checkoutState.promoDiscount || 0);
             console.log('[CHECKOUT] Expected total:', itemsTotal - (checkoutState.promoDiscount || 0) + deliveryFee);
             
+            // ВАЖНО: Явно передаем delivery_type, даже если это значение по умолчанию
             const orderData = {
                 shop_id: checkoutState.shopId,
                 items: items.map(item => ({
@@ -1824,11 +1825,13 @@
                 delivery_comment: checkoutState.deliveryComment || null,
                 delivery_date: checkoutState.deliveryDate,
                 delivery_time: checkoutState.deliveryTime,
-                delivery_type: deliveryType,  // 'delivery' или 'pickup'
+                delivery_type: deliveryType,  // ЯВНО передаем 'delivery' или 'pickup'
                 promo_code: checkoutState.promoCode || null
             };
             
             console.log('[CHECKOUT] Order data to send:', JSON.stringify(orderData, null, 2));
+            console.log('[CHECKOUT] delivery_type in orderData:', orderData.delivery_type);
+            console.log('[CHECKOUT] Type of delivery_type:', typeof orderData.delivery_type);
             console.log('[CHECKOUT] ======================================');
             
             // Отправляем заказ
@@ -1944,7 +1947,15 @@
         
         const totalEl = document.getElementById('orderSuccessTotal');
         if (totalEl) {
-            const total = itemsTotal - (checkoutState.promoDiscount || 0) + deliveryFee;
+            // Используем total_amount из ответа сервера, если он есть, иначе вычисляем
+            let total;
+            if (orderResult && orderResult.total_amount !== undefined) {
+                total = orderResult.total_amount;
+                console.log('[CHECKOUT] Using total_amount from server:', total);
+            } else {
+                total = itemsTotal - (checkoutState.promoDiscount || 0) + deliveryFee;
+                console.log('[CHECKOUT] Calculating total on frontend:', total, 'itemsTotal:', itemsTotal, 'deliveryFee:', deliveryFee);
+            }
             totalEl.textContent = formatPrice(total);
         }
         
