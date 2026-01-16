@@ -265,6 +265,10 @@ async def create_order(
     db: DatabaseService = Depends(get_db)
 ):
     """Создаёт новый заказ."""
+    logger.info(f"[ORDER] ========== ORDER CREATION START ==========")
+    logger.info(f"[ORDER] Received order_data.delivery_type: '{order_data.delivery_type}'")
+    logger.info(f"[ORDER] Order data model dump: {order_data.model_dump()}")
+    
     # Проверяем магазин и получаем информацию о владельце
     shop = await db.fetch_one(
         """SELECT s.id, s.name, s.owner_id, u.telegram_id 

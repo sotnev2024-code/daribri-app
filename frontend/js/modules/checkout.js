@@ -555,7 +555,10 @@
         
         // Функция переключения типа получения заказа
         function switchDeliveryType(type) {
+            console.log('[CHECKOUT] switchDeliveryType called with:', type);
+            console.log('[CHECKOUT] Previous deliveryType:', checkoutState.deliveryType);
             checkoutState.deliveryType = type;
+            console.log('[CHECKOUT] New deliveryType:', checkoutState.deliveryType);
             
             if (type === 'pickup') {
                 // Самовывоз
@@ -643,6 +646,12 @@
                 // Обновляем заголовок шага
                 const step2Title = document.getElementById('checkoutStep2Title');
                 if (step2Title) step2Title.textContent = 'Адрес доставки';
+            }
+            
+            // Если мы на шаге 4 (подтверждение), обновляем итоги
+            if (checkoutState.step === 4) {
+                console.log('[CHECKOUT] Updating totals on step 4 after delivery type change');
+                initStep4Confirm();
             }
             
             validate();
