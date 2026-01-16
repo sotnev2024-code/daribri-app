@@ -1790,9 +1790,15 @@
             // При самовывозе доставка всегда бесплатна
             
             const deliveryType = checkoutState.deliveryType || 'delivery';
+            console.log('[CHECKOUT] ========== ORDER SUBMISSION ==========');
+            console.log('[CHECKOUT] Full checkoutState:', JSON.stringify(checkoutState, null, 2));
             console.log('[CHECKOUT] Delivery type from state:', checkoutState.deliveryType);
+            console.log('[CHECKOUT] Delivery type used:', deliveryType);
             console.log('[CHECKOUT] Is pickup:', deliveryType === 'pickup');
             console.log('[CHECKOUT] Calculated delivery fee:', deliveryFee);
+            console.log('[CHECKOUT] Items total:', itemsTotal);
+            console.log('[CHECKOUT] Promo discount:', checkoutState.promoDiscount || 0);
+            console.log('[CHECKOUT] Expected total:', itemsTotal - (checkoutState.promoDiscount || 0) + deliveryFee);
             
             const orderData = {
                 shop_id: checkoutState.shopId,
@@ -1813,7 +1819,8 @@
                 promo_code: checkoutState.promoCode || null
             };
             
-            console.log('[CHECKOUT] Order data:', orderData);
+            console.log('[CHECKOUT] Order data to send:', JSON.stringify(orderData, null, 2));
+            console.log('[CHECKOUT] ======================================');
             
             // Отправляем заказ
             const result = await api.createOrder(orderData);

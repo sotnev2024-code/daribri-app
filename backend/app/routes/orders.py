@@ -2,6 +2,7 @@
 API Routes для заказов.
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 from decimal import Decimal
@@ -15,6 +16,7 @@ from ..services.telegram_notifier import telegram_notifier
 from .users import get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def generate_order_number() -> str:
@@ -326,19 +328,19 @@ async def create_order(
     delivery_type = (order_data.delivery_type or "delivery").strip().lower()  # По умолчанию доставка, нормализуем
     is_pickup = delivery_type == "pickup"
     
-    print(f"[ORDER] Delivery type received: '{order_data.delivery_type}'")
-    print(f"[ORDER] Delivery type normalized: '{delivery_type}', is_pickup: {is_pickup}")
+    logger.info(f"[ORDER] Delivery type received: '{order_data.delivery_type}'")
+    logger.info(f"[ORDER] Delivery type normalized: '{delivery_type}', is_pickup: {is_pickup}")
     
     if is_pickup:
         # При самовывозе доставка бесплатна
         delivery_fee = Decimal("0")
-        print(f"[ORDER] Pickup order - delivery fee set to 0")
+        logger.info(f"[ORDER] Pickup order - delivery fee set to 0")
     else:
         # Стандартная стоимость доставки
         delivery_fee = Decimal("500")
-        print(f"[ORDER] Delivery order - delivery fee set to 500")
+        logger.info(f"[ORDER] Delivery order - delivery fee set to 500")
     
-    print(f"[ORDER] Final delivery fee: {delivery_fee}")
+    logger.info(f"[ORDER] Final delivery fee: {delivery_fee}, subtotal: {subtotal_amount}, total will be: {subtotal_amount - Decimal('0') + delivery_fee}")
     
     if order_data.promo_code:
         from ..models.promo import PromoValidate
@@ -429,6 +431,7 @@ async def create_order(
     
     # Итоговая сумма с учетом промокода и доставки
     total_amount = subtotal_amount - promo_discount_amount + delivery_fee
+    logger.info(f"[ORDER] Final calculation: subtotal={subtotal_amount}, promo_discount={promo_discount_amount}, delivery_fee={delivery_fee}, total={total_amount}")
     
     # Создаём заказ
     order_dict = order_data.model_dump(exclude={"items"})
