@@ -645,6 +645,7 @@
                             loadShopPickupMap(pickupMapContainer, checkoutState.shopLatitude, checkoutState.shopLongitude, fullAddress);
                         } else {
                             // Если координат нет, пытаемся геокодировать адрес
+                            const city = checkoutState.shopCity || APP_CITY;
                             fetch(`/api/geocode/geocode?address=${encodeURIComponent(fullAddress)}&city=${encodeURIComponent(city)}`)
                                 .then(res => res.json())
                                 .then(data => {
