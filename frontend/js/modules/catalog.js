@@ -482,21 +482,27 @@
         });
         
         // Пробуем разные варианты получения данных
-        const shopRatingRaw = product.shop_rating || product.average_rating || 0;
-        const shopReviewsCountRaw = product.shop_reviews_count || product.total_reviews || product.reviews_count || 0;
+        const shopRatingRaw = product.shop_rating ?? product.average_rating ?? null;
+        const shopReviewsCountRaw = product.shop_reviews_count ?? product.total_reviews ?? product.reviews_count ?? 0;
         
-        const shopRating = typeof shopRatingRaw === 'string' 
-            ? parseFloat(shopRatingRaw) 
-            : typeof shopRatingRaw === 'number' 
-                ? shopRatingRaw 
-                : 0;
+        // Обрабатываем рейтинг: null, 0 и undefined - это разные случаи
+        let shopRating = null;
+        if (shopRatingRaw !== null && shopRatingRaw !== undefined) {
+            if (typeof shopRatingRaw === 'string') {
+                const parsed = parseFloat(shopRatingRaw);
+                shopRating = isNaN(parsed) ? null : parsed;
+            } else if (typeof shopRatingRaw === 'number') {
+                shopRating = isNaN(shopRatingRaw) ? null : shopRatingRaw;
+            }
+        }
+        
         const shopReviewsCount = typeof shopReviewsCountRaw === 'string' 
-            ? parseInt(shopReviewsCountRaw) 
+            ? parseInt(shopReviewsCountRaw) || 0
             : typeof shopReviewsCountRaw === 'number' 
-                ? shopReviewsCountRaw 
+                ? shopReviewsCountRaw || 0
                 : 0;
         
-        const hasRating = shopRating > 0 && !isNaN(shopRating);
+        const hasRating = shopRating !== null && shopRating > 0 && !isNaN(shopRating);
         const hasReviews = shopReviewsCount > 0;
         const ratingText = hasRating ? shopRating.toFixed(1) : '';
         const reviewsText = hasReviews 
@@ -517,12 +523,15 @@
         }
         
         console.log('[PRODUCT CARD] Parsed rating data:', {
+            productId: product.id,
             shopRatingRaw,
             shopRating,
             shopReviewsCountRaw,
             shopReviewsCount,
             hasRating,
-            ratingDisplay
+            hasReviews,
+            ratingDisplay,
+            productKeys: Object.keys(product)
         });
         
         card.innerHTML = `

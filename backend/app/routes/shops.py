@@ -408,6 +408,15 @@ async def get_shop_products(
     # Иначе показываем только активные товары
     is_owner = current_user and current_user.id == shop["owner_id"]
     
+    # Получаем данные магазина для добавления в товары
+    shop_name = shop.get("name")
+    shop_rating = shop.get("average_rating")
+    shop_reviews_count = await db.fetch_one(
+        "SELECT COUNT(*) as cnt FROM shop_reviews WHERE shop_id = ?",
+        (shop_id,)
+    )
+    shop_reviews_count = shop_reviews_count["cnt"] if shop_reviews_count else 0
+    
     if is_owner:
         products = await db.fetch_all(
             "SELECT * FROM products WHERE shop_id = ? ORDER BY created_at DESC",
@@ -431,6 +440,29 @@ async def get_shop_products(
         # Добавляем primary_image для удобства (первое изображение из media или первое с is_primary=1)
         primary_media = next((m for m in media if m.get("is_primary") == 1), None) or (media[0] if media else None)
         product_dict["primary_image"] = primary_media["url"] if primary_media else None
+        
+        # Добавляем данные магазина для отображения в карточке товара
+        product_dict["shop_name"] = shop_name
+        
+        # Преобразуем рейтинг из Decimal в float
+        if shop_rating is not None:
+            from decimal import Decimal
+            if isinstance(shop_rating, Decimal):
+                product_dict["shop_rating"] = float(shop_rating)
+            elif isinstance(shop_rating, (int, float)):
+                product_dict["shop_rating"] = float(shop_rating)
+            elif isinstance(shop_rating, str):
+                try:
+                    product_dict["shop_rating"] = float(shop_rating)
+                except (ValueError, TypeError):
+                    product_dict["shop_rating"] = None
+            else:
+                product_dict["shop_rating"] = None
+        else:
+            product_dict["shop_rating"] = None
+            
+        product_dict["shop_reviews_count"] = int(shop_reviews_count) if shop_reviews_count else 0
+        
         result.append(product_dict)
     
     return result
