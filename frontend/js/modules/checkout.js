@@ -1648,6 +1648,25 @@
         
         const total = itemsTotal - promoDiscount + deliveryFee;
         
+        // Скрываем строку доставки при самовывозе
+        const confirmDeliveryRow = document.getElementById('confirmDeliveryRow');
+        if (confirmDeliveryRow) {
+            if (isPickup) {
+                confirmDeliveryRow.hidden = true;
+            } else {
+                confirmDeliveryRow.hidden = false;
+            }
+        }
+        
+        console.log('[CHECKOUT STEP 4] Delivery calculation:', {
+            deliveryType: checkoutState.deliveryType,
+            isPickup: isPickup,
+            deliveryFee: deliveryFee,
+            itemsTotal: itemsTotal,
+            promoDiscount: promoDiscount,
+            total: total
+        });
+        
         if (confirmItemsCount) confirmItemsCount.textContent = count;
         if (confirmSubtotal) confirmSubtotal.textContent = formatPrice(itemsTotal);
         if (confirmDeliveryFee) confirmDeliveryFee.textContent = formatPrice(deliveryFee);
