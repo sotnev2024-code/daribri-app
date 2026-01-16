@@ -54,6 +54,7 @@ class PromoValidate(BaseModel):
     shop_id: int
     total_amount: Decimal
     is_first_order: bool = False
+    delivery_type: Optional[str] = "delivery"  # 'delivery' или 'pickup'
 
 
 class PromoValidationResult(BaseModel):

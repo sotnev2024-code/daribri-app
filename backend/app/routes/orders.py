@@ -321,7 +321,15 @@ async def create_order(
     
     # Проверяем и применяем промокод, если указан
     promo_discount_amount = Decimal("0")
-    delivery_fee = Decimal("500")  # Стандартная стоимость доставки
+    
+    # Определяем стоимость доставки в зависимости от типа доставки
+    is_pickup = order_data.delivery_type == "pickup"
+    if is_pickup:
+        # При самовывозе доставка бесплатна
+        delivery_fee = Decimal("0")
+    else:
+        # Стандартная стоимость доставки
+        delivery_fee = Decimal("500")
     
     if order_data.promo_code:
         from ..models.promo import PromoValidate
@@ -388,6 +396,10 @@ async def create_order(
                 if used and used["count"] > 0:
                     promo_valid = False
             
+            # Промокод с бесплатной доставкой не применяется при самовывозе
+            if promo_valid and promo_type == PromoType.FREE_DELIVERY and is_pickup:
+                promo_valid = False
+            
             # Вычисляем скидку
             if promo_valid:
                 if promo_type == PromoType.PERCENT:
@@ -395,7 +407,9 @@ async def create_order(
                 elif promo_type == PromoType.FIXED:
                     promo_discount_amount = min(promo_value, subtotal_amount)
                 elif promo_type == PromoType.FREE_DELIVERY:
-                    delivery_fee = Decimal("0")
+                    # Промокод с бесплатной доставкой применяется только для доставки (не для самовывоза)
+                    if not is_pickup:
+                        delivery_fee = Decimal("0")
                     promo_discount_amount = Decimal("0")
                 
                 # Увеличиваем счетчик использований промокода

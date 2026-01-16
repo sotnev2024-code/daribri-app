@@ -1703,7 +1703,8 @@
                     code,
                     checkoutState.shopId,
                     itemsTotal,
-                    isFirstOrder
+                    isFirstOrder,
+                    checkoutState.deliveryType || 'delivery'
                 );
                 
                 if (result.valid) {
@@ -1765,10 +1766,19 @@
                 return sum + (parseFloat(price) * item.quantity);
             }, 0);
             
-            let deliveryFee = DELIVERY_FEE;
-            if (checkoutState.promoType === 'free_delivery') {
-                deliveryFee = 0;
+            // Определяем стоимость доставки
+            let deliveryFee = 0;
+            const isPickup = checkoutState.deliveryType === 'pickup';
+            
+            if (!isPickup) {
+                // Для доставки стандартная стоимость
+                deliveryFee = DELIVERY_FEE;
+                // Если есть промокод с бесплатной доставкой, то доставка бесплатна
+                if (checkoutState.promoType === 'free_delivery') {
+                    deliveryFee = 0;
+                }
             }
+            // При самовывозе доставка всегда бесплатна
             
             const orderData = {
                 shop_id: checkoutState.shopId,

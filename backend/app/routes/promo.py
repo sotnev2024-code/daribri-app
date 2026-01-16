@@ -94,6 +94,14 @@ async def validate_promo(
     promo_type = PromoType(promo["promo_type"])
     value = Decimal(str(promo["value"]))
     
+    # Промокод с бесплатной доставкой не применяется при самовывозе
+    is_pickup = promo_data.delivery_type == "pickup"
+    if promo_type == PromoType.FREE_DELIVERY and is_pickup:
+        return PromoValidationResult(
+            valid=False,
+            message="Промокод с бесплатной доставкой не применяется при самовывозе"
+        )
+    
     if promo_type == PromoType.PERCENT:
         discount_amount = (promo_data.total_amount * value) / 100
     elif promo_type == PromoType.FIXED:

@@ -551,14 +551,15 @@ class API {
 
     // ==================== Promo Codes ====================
 
-    async validatePromoCode(code, shopId, totalAmount, isFirstOrder = false) {
+    async validatePromoCode(code, shopId, totalAmount, isFirstOrder = false, deliveryType = 'delivery') {
         return this.request('/promo/validate', {
             method: 'POST',
             body: JSON.stringify({
                 code,
                 shop_id: shopId,
                 total_amount: totalAmount,
-                is_first_order: isFirstOrder
+                is_first_order: isFirstOrder,
+                delivery_type: deliveryType
             }),
         });
     }
