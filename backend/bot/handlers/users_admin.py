@@ -9,6 +9,8 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+import httpx
+from backend.app.config import settings
 
 router = Router()
 
@@ -75,6 +77,7 @@ async def show_users_menu(callback: CallbackQuery, bot: Bot):
 """
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Список пользователей", callback_data="admin_users_list")],
             [InlineKeyboardButton(text="📢 Создать рассылку", callback_data="admin_broadcast_create")],
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back_to_menu")]
         ])
@@ -276,4 +279,314 @@ async def cancel_broadcast(callback: CallbackQuery, bot: Bot, state: FSMContext)
     
     await show_users_menu(callback, bot)
     await callback.answer()
+
+
+async def show_users_list(callback: CallbackQuery, bot: Bot, page: int = 0):
+    """Показывает список пользователей с пагинацией."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.WEBAPP_URL}/api/admin/users",
+                headers={"X-Telegram-ID": str(callback.from_user.id)},
+                params={"skip": page * 10, "limit": 10}
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"API error: {response.status_code}")
+            
+            users = response.json()
+        
+        if not users:
+            text = "<b>👥 Пользователи</b>\n\nПользователей не найдено."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_users_menu")]
+            ])
+            await callback.message.edit_text(text, reply_markup=keyboard)
+            await callback.answer()
+            return
+        
+        text = "<b>👥 Пользователи</b>\n\n"
+        keyboard_buttons = []
+        
+        for user in users:
+            premium_emoji = "⭐" if user.get("is_premium") else ""
+            text += f"{premium_emoji} <b>#{user['id']}</b> - {user.get('first_name', '')} {user.get('last_name', '')}\n"
+            text += f"   @{user.get('username', 'не указан')}\n"
+            text += f"   Заказов: {user.get('orders_count', 0)}, Потрачено: {user.get('total_spent', 0):.2f} ₽\n\n"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=f"#{user['id']} - {user.get('first_name', '')} {user.get('last_name', '')}",
+                    callback_data=f"admin_user_view_{user['id']}"
+                )
+            ])
+        
+        # Пагинация
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(
+                InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_users_list_{page-1}")
+            )
+        
+        if len(users) == 10:  # Если получили полную страницу, есть еще пользователи
+            nav_buttons.append(
+                InlineKeyboardButton(text="Вперед ▶️", callback_data=f"admin_users_list_{page+1}")
+            )
+        
+        if nav_buttons:
+            keyboard_buttons.append(nav_buttons)
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад к меню", callback_data="admin_users_menu")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing users list: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке списка пользователей.", show_alert=True)
+
+
+async def show_user_details(callback: CallbackQuery, bot: Bot, user_id: int):
+    """Показывает детали пользователя."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}",
+                headers={"X-Telegram-ID": str(callback.from_user.id)}
+            )
+            
+            if response.status_code == 404:
+                await callback.answer("❌ Пользователь не найден", show_alert=True)
+                return
+            
+            if response.status_code != 200:
+                raise Exception(f"API error: {response.status_code}")
+            
+            user = response.json()
+        
+        premium_emoji = "⭐" if user.get("is_premium") else ""
+        blocked_emoji = "🚫" if not user.get("is_active", True) else ""
+        
+        text = f"""
+<b>{premium_emoji} {blocked_emoji} Пользователь #{user_id}</b>
+
+<b>Имя:</b> {user.get('first_name', 'Не указано')} {user.get('last_name', '')}
+<b>Username:</b> @{user.get('username', 'не указан')}
+<b>Telegram ID:</b> {user.get('telegram_id', 'не указан')}
+<b>Premium:</b> {'Да' if user.get('is_premium') else 'Нет'}
+<b>Статус:</b> {'Заблокирован' if not user.get('is_active', True) else 'Активен'}
+
+<b>Статистика:</b>
+📋 Заказов: {user.get('orders_count', 0)}
+💰 Потрачено: {user.get('total_spent', 0):.2f} ₽
+"""
+        
+        keyboard_buttons = []
+        
+        # Кнопка блокировки/разблокировки
+        if user.get("is_active", True):
+            keyboard_buttons.append([
+                InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"admin_user_block_{user_id}")
+            ])
+        else:
+            keyboard_buttons.append([
+                InlineKeyboardButton(text="✅ Разблокировать", callback_data=f"admin_user_unblock_{user_id}")
+            ])
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="📋 История заказов", callback_data=f"admin_user_orders_{user_id}")
+        ])
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад к списку", callback_data="admin_users_list_0")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing user details: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке пользователя.", show_alert=True)
+
+
+async def toggle_user_status(callback: CallbackQuery, bot: Bot, user_id: int, block: bool):
+    """Блокирует/разблокирует пользователя."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}/status",
+                headers={"X-Telegram-ID": str(callback.from_user.id)},
+                params={"is_blocked": block}
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"Update failed: {response.status_code}")
+        
+        status_text = "заблокирован" if block else "разблокирован"
+        await callback.answer(f"✅ Пользователь {status_text}", show_alert=True)
+        
+        # Обновляем детали пользователя
+        await show_user_details(callback, bot, user_id)
+        
+    except Exception as e:
+        print(f"Error toggling user status: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при изменении статуса пользователя.", show_alert=True)
+
+
+async def show_user_orders(callback: CallbackQuery, bot: Bot, user_id: int, page: int = 0):
+    """Показывает историю заказов пользователя."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}/orders",
+                headers={"X-Telegram-ID": str(callback.from_user.id)},
+                params={"skip": page * 10, "limit": 10}
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"API error: {response.status_code}")
+            
+            orders = response.json()
+        
+        # Получаем информацию о пользователе
+        async with httpx.AsyncClient() as client:
+            user_response = await client.get(
+                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}",
+                headers={"X-Telegram-ID": str(callback.from_user.id)}
+            )
+            user = user_response.json() if user_response.status_code == 200 else {}
+        
+        if not orders:
+            text = f"<b>📋 Заказы пользователя</b>\n\n"
+            text += f"Пользователь: {user.get('first_name', '')} {user.get('last_name', '')}\n\n"
+            text += "Заказов не найдено."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_user_view_{user_id}")]
+            ])
+            await callback.message.edit_text(text, reply_markup=keyboard)
+            await callback.answer()
+            return
+        
+        text = f"<b>📋 Заказы пользователя</b>\n\n"
+        text += f"Пользователь: {user.get('first_name', '')} {user.get('last_name', '')}\n\n"
+        
+        keyboard_buttons = []
+        
+        for order in orders:
+            status_emoji = {
+                "pending": "⏳",
+                "confirmed": "✅",
+                "processing": "🔄",
+                "shipped": "📦",
+                "delivered": "✓",
+                "cancelled": "❌"
+            }.get(order.get("status"), "📋")
+            
+            text += f"{status_emoji} <b>#{order['id']}</b> - {order.get('order_number', 'N/A')}\n"
+            text += f"   Магазин: {order.get('shop_name', 'Неизвестно')}\n"
+            text += f"   Сумма: {order.get('total_amount', 0):.2f} ₽\n\n"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=f"#{order['id']} - {order.get('order_number', 'N/A')}",
+                    callback_data=f"admin_order_view_{order['id']}"
+                )
+            ])
+        
+        # Пагинация
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(
+                InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_user_orders_{user_id}_{page-1}")
+            )
+        
+        if len(orders) == 10:
+            nav_buttons.append(
+                InlineKeyboardButton(text="Вперед ▶️", callback_data=f"admin_user_orders_{user_id}_{page+1}")
+            )
+        
+        if nav_buttons:
+            keyboard_buttons.append(nav_buttons)
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_user_view_{user_id}")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing user orders: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке заказов пользователя.", show_alert=True)
+
+
+# Обработчики callback
+@router.callback_query(F.data.startswith("admin_users_list"))
+async def callback_users_list(callback: CallbackQuery, bot: Bot):
+    """Обработчик списка пользователей."""
+    parts = callback.data.split("_")
+    page = int(parts[3]) if len(parts) > 3 else 0
+    await show_users_list(callback, bot, page)
+
+
+@router.callback_query(F.data.startswith("admin_user_view_"))
+async def callback_user_view(callback: CallbackQuery, bot: Bot):
+    """Обработчик просмотра пользователя."""
+    user_id = int(callback.data.split("_")[3])
+    await show_user_details(callback, bot, user_id)
+
+
+@router.callback_query(F.data.startswith("admin_user_block_"))
+async def callback_user_block(callback: CallbackQuery, bot: Bot):
+    """Обработчик блокировки пользователя."""
+    user_id = int(callback.data.split("_")[3])
+    await toggle_user_status(callback, bot, user_id, True)
+
+
+@router.callback_query(F.data.startswith("admin_user_unblock_"))
+async def callback_user_unblock(callback: CallbackQuery, bot: Bot):
+    """Обработчик разблокировки пользователя."""
+    user_id = int(callback.data.split("_")[3])
+    await toggle_user_status(callback, bot, user_id, False)
+
+
+@router.callback_query(F.data.startswith("admin_user_orders_"))
+async def callback_user_orders(callback: CallbackQuery, bot: Bot):
+    """Обработчик заказов пользователя."""
+    parts = callback.data.split("_")
+    user_id = int(parts[3])
+    page = int(parts[4]) if len(parts) > 4 else 0
+    await show_user_orders(callback, bot, user_id, page)
 

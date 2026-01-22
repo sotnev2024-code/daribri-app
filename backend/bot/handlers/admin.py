@@ -222,6 +222,11 @@ async def show_admin_menu(message: Message, bot: Bot):
 """
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏪 Магазины", callback_data="admin_shops_menu")],
+            [InlineKeyboardButton(text="📦 Товары", callback_data="admin_products_menu")],
+            [InlineKeyboardButton(text="📋 Заказы", callback_data="admin_orders_menu")],
+            [InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_users_menu")],
+            [InlineKeyboardButton(text="📊 Аналитика", callback_data="admin_analytics_menu")],
             [InlineKeyboardButton(text="📋 Заявки", callback_data="admin_requests_menu")],
             [InlineKeyboardButton(text="💳 Управление подписками", callback_data="admin_subscriptions")],
             [InlineKeyboardButton(text="🎫 Промокоды", callback_data="admin_promos_menu")]
@@ -284,6 +289,25 @@ async def admin_callback_handler(callback: CallbackQuery, bot: Bot, state: FSMCo
         await callback.answer()
     elif action == "admin_list_promos":
         await show_promos_list(callback, bot)
+        await callback.answer()
+    elif action == "admin_promos_statistics":
+        await show_promo_statistics(callback, bot)
+        await callback.answer()
+    elif action == "admin_shops_menu":
+        from .shops_admin import show_shops_menu
+        await show_shops_menu(callback, bot)
+        await callback.answer()
+    elif action == "admin_products_menu":
+        from .products_admin import show_products_menu
+        await show_products_menu(callback, bot)
+        await callback.answer()
+    elif action == "admin_orders_menu":
+        from .orders_admin import show_orders_menu
+        await show_orders_menu(callback, bot)
+        await callback.answer()
+    elif action == "admin_analytics_menu":
+        from .analytics_admin import show_analytics_menu
+        await show_analytics_menu(callback, bot)
         await callback.answer()
     elif action == "admin_subscriptions":
         from .subscriptions_admin import show_subscription_plans_list
@@ -384,6 +408,7 @@ async def show_promos_menu(callback: CallbackQuery, bot: Bot):
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="➕ Создать промокод", callback_data="admin_create_promo")],
             [InlineKeyboardButton(text="📋 Список промокодов", callback_data="admin_list_promos")],
+            [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_promos_statistics")],
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back_to_menu")]
         ])
         
@@ -1534,4 +1559,71 @@ async def cancel_promo_creation(message: Message, state: FSMContext):
             "❌ Создание промокода отменено.",
             reply_markup=ReplyKeyboardRemove()
         )
+
+
+async def show_promo_statistics(callback: CallbackQuery, bot: Bot):
+    """Показывает статистику использования промокодов."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        import httpx
+        from backend.app.config import settings
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.WEBAPP_URL}/api/admin/promos/statistics",
+                headers={"X-Telegram-ID": str(callback.from_user.id)}
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"API error: {response.status_code}")
+            
+            stats = response.json()
+        
+        text = f"""
+<b>📊 Статистика промокодов</b>
+
+<b>Общая статистика:</b>
+🎫 Всего промокодов: {stats.get('total_promos', 0)}
+✅ Активных: {stats.get('active_promos', 0)}
+📈 Всего использований: {stats.get('total_uses', 0)}
+
+<b>Промокоды по типам:</b>
+"""
+        
+        promos_by_type = stats.get('promos_by_type', {})
+        type_names = {
+            "percent": "Процентные",
+            "fixed": "Фиксированные",
+            "free_delivery": "Бесплатная доставка"
+        }
+        
+        for promo_type, count in promos_by_type.items():
+            type_name = type_names.get(promo_type, promo_type)
+            text += f"• {type_name}: {count}\n"
+        
+        text += "\n<b>Топ промокодов по использованию:</b>\n"
+        
+        top_promos = stats.get('top_promos', [])
+        for idx, promo in enumerate(top_promos[:5], 1):
+            text += f"{idx}. <b>{promo.get('code', 'N/A')}</b> ({promo.get('promo_type', 'N/A')})\n"
+            text += f"   Использований: {promo.get('usage_count', 0)}\n"
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_promos_menu")]
+        ])
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing promo statistics: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке статистики промокодов.", show_alert=True)
 

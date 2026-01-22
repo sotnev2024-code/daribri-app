@@ -510,6 +510,10 @@ app.include_router(promo_router, prefix="/api/promo", tags=["Promo"])
 app.include_router(banners_router, prefix="/api/banners", tags=["Banners"])
 app.include_router(bot_router, prefix="/api/bot", tags=["Bot"])
 
+# Admin router
+from .routes.admin import router as admin_router
+app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
+
 
 @app.get("/health")
 @app.get("/api/health")

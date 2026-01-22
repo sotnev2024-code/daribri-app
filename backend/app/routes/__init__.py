@@ -14,6 +14,7 @@ from .subscriptions import router as subscriptions_router
 from .geocode import router as geocode_router
 from .promo import router as promo_router
 from .banners import router as banners_router
+from .admin import router as admin_router
 
 __all__ = [
     "users_router",
@@ -28,6 +29,7 @@ __all__ = [
     "geocode_router",
     "promo_router",
     "banners_router",
+    "admin_router",
 ]
 
 
