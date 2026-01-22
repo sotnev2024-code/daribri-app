@@ -6,7 +6,6 @@ from aiogram import Router, F, Bot
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 )
-import httpx
 import os
 from backend.app.config import settings
 
@@ -68,16 +67,43 @@ async def show_platform_statistics(callback: CallbackQuery, bot: Bot):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/analytics/platform",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            stats = response.json()
+        from backend.app.services.database import DatabaseService
+        
+        db = DatabaseService(db_path=settings.DATABASE_PATH)
+        await db.connect()
+        
+        # Активные магазины
+        active_shops = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM shops WHERE is_active = 1"
+        )
+        total_shops = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM shops"
+        )
+        active_users = await db.fetch_one(
+            """SELECT COUNT(DISTINCT user_id) as cnt 
+               FROM orders 
+               WHERE created_at >= datetime('now', '-30 days')"""
+        )
+        total_users = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM users"
+        )
+        total_products = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM products"
+        )
+        active_products = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM products WHERE is_active = 1"
+        )
+        
+        await db.disconnect()
+        
+        stats = {
+            "active_shops": active_shops["cnt"] if active_shops else 0,
+            "total_shops": total_shops["cnt"] if total_shops else 0,
+            "active_users": active_users["cnt"] if active_users else 0,
+            "total_users": total_users["cnt"] if total_users else 0,
+            "total_products": total_products["cnt"] if total_products else 0,
+            "active_products": active_products["cnt"] if active_products else 0
+        }
         
         text = f"""
 <b>📈 Общая статистика платформы</b>
@@ -99,14 +125,20 @@ async def show_platform_statistics(callback: CallbackQuery, bot: Bot):
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_menu")]
         ])
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing platform statistics: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке статистики.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке статистики.", show_alert=True)
+        except:
+            pass
 
 
 async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "month"):
@@ -116,17 +148,49 @@ async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/analytics/revenue",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"period": period}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            report = response.json()
+        from backend.app.services.database import DatabaseService
+        from decimal import Decimal
+        
+        db = DatabaseService(db_path=settings.DATABASE_PATH)
+        await db.connect()
+        
+        period_map = {
+            "day": "-1 day",
+            "week": "-7 days",
+            "month": "-30 days"
+        }
+        
+        period_sql = period_map.get(period, "-30 days")
+        
+        # Выручка за период
+        revenue = await db.fetch_one(
+            f"""SELECT COALESCE(SUM(total_amount), 0) as total 
+               FROM orders 
+               WHERE created_at >= datetime('now', '{period_sql}')"""
+        )
+        
+        # Количество заказов за период
+        orders_count = await db.fetch_one(
+            f"""SELECT COUNT(*) as cnt 
+               FROM orders 
+               WHERE created_at >= datetime('now', '{period_sql}')"""
+        )
+        
+        # Средний чек за период
+        avg_order = await db.fetch_one(
+            f"""SELECT COALESCE(AVG(total_amount), 0) as avg 
+               FROM orders 
+               WHERE created_at >= datetime('now', '{period_sql}')"""
+        )
+        
+        await db.disconnect()
+        
+        report = {
+            "period": period,
+            "revenue": float(revenue["total"]) if revenue and isinstance(revenue["total"], Decimal) else (revenue["total"] if revenue else 0),
+            "orders_count": orders_count["cnt"] if orders_count else 0,
+            "average_order": float(avg_order["avg"]) if avg_order and isinstance(avg_order["avg"], Decimal) else (avg_order["avg"] if avg_order else 0)
+        }
         
         period_names = {
             "day": "За день",
@@ -153,14 +217,20 @@ async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_menu")]
         ])
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing revenue report: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке отчета.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке отчета.", show_alert=True)
+        except:
+            pass
 
 
 async def show_top_shops(callback: CallbackQuery, bot: Bot, limit: int = 10):
@@ -170,17 +240,36 @@ async def show_top_shops(callback: CallbackQuery, bot: Bot, limit: int = 10):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/analytics/top-shops",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"limit": limit}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            shops = response.json()
+        from backend.app.services.database import DatabaseService
+        from decimal import Decimal
+        
+        db = DatabaseService(db_path=settings.DATABASE_PATH)
+        await db.connect()
+        
+        shops = await db.fetch_all(
+            """SELECT s.id, s.name, s.is_active, s.is_verified,
+                      COALESCE(SUM(o.total_amount), 0) as revenue,
+                      COUNT(o.id) as orders_count
+               FROM shops s
+               LEFT JOIN orders o ON s.id = o.shop_id
+               GROUP BY s.id
+               ORDER BY revenue DESC
+               LIMIT ?""",
+            (limit,)
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        shops_list = []
+        for shop in shops:
+            shop_dict = dict(shop)
+            if shop_dict.get("revenue") is not None:
+                if isinstance(shop_dict["revenue"], Decimal):
+                    shop_dict["revenue"] = float(shop_dict["revenue"])
+            shops_list.append(shop_dict)
+        
+        shops = shops_list
         
         if not shops:
             text = "<b>🏆 Топ магазинов</b>\n\nМагазинов не найдено."
@@ -205,14 +294,20 @@ async def show_top_shops(callback: CallbackQuery, bot: Bot, limit: int = 10):
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_menu")]
         ])
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing top shops: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке топа магазинов.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке топа магазинов.", show_alert=True)
+        except:
+            pass
 
 
 async def show_top_products(callback: CallbackQuery, bot: Bot, limit: int = 10):
@@ -222,17 +317,41 @@ async def show_top_products(callback: CallbackQuery, bot: Bot, limit: int = 10):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/analytics/top-products",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"limit": limit}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            products = response.json()
+        from backend.app.services.database import DatabaseService
+        from decimal import Decimal
+        
+        db = DatabaseService(db_path=settings.DATABASE_PATH)
+        await db.connect()
+        
+        products = await db.fetch_all(
+            """SELECT p.id, p.name, p.price, s.name as shop_name,
+                      SUM(oi.quantity) as sold_quantity,
+                      SUM(oi.price * oi.quantity) as revenue
+               FROM products p
+               LEFT JOIN order_items oi ON p.id = oi.product_id
+               LEFT JOIN shops s ON p.shop_id = s.id
+               GROUP BY p.id
+               HAVING sold_quantity > 0
+               ORDER BY sold_quantity DESC
+               LIMIT ?""",
+            (limit,)
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        products_list = []
+        for product in products:
+            product_dict = dict(product)
+            if product_dict.get("price") is not None:
+                if isinstance(product_dict["price"], Decimal):
+                    product_dict["price"] = float(product_dict["price"])
+            if product_dict.get("revenue") is not None:
+                if isinstance(product_dict["revenue"], Decimal):
+                    product_dict["revenue"] = float(product_dict["revenue"])
+            products_list.append(product_dict)
+        
+        products = products_list
         
         if not products:
             text = "<b>📦 Топ товаров</b>\n\nТоваров не найдено."
@@ -255,14 +374,20 @@ async def show_top_products(callback: CallbackQuery, bot: Bot, limit: int = 10):
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_menu")]
         ])
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing top products: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке топа товаров.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке топа товаров.", show_alert=True)
+        except:
+            pass
 
 
 # Обработчики callback

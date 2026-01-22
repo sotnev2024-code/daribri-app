@@ -1568,19 +1568,55 @@ async def show_promo_statistics(callback: CallbackQuery, bot: Bot):
         return
     
     try:
-        import httpx
-        from backend.app.config import settings
+        db = await get_db()
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/promos/statistics",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            stats = response.json()
+        # Всего промокодов
+        total_promos = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM promos"
+        )
+        
+        # Активных промокодов
+        active_promos = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM promos WHERE is_active = 1"
+        )
+        
+        # Общее количество использований
+        total_uses = await db.fetch_one(
+            "SELECT COALESCE(SUM(usage_count), 0) as total FROM promos"
+        )
+        
+        # Промокоды по типам
+        promos_by_type = await db.fetch_all(
+            """SELECT promo_type, COUNT(*) as cnt 
+               FROM promos 
+               GROUP BY promo_type"""
+        )
+        
+        # Топ промокодов по использованию
+        top_promos = await db.fetch_all(
+            """SELECT code, promo_type, usage_count, current_uses
+               FROM promos
+               ORDER BY usage_count DESC
+               LIMIT 10"""
+        )
+        
+        await db.disconnect()
+        
+        stats = {
+            "total_promos": total_promos["cnt"] if total_promos else 0,
+            "active_promos": active_promos["cnt"] if active_promos else 0,
+            "total_uses": total_uses["total"] if total_uses else 0,
+            "promos_by_type": {row["promo_type"]: row["cnt"] for row in promos_by_type},
+            "top_promos": [
+                {
+                    "code": p["code"],
+                    "promo_type": p["promo_type"],
+                    "usage_count": p["usage_count"] or 0,
+                    "current_uses": p["current_uses"] or 0
+                }
+                for p in top_promos
+            ]
+        }
         
         text = f"""
 <b>📊 Статистика промокодов</b>

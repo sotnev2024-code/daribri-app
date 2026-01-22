@@ -9,7 +9,7 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-import httpx
+from decimal import Decimal
 from backend.app.config import settings
 
 router = Router()
@@ -288,17 +288,33 @@ async def show_users_list(callback: CallbackQuery, bot: Bot, page: int = 0):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/users",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"skip": page * 10, "limit": 10}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            users = response.json()
+        db = await get_db()
+        
+        limit = 10
+        offset = page * limit
+        
+        users = await db.fetch_all(
+            """SELECT u.*,
+                      (SELECT COUNT(*) FROM orders WHERE user_id = u.id) as orders_count,
+                      (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE user_id = u.id) as total_spent
+               FROM users u
+               ORDER BY u.created_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        users_list = []
+        for user in users:
+            user_dict = dict(user)
+            if user_dict.get("total_spent") is not None:
+                if isinstance(user_dict["total_spent"], Decimal):
+                    user_dict["total_spent"] = float(user_dict["total_spent"])
+            users_list.append(user_dict)
+        
+        users = users_list
         
         if not users:
             text = "<b>👥 Пользователи</b>\n\nПользователей не найдено."
@@ -346,14 +362,20 @@ async def show_users_list(callback: CallbackQuery, bot: Bot, page: int = 0):
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing users list: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке списка пользователей.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке списка пользователей.", show_alert=True)
+        except:
+            pass
 
 
 async def show_user_details(callback: CallbackQuery, bot: Bot, user_id: int):
@@ -363,20 +385,33 @@ async def show_user_details(callback: CallbackQuery, bot: Bot, user_id: int):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code == 404:
-                await callback.answer("❌ Пользователь не найден", show_alert=True)
-                return
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            user = response.json()
+        db = await get_db()
+        
+        user = await db.fetch_one("SELECT * FROM users WHERE id = ?", (user_id,))
+        
+        if not user:
+            await db.disconnect()
+            await callback.answer("❌ Пользователь не найден", show_alert=True)
+            return
+        
+        # Статистика пользователя
+        orders_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM orders WHERE user_id = ?",
+            (user_id,)
+        )
+        
+        total_spent = await db.fetch_one(
+            "SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE user_id = ?",
+            (user_id,)
+        )
+        
+        await db.disconnect()
+        
+        user_dict = dict(user)
+        user_dict["orders_count"] = orders_count["cnt"] if orders_count else 0
+        user_dict["total_spent"] = float(total_spent["total"]) if total_spent and isinstance(total_spent["total"], Decimal) else (total_spent["total"] if total_spent else 0)
+        
+        user = user_dict
         
         premium_emoji = "⭐" if user.get("is_premium") else ""
         blocked_emoji = "🚫" if not user.get("is_active", True) else ""
@@ -417,14 +452,20 @@ async def show_user_details(callback: CallbackQuery, bot: Bot, user_id: int):
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing user details: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке пользователя.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке пользователя.", show_alert=True)
+        except:
+            pass
 
 
 async def toggle_user_status(callback: CallbackQuery, bot: Bot, user_id: int, block: bool):
@@ -434,15 +475,24 @@ async def toggle_user_status(callback: CallbackQuery, bot: Bot, user_id: int, bl
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.patch(
-                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}/status",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"is_blocked": block}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"Update failed: {response.status_code}")
+        db = await get_db()
+        
+        # Проверяем существование пользователя
+        user = await db.fetch_one("SELECT id FROM users WHERE id = ?", (user_id,))
+        if not user:
+            await db.disconnect()
+            await callback.answer("❌ Пользователь не найден", show_alert=True)
+            return
+        
+        # Обновляем статус (используем is_active как индикатор блокировки)
+        await db.update(
+            "users",
+            {"is_active": 0 if block else 1},
+            "id = ?",
+            (user_id,)
+        )
+        await db.commit()
+        await db.disconnect()
         
         status_text = "заблокирован" if block else "разблокирован"
         await callback.answer(f"✅ Пользователь {status_text}", show_alert=True)
@@ -464,25 +514,40 @@ async def show_user_orders(callback: CallbackQuery, bot: Bot, user_id: int, page
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}/orders",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"skip": page * 10, "limit": 10}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            orders = response.json()
+        db = await get_db()
         
-        # Получаем информацию о пользователе
-        async with httpx.AsyncClient() as client:
-            user_response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/users/{user_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            user = user_response.json() if user_response.status_code == 200 else {}
+        # Проверяем существование пользователя
+        user = await db.fetch_one("SELECT first_name, last_name FROM users WHERE id = ?", (user_id,))
+        if not user:
+            await db.disconnect()
+            await callback.answer("❌ Пользователь не найден", show_alert=True)
+            return
+        
+        limit = 10
+        offset = page * limit
+        
+        orders = await db.fetch_all(
+            """SELECT o.*, s.name as shop_name
+               FROM orders o
+               LEFT JOIN shops s ON o.shop_id = s.id
+               WHERE o.user_id = ?
+               ORDER BY o.created_at DESC
+               LIMIT ? OFFSET ?""",
+            (user_id, limit, offset)
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        orders_list = []
+        for order in orders:
+            order_dict = dict(order)
+            if order_dict.get("total_amount") is not None:
+                if isinstance(order_dict["total_amount"], Decimal):
+                    order_dict["total_amount"] = float(order_dict["total_amount"])
+            orders_list.append(order_dict)
+        
+        orders = orders_list
         
         if not orders:
             text = f"<b>📋 Заказы пользователя</b>\n\n"
@@ -542,14 +607,20 @@ async def show_user_orders(callback: CallbackQuery, bot: Bot, user_id: int, page
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing user orders: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке заказов пользователя.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке заказов пользователя.", show_alert=True)
+        except:
+            pass
 
 
 # Обработчики callback

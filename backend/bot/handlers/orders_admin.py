@@ -8,7 +8,7 @@ from aiogram.types import (
     FSInputFile
 )
 from datetime import datetime
-import httpx
+from decimal import Decimal
 import os
 import tempfile
 from openpyxl import Workbook
@@ -48,14 +48,26 @@ async def show_orders_menu(callback: CallbackQuery, bot: Bot):
         return
     
     try:
+        db = await get_db()
+        
         # Получаем статистику заказов
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/orders/statistics",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            stats = response.json() if response.status_code == 200 else {}
+        total_revenue = await db.fetch_one(
+            "SELECT COALESCE(SUM(total_amount), 0) as total FROM orders"
+        )
+        avg_order = await db.fetch_one(
+            "SELECT COALESCE(AVG(total_amount), 0) as avg FROM orders"
+        )
+        orders_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM orders"
+        )
+        
+        await db.disconnect()
+        
+        stats = {
+            "total_revenue": float(total_revenue["total"]) if total_revenue and isinstance(total_revenue["total"], Decimal) else (total_revenue["total"] if total_revenue else 0),
+            "average_order": float(avg_order["avg"]) if avg_order and isinstance(avg_order["avg"], Decimal) else (avg_order["avg"] if avg_order else 0),
+            "orders_count": orders_count["cnt"] if orders_count else 0
+        }
         
         menu_text = f"""
 <b>📋 Управление заказами</b>
@@ -100,25 +112,48 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         return
     
     try:
-        params = {
-            "skip": page * 10,
-            "limit": 10
-        }
+        db = await get_db()
+        
+        # Формируем условия фильтрации
+        conditions = []
+        params = []
         
         if status:
-            params["status"] = status
+            conditions.append("o.status = ?")
+            params.append(status)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/orders",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params=params
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            orders = response.json()
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        limit = 10
+        offset = page * limit
+        
+        orders = await db.fetch_all(
+            f"""SELECT o.*, 
+                      s.name as shop_name,
+                      u.telegram_id as user_telegram_id,
+                      u.username as user_username,
+                      u.first_name as user_first_name,
+                      u.last_name as user_last_name
+               FROM orders o
+               LEFT JOIN shops s ON o.shop_id = s.id
+               LEFT JOIN users u ON o.user_id = u.id
+               WHERE {where_clause}
+               ORDER BY o.created_at DESC
+               LIMIT ? OFFSET ?""",
+            tuple(params + [limit, offset])
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        orders_list = []
+        for order in orders:
+            order_dict = dict(order)
+            if order_dict.get("total_amount") is not None:
+                if isinstance(order_dict["total_amount"], Decimal):
+                    order_dict["total_amount"] = float(order_dict["total_amount"])
+            orders_list.append(order_dict)
+        
+        orders = orders_list
         
         status_names = {
             None: "Все заказы",
@@ -194,14 +229,20 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing orders list: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке списка заказов.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке списка заказов.", show_alert=True)
+        except:
+            pass
 
 
 async def show_order_details(callback: CallbackQuery, bot: Bot, order_id: int):
@@ -211,20 +252,60 @@ async def show_order_details(callback: CallbackQuery, bot: Bot, order_id: int):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/orders/{order_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code == 404:
-                await callback.answer("❌ Заказ не найден", show_alert=True)
-                return
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            order = response.json()
+        db = await get_db()
+        
+        order = await db.fetch_one(
+            """SELECT o.*, 
+                      s.name as shop_name,
+                      u.telegram_id as user_telegram_id,
+                      u.username as user_username,
+                      u.first_name as user_first_name,
+                      u.last_name as user_last_name
+               FROM orders o
+               LEFT JOIN shops s ON o.shop_id = s.id
+               LEFT JOIN users u ON o.user_id = u.id
+               WHERE o.id = ?""",
+            (order_id,)
+        )
+        
+        if not order:
+            await db.disconnect()
+            await callback.answer("❌ Заказ не найден", show_alert=True)
+            return
+        
+        # Получаем товары заказа
+        items = await db.fetch_all(
+            """SELECT oi.*, 
+                      COALESCE(oi.product_name, p.name, 'Товар удалён') as product_name
+               FROM order_items oi
+               LEFT JOIN products p ON oi.product_id = p.id
+               WHERE oi.order_id = ?""",
+            (order_id,)
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        order_dict = dict(order)
+        if order_dict.get("total_amount") is not None:
+            if isinstance(order_dict["total_amount"], Decimal):
+                order_dict["total_amount"] = float(order_dict["total_amount"])
+        if order_dict.get("delivery_fee") is not None:
+            if isinstance(order_dict["delivery_fee"], Decimal):
+                order_dict["delivery_fee"] = float(order_dict["delivery_fee"])
+        if order_dict.get("promo_discount_amount") is not None:
+            if isinstance(order_dict["promo_discount_amount"], Decimal):
+                order_dict["promo_discount_amount"] = float(order_dict["promo_discount_amount"])
+        
+        order_dict["items"] = []
+        for item in items:
+            item_dict = dict(item)
+            if item_dict.get("price") is not None:
+                if isinstance(item_dict["price"], Decimal):
+                    item_dict["price"] = float(item_dict["price"])
+            order_dict["items"].append(item_dict)
+        
+        order = order_dict
         
         status_emoji = {
             "pending": "⏳",
@@ -280,14 +361,20 @@ ID: {order.get('user_telegram_id', 'не указан')}
             [InlineKeyboardButton(text="◀️ Назад к списку", callback_data="admin_orders_list_all_0")]
         ])
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing order details: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке заказа.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке заказа.", show_alert=True)
+        except:
+            pass
 
 
 async def export_orders_to_excel(callback: CallbackQuery, bot: Bot):
@@ -299,32 +386,40 @@ async def export_orders_to_excel(callback: CallbackQuery, bot: Bot):
     try:
         await callback.answer("📥 Генерация файла...")
         
-        # Получаем все заказы
-        all_orders = []
-        page = 0
-        limit = 100
+        # Получаем все заказы напрямую из БД
+        db = await get_db()
         
-        async with httpx.AsyncClient() as client:
-            while True:
-                response = await client.get(
-                    f"{settings.WEBAPP_URL}/api/admin/orders",
-                    headers={"X-Telegram-ID": str(callback.from_user.id)},
-                    params={"skip": page * limit, "limit": limit}
-                )
-                
-                if response.status_code != 200:
-                    raise Exception(f"API error: {response.status_code}")
-                
-                orders = response.json()
-                if not orders:
-                    break
-                
-                all_orders.extend(orders)
-                
-                if len(orders) < limit:
-                    break
-                
-                page += 1
+        all_orders = await db.fetch_all(
+            """SELECT o.*, 
+                      s.name as shop_name,
+                      u.telegram_id as user_telegram_id,
+                      u.username as user_username,
+                      u.first_name as user_first_name,
+                      u.last_name as user_last_name
+               FROM orders o
+               LEFT JOIN shops s ON o.shop_id = s.id
+               LEFT JOIN users u ON o.user_id = u.id
+               ORDER BY o.created_at DESC"""
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        orders_list = []
+        for order in all_orders:
+            order_dict = dict(order)
+            if order_dict.get("total_amount") is not None:
+                if isinstance(order_dict["total_amount"], Decimal):
+                    order_dict["total_amount"] = float(order_dict["total_amount"])
+            if order_dict.get("delivery_fee") is not None:
+                if isinstance(order_dict["delivery_fee"], Decimal):
+                    order_dict["delivery_fee"] = float(order_dict["delivery_fee"])
+            if order_dict.get("promo_discount_amount") is not None:
+                if isinstance(order_dict["promo_discount_amount"], Decimal):
+                    order_dict["promo_discount_amount"] = float(order_dict["promo_discount_amount"])
+            orders_list.append(order_dict)
+        
+        all_orders = orders_list
         
         # Создаем Excel файл
         wb = Workbook()
@@ -426,16 +521,38 @@ async def show_orders_statistics(callback: CallbackQuery, bot: Bot):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/orders/statistics",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            stats = response.json()
+        db = await get_db()
+        
+        # Общая выручка
+        total_revenue = await db.fetch_one(
+            "SELECT COALESCE(SUM(total_amount), 0) as total FROM orders"
+        )
+        
+        # Средний чек
+        avg_order = await db.fetch_one(
+            "SELECT COALESCE(AVG(total_amount), 0) as avg FROM orders"
+        )
+        
+        # Количество заказов
+        orders_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM orders"
+        )
+        
+        # Заказы по статусам
+        orders_by_status = await db.fetch_all(
+            """SELECT status, COUNT(*) as cnt 
+               FROM orders 
+               GROUP BY status"""
+        )
+        
+        await db.disconnect()
+        
+        stats = {
+            "total_revenue": float(total_revenue["total"]) if total_revenue and isinstance(total_revenue["total"], Decimal) else (total_revenue["total"] if total_revenue else 0),
+            "average_order": float(avg_order["avg"]) if avg_order and isinstance(avg_order["avg"], Decimal) else (avg_order["avg"] if avg_order else 0),
+            "orders_count": orders_count["cnt"] if orders_count else 0,
+            "orders_by_status": {row["status"]: row["cnt"] for row in orders_by_status}
+        }
         
         text = f"""
 <b>📊 Статистика по заказам</b>

@@ -10,7 +10,6 @@ from aiogram.types import (
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from decimal import Decimal
-import httpx
 import os
 from backend.app.config import settings
 
@@ -212,32 +211,74 @@ async def show_shop_details(callback: CallbackQuery, bot: Bot, shop_id: int):
         return
     
     try:
-        # Используем API для получения данных
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code == 404:
-                await callback.answer("❌ Магазин не найден", show_alert=True)
-                return
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            shop = response.json()
+        # Используем прямой доступ к базе данных
+        db = await get_db()
+        
+        # Получаем данные магазина
+        shop = await db.fetch_one(
+            """SELECT s.*, 
+                      u.telegram_id as owner_telegram_id,
+                      u.username as owner_username,
+                      u.first_name as owner_first_name,
+                      u.last_name as owner_last_name
+               FROM shops s
+               LEFT JOIN users u ON s.owner_id = u.id
+               WHERE s.id = ?""",
+            (shop_id,)
+        )
+        
+        if not shop:
+            await db.disconnect()
+            await callback.answer("❌ Магазин не найден", show_alert=True)
+            return
         
         # Получаем статистику
-        async with httpx.AsyncClient() as client:
-            stats_response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}/statistics",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            stats = stats_response.json() if stats_response.status_code == 200 else {}
+        products_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM products WHERE shop_id = ?",
+            (shop_id,)
+        )
+        active_products_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM products WHERE shop_id = ? AND is_active = 1",
+            (shop_id,)
+        )
+        orders_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM orders WHERE shop_id = ?",
+            (shop_id,)
+        )
+        total_revenue = await db.fetch_one(
+            "SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE shop_id = ?",
+            (shop_id,)
+        )
+        avg_order = await db.fetch_one(
+            "SELECT COALESCE(AVG(total_amount), 0) as avg FROM orders WHERE shop_id = ?",
+            (shop_id,)
+        )
+        
+        await db.disconnect()
+        
+        stats = {
+            "products_count": products_count["cnt"] if products_count else 0,
+            "active_products_count": active_products_count["cnt"] if active_products_count else 0,
+            "orders_count": orders_count["cnt"] if orders_count else 0,
+            "total_revenue": float(total_revenue["total"]) if total_revenue and isinstance(total_revenue["total"], Decimal) else (total_revenue["total"] if total_revenue else 0),
+            "average_order": float(avg_order["avg"]) if avg_order and isinstance(avg_order["avg"], Decimal) else (avg_order["avg"] if avg_order else 0)
+        }
         
         status_emoji = "✅" if shop.get("is_active") else "❌"
         verified_emoji = "⭐" if shop.get("is_verified") else ""
+        
+        # Преобразуем Decimal в float для отображения
+        avg_rating = shop.get('average_rating')
+        if avg_rating is not None:
+            if isinstance(avg_rating, Decimal):
+                avg_rating = float(avg_rating)
+            elif isinstance(avg_rating, str):
+                try:
+                    avg_rating = float(avg_rating)
+                except:
+                    avg_rating = 0
+        else:
+            avg_rating = 0
         
         text = f"""
 <b>{status_emoji} {verified_emoji} Магазин #{shop_id}</b>
@@ -258,7 +299,7 @@ ID: {shop.get('owner_telegram_id', 'не указан')}
 💰 Выручка: {stats.get('total_revenue', 0):.2f} ₽
 📊 Средний чек: {stats.get('average_order', 0):.2f} ₽
 
-<b>Рейтинг:</b> {shop.get('average_rating', 0) or 0:.1f} ⭐ ({shop.get('total_reviews', 0)} отзывов)
+<b>Рейтинг:</b> {avg_rating:.1f} ⭐ ({shop.get('total_reviews', 0)} отзывов)
 """
         
         keyboard_buttons = []
@@ -294,14 +335,20 @@ ID: {shop.get('owner_telegram_id', 'не указан')}
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing shop details: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке магазина.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке магазина.", show_alert=True)
+        except:
+            pass
 
 
 async def toggle_shop_status(callback: CallbackQuery, bot: Bot, shop_id: int):
@@ -311,30 +358,27 @@ async def toggle_shop_status(callback: CallbackQuery, bot: Bot, shop_id: int):
         return
     
     try:
+        db = await get_db()
+        
         # Получаем текущий статус
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code != 200:
-                await callback.answer("❌ Магазин не найден", show_alert=True)
-                return
-            
-            shop = response.json()
-            new_status = not shop.get("is_active", False)
+        shop = await db.fetch_one("SELECT is_active FROM shops WHERE id = ?", (shop_id,))
+        
+        if not shop:
+            await db.disconnect()
+            await callback.answer("❌ Магазин не найден", show_alert=True)
+            return
+        
+        new_status = not shop.get("is_active", False)
         
         # Обновляем статус
-        async with httpx.AsyncClient() as client:
-            update_response = await client.patch(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                json={"is_active": new_status}
-            )
-            
-            if update_response.status_code != 200:
-                raise Exception(f"Update failed: {update_response.status_code}")
+        await db.update(
+            "shops",
+            {"is_active": 1 if new_status else 0},
+            "id = ?",
+            (shop_id,)
+        )
+        await db.commit()
+        await db.disconnect()
         
         status_text = "активирован" if new_status else "заблокирован"
         await callback.answer(f"✅ Магазин {status_text}", show_alert=True)
@@ -356,16 +400,24 @@ async def toggle_shop_verification(callback: CallbackQuery, bot: Bot, shop_id: i
         return
     
     try:
+        db = await get_db()
+        
+        # Проверяем существование магазина
+        shop = await db.fetch_one("SELECT id FROM shops WHERE id = ?", (shop_id,))
+        if not shop:
+            await db.disconnect()
+            await callback.answer("❌ Магазин не найден", show_alert=True)
+            return
+        
         # Обновляем верификацию
-        async with httpx.AsyncClient() as client:
-            update_response = await client.patch(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                json={"is_verified": verify}
-            )
-            
-            if update_response.status_code != 200:
-                raise Exception(f"Update failed: {update_response.status_code}")
+        await db.update(
+            "shops",
+            {"is_verified": 1 if verify else 0},
+            "id = ?",
+            (shop_id,)
+        )
+        await db.commit()
+        await db.disconnect()
         
         status_text = "верифицирован" if verify else "верификация снята"
         await callback.answer(f"✅ Магазин {status_text}", show_alert=True)
@@ -387,25 +439,54 @@ async def show_shop_statistics(callback: CallbackQuery, bot: Bot, shop_id: int):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}/statistics",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code != 200:
-                await callback.answer("❌ Статистика не найдена", show_alert=True)
-                return
-            
-            stats = response.json()
+        db = await get_db()
         
-        # Получаем информацию о магазине
-        async with httpx.AsyncClient() as client:
-            shop_response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/shops/{shop_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            shop = shop_response.json() if shop_response.status_code == 200 else {}
+        # Проверяем существование магазина
+        shop = await db.fetch_one("SELECT name FROM shops WHERE id = ?", (shop_id,))
+        if not shop:
+            await db.disconnect()
+            await callback.answer("❌ Магазин не найден", show_alert=True)
+            return
+        
+        # Получаем статистику
+        products_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM products WHERE shop_id = ?",
+            (shop_id,)
+        )
+        active_products_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM products WHERE shop_id = ? AND is_active = 1",
+            (shop_id,)
+        )
+        orders_count = await db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM orders WHERE shop_id = ?",
+            (shop_id,)
+        )
+        total_revenue = await db.fetch_one(
+            "SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE shop_id = ?",
+            (shop_id,)
+        )
+        avg_order = await db.fetch_one(
+            "SELECT COALESCE(AVG(total_amount), 0) as avg FROM orders WHERE shop_id = ?",
+            (shop_id,)
+        )
+        orders_by_status = await db.fetch_all(
+            """SELECT status, COUNT(*) as cnt 
+               FROM orders 
+               WHERE shop_id = ? 
+               GROUP BY status""",
+            (shop_id,)
+        )
+        
+        await db.disconnect()
+        
+        stats = {
+            "products_count": products_count["cnt"] if products_count else 0,
+            "active_products_count": active_products_count["cnt"] if active_products_count else 0,
+            "orders_count": orders_count["cnt"] if orders_count else 0,
+            "total_revenue": float(total_revenue["total"]) if total_revenue and isinstance(total_revenue["total"], Decimal) else (total_revenue["total"] if total_revenue else 0),
+            "average_order": float(avg_order["avg"]) if avg_order and isinstance(avg_order["avg"], Decimal) else (avg_order["avg"] if avg_order else 0),
+            "orders_by_status": {row["status"]: row["cnt"] for row in orders_by_status}
+        }
         
         text = f"""
 <b>📊 Статистика магазина</b>

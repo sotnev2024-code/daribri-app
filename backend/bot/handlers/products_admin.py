@@ -6,8 +6,8 @@ from aiogram import Router, F, Bot
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 )
-import httpx
 import os
+from decimal import Decimal
 from backend.app.config import settings
 
 router = Router()
@@ -89,31 +89,53 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         return
     
     try:
-        # Используем API для получения данных
-        params = {
-            "skip": page * 10,
-            "limit": 10
-        }
+        db = await get_db()
+        
+        # Формируем условия фильтрации
+        conditions = []
+        params = []
         
         if filter_type == "active":
-            params["is_active"] = True
+            conditions.append("p.is_active = 1")
         elif filter_type == "inactive":
-            params["is_active"] = False
+            conditions.append("p.is_active = 0")
         
         if shop_id:
-            params["shop_id"] = shop_id
+            conditions.append("p.shop_id = ?")
+            params.append(shop_id)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/products",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params=params
-            )
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            products = response.json()
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        limit = 10
+        offset = page * limit
+        
+        products = await db.fetch_all(
+            f"""SELECT p.*, 
+                      s.name as shop_name,
+                      c.name as category_name
+               FROM products p
+               LEFT JOIN shops s ON p.shop_id = s.id
+               LEFT JOIN categories c ON p.category_id = c.id
+               WHERE {where_clause}
+               ORDER BY p.created_at DESC
+               LIMIT ? OFFSET ?""",
+            tuple(params + [limit, offset])
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        products_list = []
+        for product in products:
+            product_dict = dict(product)
+            if product_dict.get("price") is not None:
+                if isinstance(product_dict["price"], Decimal):
+                    product_dict["price"] = float(product_dict["price"])
+            if product_dict.get("discount_price") is not None:
+                if isinstance(product_dict["discount_price"], Decimal):
+                    product_dict["discount_price"] = float(product_dict["discount_price"])
+            products_list.append(product_dict)
+        
+        products = products_list
         
         filter_names = {
             "all": "Все товары",
@@ -175,14 +197,20 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing products list: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке списка товаров.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке списка товаров.", show_alert=True)
+        except:
+            pass
 
 
 async def show_product_details(callback: CallbackQuery, bot: Bot, product_id: int):
@@ -192,20 +220,37 @@ async def show_product_details(callback: CallbackQuery, bot: Bot, product_id: in
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/products/{product_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code == 404:
-                await callback.answer("❌ Товар не найден", show_alert=True)
-                return
-            
-            if response.status_code != 200:
-                raise Exception(f"API error: {response.status_code}")
-            
-            product = response.json()
+        db = await get_db()
+        
+        product = await db.fetch_one(
+            """SELECT p.*, 
+                      s.name as shop_name,
+                      s.id as shop_id,
+                      c.name as category_name
+               FROM products p
+               LEFT JOIN shops s ON p.shop_id = s.id
+               LEFT JOIN categories c ON p.category_id = c.id
+               WHERE p.id = ?""",
+            (product_id,)
+        )
+        
+        if not product:
+            await db.disconnect()
+            await callback.answer("❌ Товар не найден", show_alert=True)
+            return
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        product_dict = dict(product)
+        if product_dict.get("price") is not None:
+            if isinstance(product_dict["price"], Decimal):
+                product_dict["price"] = float(product_dict["price"])
+        if product_dict.get("discount_price") is not None:
+            if isinstance(product_dict["discount_price"], Decimal):
+                product_dict["discount_price"] = float(product_dict["discount_price"])
+        
+        product = product_dict
         
         status_emoji = "✅" if product.get("is_active") else "❌"
         price = product.get("price", 0)
@@ -251,14 +296,20 @@ async def show_product_details(callback: CallbackQuery, bot: Bot, product_id: in
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing product details: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при загрузке товара.", show_alert=True)
+        try:
+            await callback.answer("❌ Ошибка при загрузке товара.", show_alert=True)
+        except:
+            pass
 
 
 async def toggle_product_status(callback: CallbackQuery, bot: Bot, product_id: int):
@@ -268,30 +319,27 @@ async def toggle_product_status(callback: CallbackQuery, bot: Bot, product_id: i
         return
     
     try:
+        db = await get_db()
+        
         # Получаем текущий статус
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{settings.WEBAPP_URL}/api/admin/products/{product_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code != 200:
-                await callback.answer("❌ Товар не найден", show_alert=True)
-                return
-            
-            product = response.json()
-            new_status = not product.get("is_active", False)
+        product = await db.fetch_one("SELECT is_active FROM products WHERE id = ?", (product_id,))
+        
+        if not product:
+            await db.disconnect()
+            await callback.answer("❌ Товар не найден", show_alert=True)
+            return
+        
+        new_status = not product.get("is_active", False)
         
         # Обновляем статус
-        async with httpx.AsyncClient() as client:
-            update_response = await client.patch(
-                f"{settings.WEBAPP_URL}/api/admin/products/{product_id}/status",
-                headers={"X-Telegram-ID": str(callback.from_user.id)},
-                params={"is_active": new_status}
-            )
-            
-            if update_response.status_code != 200:
-                raise Exception(f"Update failed: {update_response.status_code}")
+        await db.update(
+            "products",
+            {"is_active": 1 if new_status else 0},
+            "id = ?",
+            (product_id,)
+        )
+        await db.commit()
+        await db.disconnect()
         
         status_text = "активирован" if new_status else "деактивирован"
         await callback.answer(f"✅ Товар {status_text}", show_alert=True)
@@ -313,18 +361,19 @@ async def delete_product(callback: CallbackQuery, bot: Bot, product_id: int):
         return
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.delete(
-                f"{settings.WEBAPP_URL}/api/admin/products/{product_id}",
-                headers={"X-Telegram-ID": str(callback.from_user.id)}
-            )
-            
-            if response.status_code == 404:
-                await callback.answer("❌ Товар не найден", show_alert=True)
-                return
-            
-            if response.status_code != 200:
-                raise Exception(f"Delete failed: {response.status_code}")
+        db = await get_db()
+        
+        # Проверяем существование товара
+        product = await db.fetch_one("SELECT id FROM products WHERE id = ?", (product_id,))
+        if not product:
+            await db.disconnect()
+            await callback.answer("❌ Товар не найден", show_alert=True)
+            return
+        
+        # Удаляем товар
+        await db.execute("DELETE FROM products WHERE id = ?", (product_id,))
+        await db.commit()
+        await db.disconnect()
         
         await callback.answer("✅ Товар удален", show_alert=True)
         
