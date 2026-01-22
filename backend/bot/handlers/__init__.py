@@ -20,15 +20,19 @@ from .analytics_admin import router as analytics_admin_router
 router = Router()
 
 # Регистрируем только необходимые роутеры
+# ВАЖНО: Специфичные админ-роутеры должны быть зарегистрированы ПЕРЕД общим admin_router,
+# чтобы их обработчики проверялись первыми
 router.include_router(start_router)
 router.include_router(add_shop_router)
-router.include_router(admin_router)
-router.include_router(users_admin_router)
 router.include_router(subscription_router)
 router.include_router(banners_router)
-router.include_router(subscriptions_admin_router)
 router.include_router(orders_router)
+# Специфичные админ-роутеры (должны быть перед общим admin_router)
 router.include_router(shops_admin_router)
 router.include_router(products_admin_router)
 router.include_router(orders_admin_router)
+router.include_router(users_admin_router)
 router.include_router(analytics_admin_router)
+router.include_router(subscriptions_admin_router)
+# Общий админ-роутер (в конце, чтобы обрабатывать только те callback'и, которые не обработаны выше)
+router.include_router(admin_router)
