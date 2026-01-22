@@ -48,10 +48,25 @@ async def main(bot_token: str, webapp_url: str):
     logger.info("Bot starting...")
     
     try:
-        # Удаляем webhook если был
-        await bot.delete_webhook(drop_pending_updates=True)
+        # Удаляем webhook если был (с несколькими попытками)
+        try:
+            webhook_info = await bot.get_webhook_info()
+            if webhook_info.url:
+                logger.warning(f"Found active webhook: {webhook_info.url}, deleting...")
+                await bot.delete_webhook(drop_pending_updates=True)
+                # Ждем немного, чтобы Telegram обработал запрос
+                await asyncio.sleep(1)
+                # Проверяем еще раз
+                webhook_info = await bot.get_webhook_info()
+                if webhook_info.url:
+                    logger.warning(f"Webhook still active, trying again...")
+                    await bot.delete_webhook(drop_pending_updates=True)
+                    await asyncio.sleep(1)
+        except Exception as e:
+            logger.warning(f"Error checking/deleting webhook: {e}")
+        
         # Запускаем polling
-        await dp.start_polling(bot)
+        await dp.start_polling(bot, allowed_updates=["message", "callback_query", "pre_checkout_query", "successful_payment"])
     finally:
         await bot.session.close()
 
