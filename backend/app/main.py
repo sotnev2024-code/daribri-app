@@ -228,13 +228,27 @@ async def lifespan(app: FastAPI):
                 if column_name not in promos_column_names:
                     print(f"[MIGRATION] Adding {column_name} column to promos table...")
                     try:
-                        await database._db_service.execute(
-                            f"ALTER TABLE promos ADD COLUMN {column_name} {column_definition}"
-                        )
+                        # SQLite не поддерживает DEFAULT CURRENT_TIMESTAMP при добавлении колонки
+                        # Добавляем колонку без DEFAULT, затем обновляем значения
+                        if "DEFAULT CURRENT_TIMESTAMP" in column_definition:
+                            # Добавляем колонку без DEFAULT
+                            simple_definition = column_definition.replace(" DEFAULT CURRENT_TIMESTAMP", "")
+                            await database._db_service.execute(
+                                f"ALTER TABLE promos ADD COLUMN {column_name} {simple_definition}"
+                            )
+                            # Обновляем существующие записи
+                            await database._db_service.execute(
+                                f"UPDATE promos SET {column_name} = CURRENT_TIMESTAMP WHERE {column_name} IS NULL"
+                            )
+                        else:
+                            await database._db_service.execute(
+                                f"ALTER TABLE promos ADD COLUMN {column_name} {column_definition}"
+                            )
                         await database._db_service.commit()
                         print(f"[MIGRATION] {column_name} column added successfully")
                     except Exception as e:
                         print(f"[MIGRATION] Error adding {column_name} column: {e}")
+                        # Продолжаем работу даже если колонка не добавилась
         
         # Проверяем, существует ли таблица shop_requests
         shop_requests_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='shop_requests'")
