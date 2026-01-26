@@ -65,7 +65,7 @@ async def show_products_menu(callback: CallbackQuery, bot: Bot):
             [InlineKeyboardButton(text="📋 Все товары", callback_data="admin_products_list_all")],
             [InlineKeyboardButton(text="✅ Активные", callback_data="admin_products_list_active")],
             [InlineKeyboardButton(text="❌ Неактивные", callback_data="admin_products_list_inactive")],
-            [InlineKeyboardButton(text="🔍 Поиск", callback_data="admin_products_search")],
+            [InlineKeyboardButton(text="🏪 Товары магазинов", callback_data="admin_products_by_shop")],
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back_to_menu")]
         ])
         
@@ -143,16 +143,28 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
             "inactive": "Неактивные"
         }
         
+        # Формируем заголовок
+        if shop_id and shop_name:
+            title = f"📦 Товары магазина: {shop_name}"
+        else:
+            title = f"📦 {filter_names.get(filter_type, 'Товары')}"
+        
         if not products:
-            text = f"<b>📦 {filter_names.get(filter_type, 'Товары')}</b>\n\nТоваров не найдено."
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_products_menu")]
+            text = f"<b>{title}</b>\n\nТоваров не найдено."
+            keyboard_buttons = []
+            if shop_id:
+                keyboard_buttons.append([
+                    InlineKeyboardButton(text="◀️ Назад к магазинам", callback_data="admin_products_by_shop")
+                ])
+            keyboard_buttons.append([
+                InlineKeyboardButton(text="◀️ Назад к меню", callback_data="admin_products_menu")
             ])
+            keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
             await callback.message.edit_text(text, reply_markup=keyboard)
             await callback.answer()
             return
         
-        text = f"<b>📦 {filter_names.get(filter_type, 'Товары')}</b>\n\n"
+        text = f"<b>{title}</b>\n\n"
         keyboard_buttons = []
         
         for product in products:
@@ -191,6 +203,11 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         if nav_buttons:
             keyboard_buttons.append(nav_buttons)
         
+        # Кнопка возврата
+        if shop_id:
+            keyboard_buttons.append([
+                InlineKeyboardButton(text="◀️ Назад к магазинам", callback_data="admin_products_by_shop")
+            ])
         keyboard_buttons.append([
             InlineKeyboardButton(text="◀️ Назад к меню", callback_data="admin_products_menu")
         ])
@@ -290,8 +307,14 @@ async def show_product_details(callback: CallbackQuery, bot: Bot, product_id: in
             InlineKeyboardButton(text="🗑️ Удалить", callback_data=f"admin_product_delete_{product_id}")
         ])
         
+        # Кнопка возврата к списку
+        # Сохраняем shop_id в callback для правильного возврата
+        back_callback = "admin_products_list_all_0"
+        if product.get('shop_id'):
+            back_callback = f"admin_products_shop_{product.get('shop_id')}"
+        
         keyboard_buttons.append([
-            InlineKeyboardButton(text="◀️ Назад к списку", callback_data="admin_products_list_all_0")
+            InlineKeyboardButton(text="◀️ Назад к списку", callback_data=back_callback)
         ])
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -400,7 +423,8 @@ async def callback_products_list(callback: CallbackQuery, bot: Bot):
     parts = callback.data.split("_")
     filter_type = parts[3] if len(parts) > 3 else "all"
     page = int(parts[4]) if len(parts) > 4 else 0
-    await show_products_list(callback, bot, filter_type, page)
+    shop_id = int(parts[5]) if len(parts) > 5 and parts[5].isdigit() else None
+    await show_products_list(callback, bot, filter_type, page, shop_id=shop_id)
 
 
 @router.callback_query(F.data.startswith("admin_product_view_"))
@@ -422,4 +446,111 @@ async def callback_product_delete(callback: CallbackQuery, bot: Bot):
     """Обработчик удаления товара."""
     product_id = int(callback.data.split("_")[3])
     await delete_product(callback, bot, product_id)
+
+
+async def show_shops_for_products(callback: CallbackQuery, bot: Bot, page: int = 0):
+    """Показывает список магазинов для выбора товаров."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        db = await get_db()
+        
+        # Получаем список магазинов с количеством товаров
+        limit = 15
+        offset = page * limit
+        
+        shops = await db.fetch_all(
+            """SELECT s.*, 
+                      COUNT(p.id) as products_count
+               FROM shops s
+               LEFT JOIN products p ON p.shop_id = s.id
+               GROUP BY s.id
+               ORDER BY s.name
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        
+        await db.disconnect()
+        
+        if not shops:
+            text = "<b>🏪 Выбор магазина</b>\n\nМагазинов не найдено."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_products_menu")]
+            ])
+            await callback.message.edit_text(text, reply_markup=keyboard)
+            await callback.answer()
+            return
+        
+        text = "<b>🏪 Выберите магазин</b>\n\n"
+        keyboard_buttons = []
+        
+        for shop in shops:
+            status_emoji = "✅" if shop.get("is_active") else "❌"
+            products_count = shop.get("products_count", 0)
+            
+            text += f"{status_emoji} <b>{shop['name']}</b>\n"
+            text += f"   Товаров: {products_count}\n\n"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=f"{status_emoji} {shop['name'][:30]} ({products_count})",
+                    callback_data=f"admin_products_shop_{shop['id']}"
+                )
+            ])
+        
+        # Пагинация
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(
+                InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_products_shops_page_{page-1}")
+            )
+        
+        if len(shops) == limit:  # Если получили полную страницу, есть еще магазины
+            nav_buttons.append(
+                InlineKeyboardButton(text="Вперед ▶️", callback_data=f"admin_products_shops_page_{page+1}")
+            )
+        
+        if nav_buttons:
+            keyboard_buttons.append(nav_buttons)
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад к меню", callback_data="admin_products_menu")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing shops for products: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке магазинов.", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_products_by_shop")
+async def callback_products_by_shop(callback: CallbackQuery, bot: Bot):
+    """Обработчик кнопки 'Товары магазинов'."""
+    await show_shops_for_products(callback, bot, 0)
+
+
+@router.callback_query(F.data.startswith("admin_products_shops_page_"))
+async def callback_products_shops_page(callback: CallbackQuery, bot: Bot):
+    """Обработчик пагинации списка магазинов."""
+    page = int(callback.data.split("_")[4])
+    await show_shops_for_products(callback, bot, page)
+
+
+@router.callback_query(F.data.startswith("admin_products_shop_"))
+async def callback_products_shop(callback: CallbackQuery, bot: Bot):
+    """Обработчик выбора магазина для просмотра товаров."""
+    shop_id = int(callback.data.split("_")[3])
+    # Показываем список товаров этого магазина
+    await show_products_list(callback, bot, "all", 0, shop_id=shop_id)
 
