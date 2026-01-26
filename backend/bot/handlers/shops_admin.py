@@ -581,3 +581,195 @@ async def callback_shop_stats(callback: CallbackQuery, bot: Bot):
     shop_id = int(callback.data.split("_")[3])
     await show_shop_statistics(callback, bot, shop_id)
 
+
+async def start_edit_shop(callback: CallbackQuery, bot: Bot, shop_id: int, state: FSMContext):
+    """Начинает процесс редактирования магазина."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        db = await get_db()
+        
+        shop = await db.fetch_one("SELECT * FROM shops WHERE id = ?", (shop_id,))
+        if not shop:
+            await db.disconnect()
+            await callback.answer("❌ Магазин не найден", show_alert=True)
+            return
+        
+        await db.disconnect()
+        
+        text = f"""
+<b>✏️ Редактирование магазина</b>
+
+<b>Магазин:</b> {shop.get('name', 'N/A')}
+
+Выберите поле для редактирования:
+"""
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📝 Название", callback_data=f"admin_shop_edit_field_{shop_id}_name")],
+            [InlineKeyboardButton(text="📄 Описание", callback_data=f"admin_shop_edit_field_{shop_id}_description")],
+            [InlineKeyboardButton(text="📍 Адрес", callback_data=f"admin_shop_edit_field_{shop_id}_address")],
+            [InlineKeyboardButton(text="📞 Телефон", callback_data=f"admin_shop_edit_field_{shop_id}_phone")],
+            [InlineKeyboardButton(text="📧 Email", callback_data=f"admin_shop_edit_field_{shop_id}_email")],
+            [InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_shop_view_{shop_id}")]
+        ])
+        
+        await state.update_data(shop_id=shop_id)
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error starting shop edit: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке магазина.", show_alert=True)
+
+
+async def process_edit_shop_field(callback: CallbackQuery, bot: Bot, shop_id: int, field: str, state: FSMContext):
+    """Обрабатывает выбор поля для редактирования."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    field_names = {
+        "name": "название",
+        "description": "описание",
+        "address": "адрес",
+        "phone": "телефон",
+        "email": "email"
+    }
+    
+    field_name = field_names.get(field, field)
+    
+    await state.update_data(edit_field=field)
+    await state.set_state(ShopEditStates.waiting_for_value)
+    
+    text = f"""
+<b>✏️ Редактирование магазина</b>
+
+Введите новое значение для поля <b>"{field_name}"</b>:
+
+Для отмены нажмите кнопку "❌ Отменить"
+"""
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отменить", callback_data=f"admin_shop_view_{shop_id}")]
+    ])
+    
+    cancel_keyboard = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="❌ Отменить")]],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+    
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except Exception:
+        await callback.message.answer(text, reply_markup=cancel_keyboard)
+    await callback.answer()
+
+
+async def process_edit_shop_value(message: Message, bot: Bot, state: FSMContext):
+    """Обрабатывает новое значение поля магазина."""
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ У вас нет прав администратора.")
+        await state.clear()
+        return
+    
+    try:
+        data = await state.get_data()
+        shop_id = data.get("shop_id")
+        field = data.get("edit_field")
+        
+        if not shop_id or not field:
+            await message.answer("❌ Ошибка: не указан магазин или поле.")
+            await state.clear()
+            return
+        
+        new_value = message.text.strip()
+        
+        # Проверяем отмену
+        if new_value.lower() in ["❌ отменить", "отменить", "отмена", "cancel"]:
+            await state.clear()
+            await message.answer("❌ Редактирование отменено.", reply_markup=ReplyKeyboardRemove())
+            return
+        
+        db = await get_db()
+        
+        # Обновляем поле
+        await db.update(
+            "shops",
+            {field: new_value},
+            "id = ?",
+            (shop_id,)
+        )
+        await db.commit()
+        await db.disconnect()
+        
+        await state.clear()
+        
+        field_names = {
+            "name": "Название",
+            "description": "Описание",
+            "address": "Адрес",
+            "phone": "Телефон",
+            "email": "Email"
+        }
+        
+        field_name = field_names.get(field, field)
+        
+        await message.answer(
+            f"✅ {field_name} магазина успешно обновлено!",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        
+        # Показываем обновленные детали магазина через inline кнопку
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Просмотреть магазин", callback_data=f"admin_shop_view_{shop_id}")]
+        ])
+        await message.answer("Нажмите кнопку ниже, чтобы просмотреть обновленные данные магазина:", reply_markup=keyboard)
+        
+    except Exception as e:
+        print(f"Error processing shop edit value: {e}")
+        import traceback
+        traceback.print_exc()
+        await state.clear()
+        await message.answer("❌ Ошибка при обновлении магазина.", reply_markup=ReplyKeyboardRemove())
+
+
+@router.callback_query(F.data.startswith("admin_shop_edit_"))
+async def callback_shop_edit(callback: CallbackQuery, bot: Bot, state: FSMContext):
+    """Обработчик редактирования магазина."""
+    try:
+        parts = callback.data.split("_")
+        print(f"[SHOPS_ADMIN] Callback data: {callback.data}, parts: {parts}")
+        
+        if len(parts) >= 5 and parts[3] == "field":
+            # Формат: admin_shop_edit_field_{shop_id}_{field}
+            shop_id = int(parts[4])
+            field = parts[5]
+            print(f"[SHOPS_ADMIN] Edit field: shop_id={shop_id}, field={field}")
+            await process_edit_shop_field(callback, bot, shop_id, field, state)
+        else:
+            # Формат: admin_shop_edit_{shop_id}
+            shop_id = int(parts[3])
+            print(f"[SHOPS_ADMIN] Start edit: shop_id={shop_id}")
+            await start_edit_shop(callback, bot, shop_id, state)
+    except Exception as e:
+        print(f"[SHOPS_ADMIN] Error in callback_shop_edit: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при обработке редактирования.", show_alert=True)
+
+
+@router.message(ShopEditStates.waiting_for_value)
+async def handle_shop_edit_value(message: Message, bot: Bot, state: FSMContext):
+    """Обработчик ввода нового значения для редактирования магазина."""
+    await process_edit_shop_value(message, bot, state)
+

@@ -328,6 +328,17 @@ async def admin_callback_handler(callback: CallbackQuery, bot: Bot, state: FSMCo
         from .shops_admin import show_shops_menu
         await show_shops_menu(callback, bot)
         await callback.answer()
+    elif action.startswith("admin_shop_edit_"):
+        # Обработка редактирования магазина передается в shops_admin
+        try:
+            from .shops_admin import callback_shop_edit
+            await callback_shop_edit(callback, bot, state)
+        except Exception as e:
+            print(f"Error handling shop edit: {e}")
+            import traceback
+            traceback.print_exc()
+            await callback.answer("❌ Ошибка при редактировании магазина.", show_alert=True)
+        await callback.answer()
     elif action == "admin_products_menu":
         from .products_admin import show_products_menu
         await show_products_menu(callback, bot)
