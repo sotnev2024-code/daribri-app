@@ -2081,7 +2081,14 @@ async function navigateToPage(page, addToHistory = true) {
                 setTimeout(() => {
                     elements.myShopPage.scrollTop = 0;
                 }, 0);
-                await loadMyShop();
+                // Используем функцию из модуля myshop.js
+                if (window.App?.myshop?.loadMyShop) {
+                    await window.App.myshop.loadMyShop();
+                } else if (window.loadMyShop) {
+                    await window.loadMyShop();
+                } else {
+                    console.error('[NAV] loadMyShop function not found!');
+                }
             }
             break;
         case 'shoporders':
