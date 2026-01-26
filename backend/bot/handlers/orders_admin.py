@@ -48,6 +48,17 @@ def is_admin(user_id: int) -> bool:
     return True  # Временно разрешаем всем для разработки
 
 
+def get_status_display_name(status: str) -> str:
+    """Возвращает читаемое название статуса."""
+    status_names = {
+        "pending": "Ожидает",
+        "processing": "В обработке",
+        "delivered": "Доставлен",
+        "cancelled": "Отменен"
+    }
+    return status_names.get(status, status)
+
+
 async def show_orders_menu(callback: CallbackQuery, bot: Bot):
     """Показывает главное меню управления заказами."""
     if not is_admin(callback.from_user.id):
@@ -90,8 +101,7 @@ async def show_orders_menu(callback: CallbackQuery, bot: Bot):
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📋 Все заказы", callback_data="admin_orders_list_all")],
             [InlineKeyboardButton(text="⏳ Ожидают", callback_data="admin_orders_list_pending")],
-            [InlineKeyboardButton(text="✅ Подтверждены", callback_data="admin_orders_list_confirmed")],
-            [InlineKeyboardButton(text="📦 Доставляются", callback_data="admin_orders_list_shipped")],
+            [InlineKeyboardButton(text="🔄 В обработке", callback_data="admin_orders_list_processing")],
             [InlineKeyboardButton(text="✓ Доставлены", callback_data="admin_orders_list_delivered")],
             [InlineKeyboardButton(text="❌ Отменены", callback_data="admin_orders_list_cancelled")],
             [InlineKeyboardButton(text="🏪 Заказы магазинов", callback_data="admin_orders_shops")],
@@ -182,9 +192,7 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         status_names = {
             None: "Все заказы",
             "pending": "Ожидают",
-            "confirmed": "Подтверждены",
-            "processing": "Обрабатываются",
-            "shipped": "Доставляются",
+            "processing": "В обработке",
             "delivered": "Доставлены",
             "cancelled": "Отменены"
         }
@@ -210,9 +218,7 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         for order in orders:
             status_emoji = {
                 "pending": "⏳",
-                "confirmed": "✅",
                 "processing": "🔄",
-                "shipped": "📦",
                 "delivered": "✓",
                 "cancelled": "❌"
             }.get(order.get("status"), "📋")
@@ -347,9 +353,7 @@ async def show_order_details(callback: CallbackQuery, bot: Bot, order_id: int):
         
         status_emoji = {
             "pending": "⏳",
-            "confirmed": "✅",
             "processing": "🔄",
-            "shipped": "📦",
             "delivered": "✓",
             "cancelled": "❌"
         }.get(order.get("status"), "📋")
@@ -362,11 +366,13 @@ async def show_order_details(callback: CallbackQuery, bot: Bot, order_id: int):
             except:
                 pass
         
+        status_display = get_status_display_name(order.get('status', ''))
+        
         text = f"""
 <b>{status_emoji} Заказ #{order_id}</b>
 
 <b>Номер заказа:</b> {order.get('order_number', 'N/A')}
-<b>Статус:</b> {order.get('status', 'Неизвестно')}
+<b>Статус:</b> {status_display}
 <b>Дата создания:</b> {created_at}
 
 <b>Магазин:</b> {order.get('shop_name', 'Неизвестно')}
@@ -607,16 +613,21 @@ async def show_orders_statistics(callback: CallbackQuery, bot: Bot):
 """
         
         orders_by_status = stats.get('orders_by_status', {})
+        status_display_names = {
+            "pending": "Ожидают",
+            "processing": "В обработке",
+            "delivered": "Доставлены",
+            "cancelled": "Отменены"
+        }
         for status, count in orders_by_status.items():
             status_emoji = {
                 "pending": "⏳",
-                "confirmed": "✅",
                 "processing": "🔄",
-                "shipped": "📦",
                 "delivered": "✓",
                 "cancelled": "❌"
             }.get(status, "📋")
-            text += f"{status_emoji} {status}: {count}\n"
+            status_name = status_display_names.get(status, status)
+            text += f"{status_emoji} {status_name}: {count}\n"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu")]
@@ -842,9 +853,7 @@ async def process_order_search(message: Message, bot: Bot, state: FSMContext):
         
         status_emoji = {
             "pending": "⏳",
-            "confirmed": "✅",
             "processing": "🔄",
-            "shipped": "📦",
             "delivered": "✓",
             "cancelled": "❌"
         }.get(order.get("status"), "📋")
@@ -857,11 +866,13 @@ async def process_order_search(message: Message, bot: Bot, state: FSMContext):
             except:
                 pass
         
+        status_display = get_status_display_name(order.get('status', ''))
+        
         text = f"""
 <b>{status_emoji} Заказ #{order['id']}</b>
 
 <b>Номер заказа:</b> {order.get('order_number', 'N/A')}
-<b>Статус:</b> {order.get('status', 'Неизвестно')}
+<b>Статус:</b> {status_display}
 <b>Дата создания:</b> {created_at}
 
 <b>Магазин:</b> {order.get('shop_name', 'Неизвестно')}
