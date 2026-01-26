@@ -95,11 +95,17 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         shop_name = None
         if shop_id:
             try:
-                shop = await db.fetch_one("SELECT name FROM shops WHERE id = ?", (shop_id,))
+                print(f"[PRODUCTS_ADMIN] Fetching shop name for shop_id: {shop_id} (type: {type(shop_id)})")
+                shop = await db.fetch_one("SELECT name FROM shops WHERE id = ?", (int(shop_id),))
                 if shop:
                     shop_name = shop.get("name")
+                    print(f"[PRODUCTS_ADMIN] Shop name found: {shop_name}")
+                else:
+                    print(f"[PRODUCTS_ADMIN] Shop with id {shop_id} not found")
             except Exception as shop_error:
-                print(f"Error fetching shop name: {shop_error}")
+                print(f"[PRODUCTS_ADMIN] Error fetching shop name: {shop_error}")
+                import traceback
+                traceback.print_exc()
                 shop_name = None
         
         # Формируем условия фильтрации
@@ -119,9 +125,12 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         limit = 10
         offset = page * limit
         
+        query_params = tuple(params + [limit, offset])
+        print(f"[PRODUCTS_ADMIN] Executing query with where_clause: {where_clause}")
+        print(f"[PRODUCTS_ADMIN] Query params: {query_params}")
+        
         try:
-            products = await db.fetch_all(
-                f"""SELECT p.*, 
+            query = f"""SELECT p.*, 
                           s.name as shop_name,
                           c.name as category_name
                    FROM products p
@@ -129,9 +138,10 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
                    LEFT JOIN categories c ON p.category_id = c.id
                    WHERE {where_clause}
                    ORDER BY p.created_at DESC
-                   LIMIT ? OFFSET ?""",
-                tuple(params + [limit, offset])
-            )
+                   LIMIT ? OFFSET ?"""
+            print(f"[PRODUCTS_ADMIN] SQL Query: {query}")
+            products = await db.fetch_all(query, query_params)
+            print(f"[PRODUCTS_ADMIN] Products fetched: {len(products)} items")
         except Exception as query_error:
             print(f"[PRODUCTS_ADMIN] Error executing products query: {query_error}")
             print(f"[PRODUCTS_ADMIN] Query params: filter_type={filter_type}, shop_id={shop_id}, page={page}")
