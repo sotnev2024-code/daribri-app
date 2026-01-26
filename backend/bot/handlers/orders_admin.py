@@ -5,8 +5,10 @@
 from aiogram import Router, F, Bot
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
-    FSInputFile
+    FSInputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 )
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from datetime import datetime
 from decimal import Decimal
 import os
@@ -16,6 +18,11 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from backend.app.config import settings
 
 router = Router()
+
+
+class OrderSearchStates(StatesGroup):
+    """Состояния для поиска заказа."""
+    waiting_for_order_number = State()
 
 
 async def get_db():
@@ -87,6 +94,8 @@ async def show_orders_menu(callback: CallbackQuery, bot: Bot):
             [InlineKeyboardButton(text="📦 Доставляются", callback_data="admin_orders_list_shipped")],
             [InlineKeyboardButton(text="✓ Доставлены", callback_data="admin_orders_list_delivered")],
             [InlineKeyboardButton(text="❌ Отменены", callback_data="admin_orders_list_cancelled")],
+            [InlineKeyboardButton(text="🏪 Заказы магазинов", callback_data="admin_orders_shops")],
+            [InlineKeyboardButton(text="🔍 Поиск заказа", callback_data="admin_orders_search")],
             [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_orders_statistics")],
             [InlineKeyboardButton(text="📥 Экспорт в Excel", callback_data="admin_orders_export")],
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back_to_menu")]
@@ -105,7 +114,7 @@ async def show_orders_menu(callback: CallbackQuery, bot: Bot):
         await callback.answer("❌ Ошибка при загрузке меню заказов.", show_alert=True)
 
 
-async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None, page: int = 0):
+async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None, page: int = 0, shop_id: int = None):
     """Показывает список заказов с фильтрами и пагинацией."""
     if not is_admin(callback.from_user.id):
         await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
@@ -114,6 +123,17 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
     try:
         db = await get_db()
         
+        # Получаем информацию о магазине, если указан shop_id
+        shop_name = None
+        if shop_id:
+            try:
+                shop = await db.fetch_one("SELECT name FROM shops WHERE id = ?", (shop_id,))
+                if shop:
+                    shop_name = shop.get("name")
+            except Exception as shop_error:
+                print(f"[ORDERS_ADMIN] Error fetching shop name: {shop_error}")
+                shop_name = None
+        
         # Формируем условия фильтрации
         conditions = []
         params = []
@@ -121,6 +141,10 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         if status:
             conditions.append("o.status = ?")
             params.append(status)
+        
+        if shop_id:
+            conditions.append("o.shop_id = ?")
+            params.append(shop_id)
         
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         limit = 10
@@ -166,15 +190,21 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         }
         
         if not orders:
-            text = f"<b>📋 {status_names.get(status, 'Заказы')}</b>\n\nЗаказов не найдено."
+            title = f"📋 {status_names.get(status, 'Заказы')}"
+            if shop_name:
+                title = f"📋 Заказы магазина: {shop_name}"
+            text = f"<b>{title}</b>\n\nЗаказов не найдено."
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu")]
+                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu" if not shop_id else f"admin_orders_shop_{shop_id}")]
             ])
             await callback.message.edit_text(text, reply_markup=keyboard)
             await callback.answer()
             return
         
-        text = f"<b>📋 {status_names.get(status, 'Заказы')}</b>\n\n"
+        title = f"📋 {status_names.get(status, 'Заказы')}"
+        if shop_name:
+            title = f"📋 Заказы магазина: {shop_name}"
+        text = f"<b>{title}</b>\n\n"
         keyboard_buttons = []
         
         for order in orders:
@@ -210,21 +240,29 @@ async def show_orders_list(callback: CallbackQuery, bot: Bot, status: str = None
         
         # Пагинация
         nav_buttons = []
+        callback_prefix = f"admin_orders_list_{status or 'all'}"
+        if shop_id:
+            callback_prefix = f"admin_orders_list_shop_{shop_id}_{status or 'all'}"
+        
         if page > 0:
             nav_buttons.append(
-                InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_orders_list_{status or 'all'}_{page-1}")
+                InlineKeyboardButton(text="◀️ Назад", callback_data=f"{callback_prefix}_{page-1}")
             )
         
         if len(orders) == 10:  # Если получили полную страницу, есть еще заказы
             nav_buttons.append(
-                InlineKeyboardButton(text="Вперед ▶️", callback_data=f"admin_orders_list_{status or 'all'}_{page+1}")
+                InlineKeyboardButton(text="Вперед ▶️", callback_data=f"{callback_prefix}_{page+1}")
             )
         
         if nav_buttons:
             keyboard_buttons.append(nav_buttons)
         
+        back_callback = "admin_orders_menu"
+        if shop_id:
+            back_callback = f"admin_orders_shop_{shop_id}"
+        
         keyboard_buttons.append([
-            InlineKeyboardButton(text="◀️ Назад к меню", callback_data="admin_orders_menu")
+            InlineKeyboardButton(text="◀️ Назад к меню", callback_data=back_callback)
         ])
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -357,8 +395,11 @@ ID: {order.get('user_telegram_id', 'не указан')}
 <b>💵 К оплате: {order.get('total_amount', 0):.2f} ₽</b>
 """
         
+        # Определяем callback для кнопки "Назад"
+        back_callback = "admin_orders_list_all_0"
+        
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="◀️ Назад к списку", callback_data="admin_orders_list_all_0")]
+            [InlineKeyboardButton(text="◀️ Назад к списку", callback_data=back_callback)]
         ])
         
         try:
@@ -591,6 +632,278 @@ async def show_orders_statistics(callback: CallbackQuery, bot: Bot):
         await callback.answer("❌ Ошибка при загрузке статистики.", show_alert=True)
 
 
+async def show_shops_for_orders(callback: CallbackQuery, bot: Bot):
+    """Показывает список магазинов для выбора заказов."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        db = await get_db()
+        
+        # Получаем все магазины с количеством заказов
+        shops = await db.fetch_all(
+            """SELECT s.id, s.name, s.is_active, COUNT(o.id) as orders_count
+               FROM shops s
+               LEFT JOIN orders o ON s.id = o.shop_id
+               GROUP BY s.id, s.name, s.is_active
+               ORDER BY orders_count DESC, s.name"""
+        )
+        
+        await db.disconnect()
+        
+        if not shops:
+            text = "<b>🏪 Заказы магазинов</b>\n\nМагазинов не найдено."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu")]
+            ])
+            await callback.message.edit_text(text, reply_markup=keyboard)
+            await callback.answer()
+            return
+        
+        text = "<b>🏪 Выберите магазин для просмотра заказов:</b>\n\n"
+        keyboard_buttons = []
+        
+        for shop in shops:
+            shop_id = shop.get("id")
+            shop_name = shop.get("name", "Без названия")
+            orders_count = shop.get("orders_count", 0)
+            is_active = shop.get("is_active", 1)
+            
+            status_emoji = "✅" if is_active else "❌"
+            text += f"{status_emoji} <b>{shop_name}</b> - {orders_count} заказов\n"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=f"{shop_name} ({orders_count})",
+                    callback_data=f"admin_orders_shop_{shop_id}"
+                )
+            ])
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_orders_menu")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"[ORDERS_ADMIN] Error showing shops for orders: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке магазинов.", show_alert=True)
+
+
+def get_cancel_keyboard() -> ReplyKeyboardMarkup:
+    """Создаёт клавиатуру с кнопкой отмены."""
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="❌ Отменить")]],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
+
+async def start_order_search(callback: CallbackQuery, bot: Bot, state: FSMContext):
+    """Начинает процесс поиска заказа по номеру."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        text = """
+<b>🔍 Поиск заказа</b>
+
+Введите номер заказа для поиска.
+Вы можете ввести:
+• ID заказа (например: 123)
+• Номер заказа (например: ORD-2024-001)
+
+Для отмены нажмите кнопку "❌ Отменить"
+"""
+        
+        keyboard = get_cancel_keyboard()
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        
+        await state.set_state(OrderSearchStates.waiting_for_order_number)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"[ORDERS_ADMIN] Error starting order search: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при запуске поиска.", show_alert=True)
+
+
+async def process_order_search(message: Message, bot: Bot, state: FSMContext):
+    """Обрабатывает введенный номер заказа."""
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ У вас нет прав администратора.")
+        await state.clear()
+        return
+    
+    try:
+        order_input = message.text.strip()
+        
+        # Проверяем отмену
+        if order_input.lower() in ["❌ отменить", "отменить", "отмена", "cancel"]:
+            await state.clear()
+            await message.answer("❌ Поиск отменен.", reply_markup=ReplyKeyboardRemove())
+            return
+        
+        db = await get_db()
+        
+        # Пытаемся найти заказ по ID или номеру заказа
+        order = None
+        
+        # Сначала пробуем как ID (число)
+        if order_input.isdigit():
+            order = await db.fetch_one(
+                """SELECT o.*, 
+                          s.name as shop_name,
+                          u.telegram_id as user_telegram_id,
+                          u.username as user_username,
+                          u.first_name as user_first_name,
+                          u.last_name as user_last_name
+                   FROM orders o
+                   LEFT JOIN shops s ON o.shop_id = s.id
+                   LEFT JOIN users u ON o.user_id = u.id
+                   WHERE o.id = ?""",
+                (int(order_input),)
+            )
+        
+        # Если не нашли по ID, ищем по номеру заказа
+        if not order:
+            order = await db.fetch_one(
+                """SELECT o.*, 
+                          s.name as shop_name,
+                          u.telegram_id as user_telegram_id,
+                          u.username as user_username,
+                          u.first_name as user_first_name,
+                          u.last_name as user_last_name
+                   FROM orders o
+                   LEFT JOIN shops s ON o.shop_id = s.id
+                   LEFT JOIN users u ON o.user_id = u.id
+                   WHERE o.order_number LIKE ?""",
+                (f"%{order_input}%",)
+            )
+        
+        await db.disconnect()
+        await state.clear()
+        
+        if not order:
+            await message.answer(
+                f"❌ Заказ с номером/ID '{order_input}' не найден.\n\nПопробуйте ввести другой номер или нажмите /admin для возврата в меню.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            return
+        
+        # Преобразуем Decimal в float
+        order_dict = dict(order)
+        if order_dict.get("total_amount") is not None:
+            if isinstance(order_dict["total_amount"], Decimal):
+                order_dict["total_amount"] = float(order_dict["total_amount"])
+        if order_dict.get("delivery_fee") is not None:
+            if isinstance(order_dict["delivery_fee"], Decimal):
+                order_dict["delivery_fee"] = float(order_dict["delivery_fee"])
+        if order_dict.get("promo_discount_amount") is not None:
+            if isinstance(order_dict["promo_discount_amount"], Decimal):
+                order_dict["promo_discount_amount"] = float(order_dict["promo_discount_amount"])
+        
+        # Получаем товары заказа
+        db = await get_db()
+        items = await db.fetch_all(
+            """SELECT oi.*, 
+                      COALESCE(oi.product_name, p.name, 'Товар удалён') as product_name
+               FROM order_items oi
+               LEFT JOIN products p ON oi.product_id = p.id
+               WHERE oi.order_id = ?""",
+            (order_dict["id"],)
+        )
+        await db.disconnect()
+        
+        order_dict["items"] = []
+        for item in items:
+            item_dict = dict(item)
+            if item_dict.get("price") is not None:
+                if isinstance(item_dict["price"], Decimal):
+                    item_dict["price"] = float(item_dict["price"])
+            order_dict["items"].append(item_dict)
+        
+        order = order_dict
+        
+        status_emoji = {
+            "pending": "⏳",
+            "confirmed": "✅",
+            "processing": "🔄",
+            "shipped": "📦",
+            "delivered": "✓",
+            "cancelled": "❌"
+        }.get(order.get("status"), "📋")
+        
+        created_at = order.get("created_at", "")
+        if created_at:
+            try:
+                dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                created_at = dt.strftime("%d.%m.%Y %H:%M")
+            except:
+                pass
+        
+        text = f"""
+<b>{status_emoji} Заказ #{order['id']}</b>
+
+<b>Номер заказа:</b> {order.get('order_number', 'N/A')}
+<b>Статус:</b> {order.get('status', 'Неизвестно')}
+<b>Дата создания:</b> {created_at}
+
+<b>Магазин:</b> {order.get('shop_name', 'Неизвестно')}
+
+<b>Клиент:</b>
+👤 {order.get('user_first_name', '')} {order.get('user_last_name', '')}
+📱 Telegram: @{order.get('user_username', 'не указан')}
+ID: {order.get('user_telegram_id', 'не указан')}
+
+<b>Адрес доставки:</b> {order.get('delivery_address', 'Не указан')}
+<b>Тип доставки:</b> {order.get('delivery_type', 'Не указан')}
+<b>Комментарий:</b> {order.get('delivery_comment', 'Нет')}
+
+<b>Товары:</b>
+"""
+        
+        items = order.get("items", [])
+        for item in items:
+            text += f"• {item.get('product_name', 'Товар')} x{item.get('quantity', 1)} = {item.get('price', 0) * item.get('quantity', 1):.2f} ₽\n"
+        
+        text += f"""
+<b>Итого:</b>
+💰 Сумма товаров: {order.get('total_amount', 0) - order.get('delivery_fee', 0) - order.get('promo_discount_amount', 0):.2f} ₽
+🚚 Доставка: {order.get('delivery_fee', 0):.2f} ₽
+🎫 Скидка по промокоду: {order.get('promo_discount_amount', 0):.2f} ₽
+<b>💵 К оплате: {order.get('total_amount', 0):.2f} ₽</b>
+"""
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Назад к меню", callback_data="admin_orders_menu")]
+        ])
+        
+        await message.answer(text, reply_markup=keyboard)
+        
+    except Exception as e:
+        print(f"[ORDERS_ADMIN] Error processing order search: {e}")
+        import traceback
+        traceback.print_exc()
+        await state.clear()
+        await message.answer("❌ Ошибка при поиске заказа.", reply_markup=ReplyKeyboardRemove())
+
+
 # Обработчики callback
 @router.callback_query(F.data == "admin_orders_menu")
 async def callback_orders_menu(callback: CallbackQuery, bot: Bot):
@@ -601,10 +914,32 @@ async def callback_orders_menu(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data.startswith("admin_orders_list_"))
 async def callback_orders_list(callback: CallbackQuery, bot: Bot):
     """Обработчик списка заказов."""
-    parts = callback.data.split("_")
-    status = parts[3] if len(parts) > 3 and parts[3] != "all" else None
-    page = int(parts[4]) if len(parts) > 4 else 0
-    await show_orders_list(callback, bot, status, page)
+    try:
+        parts = callback.data.split("_")
+        print(f"[ORDERS_ADMIN] Callback data: {callback.data}, parts: {parts}")
+        
+        shop_id = None
+        status = None
+        page = 0
+        
+        # Проверяем формат: admin_orders_list_shop_{shop_id}_{status}_{page}
+        if len(parts) > 3 and parts[3] == "shop":
+            # Формат: admin_orders_list_shop_{shop_id}_{status}_{page}
+            shop_id = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else None
+            status = parts[5] if len(parts) > 5 and parts[5] != "all" else None
+            page = int(parts[6]) if len(parts) > 6 and parts[6].isdigit() else 0
+        else:
+            # Старый формат: admin_orders_list_{status}_{page}
+            status = parts[3] if len(parts) > 3 and parts[3] != "all" else None
+            page = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else 0
+        
+        print(f"[ORDERS_ADMIN] Parsed: shop_id={shop_id}, status={status}, page={page}")
+        await show_orders_list(callback, bot, status, page, shop_id=shop_id)
+    except Exception as e:
+        print(f"[ORDERS_ADMIN] Error parsing callback_orders_list: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при обработке запроса списка заказов.", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("admin_order_view_"))
@@ -624,4 +959,54 @@ async def callback_orders_export(callback: CallbackQuery, bot: Bot):
 async def callback_orders_statistics(callback: CallbackQuery, bot: Bot):
     """Обработчик статистики заказов."""
     await show_orders_statistics(callback, bot)
+
+
+@router.callback_query(F.data == "admin_orders_shops")
+async def callback_orders_shops(callback: CallbackQuery, bot: Bot):
+    """Обработчик кнопки выбора магазинов для заказов."""
+    await show_shops_for_orders(callback, bot)
+
+
+@router.callback_query(F.data.startswith("admin_orders_shop_"))
+async def callback_orders_shop(callback: CallbackQuery, bot: Bot):
+    """Обработчик выбора магазина для просмотра заказов."""
+    try:
+        parts = callback.data.split("_")
+        print(f"[ORDERS_ADMIN] Callback data: {callback.data}, parts: {parts}")
+        shop_id = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else None
+        print(f"[ORDERS_ADMIN] Selected shop_id: {shop_id}")
+        if shop_id:
+            # Показываем список заказов этого магазина
+            await show_orders_list(callback, bot, status=None, page=0, shop_id=shop_id)
+        else:
+            await callback.answer("❌ Неверный ID магазина.", show_alert=True)
+    except Exception as e:
+        print(f"[ORDERS_ADMIN] Error in callback_orders_shop: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при выборе магазина.", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_orders_search")
+async def callback_orders_search(callback: CallbackQuery, bot: Bot, state: FSMContext):
+    """Обработчик кнопки поиска заказа."""
+    await start_order_search(callback, bot, state)
+
+
+@router.message(OrderSearchStates.waiting_for_order_number)
+async def handle_order_search_input(message: Message, bot: Bot, state: FSMContext):
+    """Обработчик ввода номера заказа для поиска."""
+    await process_order_search(message, bot, state)
+
+
+@router.message(F.text == "❌ Отменить")
+async def handle_cancel_search(message: Message, bot: Bot, state: FSMContext):
+    """Обработчик кнопки отмены поиска."""
+    current_state = await state.get_state()
+    if current_state == OrderSearchStates.waiting_for_order_number:
+        await state.clear()
+        await message.answer("❌ Поиск отменен.", reply_markup=ReplyKeyboardRemove())
+    else:
+        # Если не в состоянии поиска, просто игнорируем
+        pass
 
