@@ -604,9 +604,25 @@ async def callback_products_shop(callback: CallbackQuery, bot: Bot):
     """Обработчик выбора магазина для просмотра товаров."""
     try:
         parts = callback.data.split("_")
-        print(f"[PRODUCTS_ADMIN] Callback data: {callback.data}, parts: {parts}")
-        shop_id = int(parts[3])
-        print(f"[PRODUCTS_ADMIN] Selected shop_id: {shop_id}")
+        print(f"[PRODUCTS_ADMIN] Callback data: {callback.data}, parts: {parts}, len: {len(parts)}")
+        
+        if len(parts) < 4:
+            print(f"[PRODUCTS_ADMIN] Invalid callback format: {callback.data}")
+            await callback.answer("❌ Неверный формат запроса.", show_alert=True)
+            return
+        
+        shop_id_str = parts[3]
+        print(f"[PRODUCTS_ADMIN] shop_id_str: {shop_id_str}")
+        
+        try:
+            shop_id = int(shop_id_str)
+        except ValueError as ve:
+            print(f"[PRODUCTS_ADMIN] Cannot convert shop_id to int: {shop_id_str}, error: {ve}")
+            await callback.answer("❌ Неверный ID магазина.", show_alert=True)
+            return
+        
+        print(f"[PRODUCTS_ADMIN] Selected shop_id: {shop_id} (type: {type(shop_id)})")
+        
         # Показываем список товаров этого магазина
         await show_products_list(callback, bot, "all", 0, shop_id=shop_id)
         await callback.answer()
@@ -614,5 +630,8 @@ async def callback_products_shop(callback: CallbackQuery, bot: Bot):
         print(f"[PRODUCTS_ADMIN] Error in callback_products_shop: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при выборе магазина.", show_alert=True)
+        try:
+            await callback.answer(f"❌ Ошибка при выборе магазина: {str(e)[:100]}", show_alert=True)
+        except:
+            pass
 
