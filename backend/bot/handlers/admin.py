@@ -1490,12 +1490,12 @@ async def process_promo_valid_until(message: Message, state: FSMContext):
 
 
 async def show_promos_list(callback: CallbackQuery, bot: Bot):
-    """Показывает список промокодов."""
+    """Показывает список промокодов в виде кнопок."""
     try:
         db = await get_db()
         
         promos = await db.fetch_all(
-            "SELECT * FROM promos ORDER BY created_at DESC LIMIT 20",
+            "SELECT * FROM promos ORDER BY created_at DESC",
             ()
         )
         
@@ -1504,21 +1504,23 @@ async def show_promos_list(callback: CallbackQuery, bot: Bot):
         if not promos:
             text = "<b>📋 Промокоды</b>\n\nПромокодов не найдено."
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back_to_menu")]
+                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_promos_menu")]
             ])
             await callback.message.edit_text(text, reply_markup=keyboard)
             await callback.answer()
             return
         
-        text = "<b>📋 Промокоды</b>\n\n"
+        text = "<b>📋 Список промокодов</b>\n\nВыберите промокод для просмотра деталей:"
         
-        for promo in promos[:10]:  # Показываем первые 10
+        keyboard_buttons = []
+        
+        for promo in promos:
             status_emoji = "✅" if promo.get("is_active", True) else "❌"
             promo_type_text = {
-                "percent": "процент",
-                "fixed": "фикс",
-                "free_delivery": "доставка"
-            }.get(promo.get("promo_type", ""), promo.get("promo_type", ""))
+                "percent": "%",
+                "fixed": "₽",
+                "free_delivery": "🚚"
+            }.get(promo.get("promo_type", ""), "")
             
             value = promo.get("value", 0)
             if promo.get("promo_type") == "percent":
@@ -1528,18 +1530,177 @@ async def show_promos_list(callback: CallbackQuery, bot: Bot):
             else:
                 value_text = "бесплатно"
             
-            text += f"{status_emoji} <b>{promo['code']}</b> - {promo_type_text} {value_text}\n"
+            button_text = f"{status_emoji} {promo['code']} - {value_text}"
+            if len(button_text) > 50:
+                button_text = button_text[:47] + "..."
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=button_text,
+                    callback_data=f"admin_promo_view_{promo['id']}"
+                )
+            ])
         
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="◀️ Назад в меню", callback_data="admin_back_to_menu")]
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_promos_menu")
         ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
         await callback.message.edit_text(text, reply_markup=keyboard)
         await callback.answer()
         
     except Exception as e:
         print(f"Error showing promos list: {e}")
+        import traceback
+        traceback.print_exc()
         await callback.answer("❌ Ошибка при загрузке списка промокодов.", show_alert=True)
+
+
+async def show_promo_details(callback: CallbackQuery, bot: Bot, promo_id: int):
+    """Показывает детали промокода."""
+    try:
+        db = await get_db()
+        
+        promo = await db.fetch_one(
+            "SELECT * FROM promos WHERE id = ?",
+            (promo_id,)
+        )
+        
+        if not promo:
+            await db.disconnect()
+            await callback.answer("❌ Промокод не найден", show_alert=True)
+            return
+        
+        # Получаем информацию о магазине, если указан shop_id
+        shop_name = None
+        if promo.get("shop_id"):
+            shop = await db.fetch_one(
+                "SELECT name FROM shops WHERE id = ?",
+                (promo.get("shop_id"),)
+            )
+            if shop:
+                shop_name = shop.get("name")
+        
+        await db.disconnect()
+        
+        # Форматируем данные промокода
+        status_emoji = "✅" if promo.get("is_active", True) else "❌"
+        status_text = "Активен" if promo.get("is_active", True) else "Неактивен"
+        
+        promo_type_text = {
+            "percent": "Процентная скидка",
+            "fixed": "Фиксированная скидка",
+            "free_delivery": "Бесплатная доставка"
+        }.get(promo.get("promo_type", ""), promo.get("promo_type", ""))
+        
+        value = promo.get("value", 0)
+        if promo.get("promo_type") == "percent":
+            value_text = f"{value}%"
+        elif promo.get("promo_type") == "fixed":
+            value_text = f"{value} ₽"
+        else:
+            value_text = "Бесплатно"
+        
+        # Форматируем даты
+        valid_from = promo.get("valid_from")
+        valid_until = promo.get("valid_until")
+        if valid_from:
+            if isinstance(valid_from, str):
+                valid_from = valid_from
+        if valid_until:
+            if isinstance(valid_until, str):
+                valid_until = valid_until
+        
+        created_at = promo.get("created_at", "")
+        if created_at:
+            try:
+                if isinstance(created_at, str):
+                    dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                    created_at = dt.strftime("%d.%m.%Y %H:%M")
+            except:
+                pass
+        
+        text = f"""
+<b>🎫 Промокод #{promo_id}</b>
+
+<b>Код:</b> <code>{promo.get('code', 'N/A')}</code>
+<b>Статус:</b> {status_emoji} {status_text}
+<b>Тип:</b> {promo_type_text}
+<b>Значение:</b> {value_text}
+<b>Описание:</b> {promo.get('description', 'Не указано')}
+
+<b>Ограничения:</b>
+• Использовать один раз: {'Да' if promo.get('use_once') else 'Нет'}
+• Только для первого заказа: {'Да' if promo.get('first_order_only') else 'Нет'}
+• Минимальная сумма заказа: {promo.get('min_order_amount', 'Не указано')} ₽
+• Максимум использований: {promo.get('max_uses', 'Не ограничено')}
+• Текущих использований: {promo.get('current_uses', 0)}
+• Всего использований: {promo.get('usage_count', 0)}
+
+<b>Срок действия:</b>
+• Действует с: {valid_from or 'Не ограничено'}
+• Действует до: {valid_until or 'Не ограничено'}
+
+<b>Магазин:</b> {shop_name or 'Для всех магазинов'}
+
+<b>Дата создания:</b> {created_at}
+"""
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🗑️ Удалить", callback_data=f"admin_promo_delete_{promo_id}")],
+            [InlineKeyboardButton(text="◀️ Назад к списку", callback_data="admin_list_promos")]
+        ])
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing promo details: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке промокода.", show_alert=True)
+
+
+async def delete_promo(callback: CallbackQuery, bot: Bot, promo_id: int):
+    """Удаляет промокод."""
+    try:
+        db = await get_db()
+        
+        # Проверяем существование промокода
+        promo = await db.fetch_one(
+            "SELECT code FROM promos WHERE id = ?",
+            (promo_id,)
+        )
+        
+        if not promo:
+            await db.disconnect()
+            await callback.answer("❌ Промокод не найден", show_alert=True)
+            return
+        
+        promo_code = promo.get("code", "N/A")
+        
+        # Удаляем промокод
+        await db.execute(
+            "DELETE FROM promos WHERE id = ?",
+            (promo_id,)
+        )
+        await db.commit()
+        await db.disconnect()
+        
+        await callback.answer(f"✅ Промокод {promo_code} удален", show_alert=True)
+        
+        # Возвращаемся к списку промокодов
+        await show_promos_list(callback, bot)
+        
+    except Exception as e:
+        print(f"Error deleting promo: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при удалении промокода.", show_alert=True)
 
 
 @router.message(F.text == "❌ Отменить")
@@ -1663,4 +1824,30 @@ async def show_promo_statistics(callback: CallbackQuery, bot: Bot):
         import traceback
         traceback.print_exc()
         await callback.answer("❌ Ошибка при загрузке статистики промокодов.", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("admin_promo_view_"))
+async def callback_promo_view(callback: CallbackQuery, bot: Bot):
+    """Обработчик просмотра деталей промокода."""
+    try:
+        promo_id = int(callback.data.split("_")[3])
+        await show_promo_details(callback, bot, promo_id)
+    except Exception as e:
+        print(f"Error in callback_promo_view: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при просмотре промокода.", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("admin_promo_delete_"))
+async def callback_promo_delete(callback: CallbackQuery, bot: Bot):
+    """Обработчик удаления промокода."""
+    try:
+        promo_id = int(callback.data.split("_")[3])
+        await delete_promo(callback, bot, promo_id)
+    except Exception as e:
+        print(f"Error in callback_promo_delete: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при удалении промокода.", show_alert=True)
 
