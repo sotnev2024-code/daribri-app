@@ -966,15 +966,29 @@ async def execute_move_products(callback: CallbackQuery, bot: Bot, from_category
 @router.callback_query(F.data.startswith("admin_category_delete_"))
 async def handle_category_delete(callback: CallbackQuery, bot: Bot):
     """Обрабатывает удаление категории."""
-    parts = callback.data.split("_")
-    category_id = int(parts[3])
-    
-    if "confirm" in callback.data:
-        await delete_category_confirm(callback, bot, category_id)
-    elif "force" in callback.data:
-        await delete_category(callback, bot, category_id, force=True)
-    else:
-        await delete_category(callback, bot, category_id)
+    try:
+        parts = callback.data.split("_")
+        print(f"[CATEGORIES_ADMIN] Callback data: {callback.data}, parts: {parts}")
+        
+        # Парсим category_id в зависимости от формата callback_data
+        # Форматы: admin_category_delete_{id}, admin_category_delete_confirm_{id}, admin_category_delete_force_{id}
+        if "confirm" in callback.data:
+            category_id = int(parts[4])  # admin_category_delete_confirm_{id}
+            print(f"[CATEGORIES_ADMIN] Confirm delete, category_id: {category_id}")
+            await delete_category_confirm(callback, bot, category_id)
+        elif "force" in callback.data:
+            category_id = int(parts[4])  # admin_category_delete_force_{id}
+            print(f"[CATEGORIES_ADMIN] Force delete, category_id: {category_id}")
+            await delete_category(callback, bot, category_id, force=True)
+        else:
+            category_id = int(parts[3])  # admin_category_delete_{id}
+            print(f"[CATEGORIES_ADMIN] Delete, category_id: {category_id}")
+            await delete_category(callback, bot, category_id)
+    except Exception as e:
+        print(f"[CATEGORIES_ADMIN] Error in handle_category_delete: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при обработке удаления категории.", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("admin_category_move_products_"))

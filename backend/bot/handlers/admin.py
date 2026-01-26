@@ -302,6 +302,28 @@ async def admin_callback_handler(callback: CallbackQuery, bot: Bot, state: FSMCo
         promo_id = int(action.split("_")[3])
         await delete_promo(callback, bot, promo_id)
         await callback.answer()
+    elif action.startswith("admin_category_delete_"):
+        # Обработка удаления категории передается в categories_admin
+        try:
+            from .categories_admin import handle_category_delete
+            await handle_category_delete(callback, bot)
+        except Exception as e:
+            print(f"Error handling category delete: {e}")
+            import traceback
+            traceback.print_exc()
+            await callback.answer("❌ Ошибка при удалении категории.", show_alert=True)
+        await callback.answer()
+    elif action.startswith("admin_category_move_products_"):
+        # Обработка переноса товаров передается в categories_admin
+        try:
+            from .categories_admin import handle_move_products
+            await handle_move_products(callback, bot)
+        except Exception as e:
+            print(f"Error handling move products: {e}")
+            import traceback
+            traceback.print_exc()
+            await callback.answer("❌ Ошибка при переносе товаров.", show_alert=True)
+        await callback.answer()
     elif action == "admin_shops_menu":
         from .shops_admin import show_shops_menu
         await show_shops_menu(callback, bot)
