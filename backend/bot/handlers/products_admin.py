@@ -91,6 +91,17 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
     try:
         db = await get_db()
         
+        # Получаем информацию о магазине, если указан shop_id
+        shop_name = None
+        if shop_id:
+            try:
+                shop = await db.fetch_one("SELECT name FROM shops WHERE id = ?", (shop_id,))
+                if shop:
+                    shop_name = shop.get("name")
+            except Exception as shop_error:
+                print(f"Error fetching shop name: {shop_error}")
+                shop_name = None
+        
         # Формируем условия фильтрации
         conditions = []
         params = []
@@ -108,18 +119,29 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         limit = 10
         offset = page * limit
         
-        products = await db.fetch_all(
-            f"""SELECT p.*, 
-                      s.name as shop_name,
-                      c.name as category_name
-               FROM products p
-               LEFT JOIN shops s ON p.shop_id = s.id
-               LEFT JOIN categories c ON p.category_id = c.id
-               WHERE {where_clause}
-               ORDER BY p.created_at DESC
-               LIMIT ? OFFSET ?""",
-            tuple(params + [limit, offset])
-        )
+        try:
+            products = await db.fetch_all(
+                f"""SELECT p.*, 
+                          s.name as shop_name,
+                          c.name as category_name
+                   FROM products p
+                   LEFT JOIN shops s ON p.shop_id = s.id
+                   LEFT JOIN categories c ON p.category_id = c.id
+                   WHERE {where_clause}
+                   ORDER BY p.created_at DESC
+                   LIMIT ? OFFSET ?""",
+                tuple(params + [limit, offset])
+            )
+        except Exception as query_error:
+            print(f"[PRODUCTS_ADMIN] Error executing products query: {query_error}")
+            print(f"[PRODUCTS_ADMIN] Query params: filter_type={filter_type}, shop_id={shop_id}, page={page}")
+            print(f"[PRODUCTS_ADMIN] Where clause: {where_clause}")
+            print(f"[PRODUCTS_ADMIN] Params: {params + [limit, offset]}")
+            import traceback
+            traceback.print_exc()
+            await db.disconnect()
+            await callback.answer(f"❌ Ошибка при загрузке товаров: {str(query_error)}", show_alert=True)
+            return
         
         await db.disconnect()
         
@@ -191,13 +213,19 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         # Пагинация
         nav_buttons = []
         if page > 0:
+            callback_data = f"admin_products_list_{filter_type}_{page-1}"
+            if shop_id:
+                callback_data += f"_{shop_id}"
             nav_buttons.append(
-                InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_products_list_{filter_type}_{page-1}")
+                InlineKeyboardButton(text="◀️ Назад", callback_data=callback_data)
             )
         
         if len(products) == 10:  # Если получили полную страницу, есть еще товары
+            callback_data = f"admin_products_list_{filter_type}_{page+1}"
+            if shop_id:
+                callback_data += f"_{shop_id}"
             nav_buttons.append(
-                InlineKeyboardButton(text="Вперед ▶️", callback_data=f"admin_products_list_{filter_type}_{page+1}")
+                InlineKeyboardButton(text="Вперед ▶️", callback_data=callback_data)
             )
         
         if nav_buttons:
@@ -221,13 +249,15 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
         await callback.answer()
         
     except Exception as e:
-        print(f"Error showing products list: {e}")
+        print(f"[PRODUCTS_ADMIN] Error showing products list: {e}")
+        print(f"[PRODUCTS_ADMIN] Parameters: filter_type={filter_type}, page={page}, shop_id={shop_id}")
         import traceback
         traceback.print_exc()
         try:
-            await callback.answer("❌ Ошибка при загрузке списка товаров.", show_alert=True)
-        except:
-            pass
+            error_msg = f"❌ Ошибка при загрузке списка товаров.\n\nДетали: {str(e)[:200]}"
+            await callback.answer(error_msg, show_alert=True)
+        except Exception as answer_error:
+            print(f"[PRODUCTS_ADMIN] Error sending answer: {answer_error}")
 
 
 async def show_product_details(callback: CallbackQuery, bot: Bot, product_id: int):
@@ -420,11 +450,19 @@ async def callback_products_menu(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data.startswith("admin_products_list_"))
 async def callback_products_list(callback: CallbackQuery, bot: Bot):
     """Обработчик списка товаров."""
-    parts = callback.data.split("_")
-    filter_type = parts[3] if len(parts) > 3 else "all"
-    page = int(parts[4]) if len(parts) > 4 else 0
-    shop_id = int(parts[5]) if len(parts) > 5 and parts[5].isdigit() else None
-    await show_products_list(callback, bot, filter_type, page, shop_id=shop_id)
+    try:
+        parts = callback.data.split("_")
+        print(f"[PRODUCTS_ADMIN] Callback data: {callback.data}, parts: {parts}")
+        filter_type = parts[3] if len(parts) > 3 else "all"
+        page = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else 0
+        shop_id = int(parts[5]) if len(parts) > 5 and parts[5].isdigit() else None
+        print(f"[PRODUCTS_ADMIN] Parsed: filter_type={filter_type}, page={page}, shop_id={shop_id}")
+        await show_products_list(callback, bot, filter_type, page, shop_id=shop_id)
+    except Exception as e:
+        print(f"[PRODUCTS_ADMIN] Error in callback_products_list: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при обработке запроса.", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("admin_product_view_"))
@@ -550,7 +588,17 @@ async def callback_products_shops_page(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data.startswith("admin_products_shop_"))
 async def callback_products_shop(callback: CallbackQuery, bot: Bot):
     """Обработчик выбора магазина для просмотра товаров."""
-    shop_id = int(callback.data.split("_")[3])
-    # Показываем список товаров этого магазина
-    await show_products_list(callback, bot, "all", 0, shop_id=shop_id)
+    try:
+        parts = callback.data.split("_")
+        print(f"[PRODUCTS_ADMIN] Callback data: {callback.data}, parts: {parts}")
+        shop_id = int(parts[3])
+        print(f"[PRODUCTS_ADMIN] Selected shop_id: {shop_id}")
+        # Показываем список товаров этого магазина
+        await show_products_list(callback, bot, "all", 0, shop_id=shop_id)
+        await callback.answer()
+    except Exception as e:
+        print(f"[PRODUCTS_ADMIN] Error in callback_products_shop: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при выборе магазина.", show_alert=True)
 
