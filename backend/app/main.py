@@ -106,6 +106,27 @@ async def lifespan(app: FastAPI):
                 await database._db_service.commit()
                 print("[MIGRATION] city column added successfully")
         
+        # Проверяем, существует ли поле is_active в таблице users
+        users_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+        if users_table:
+            users_columns = await database._db_service.fetch_all("PRAGMA table_info(users)")
+            users_column_names = [col["name"] for col in users_columns]
+            
+            if "is_active" not in users_column_names:
+                print("[MIGRATION] Adding is_active column to users table...")
+                try:
+                    await database._db_service.execute(
+                        "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1"
+                    )
+                    # Устанавливаем is_active = 1 для всех существующих пользователей
+                    await database._db_service.execute(
+                        "UPDATE users SET is_active = 1 WHERE is_active IS NULL"
+                    )
+                    await database._db_service.commit()
+                    print("[MIGRATION] is_active column added successfully")
+                except Exception as e:
+                    print(f"[MIGRATION] Error adding is_active column: {e}")
+        
         # Обновляем рейтинги всех магазинов на основе существующих отзывов
         try:
             shops_with_reviews = await database._db_service.fetch_all(

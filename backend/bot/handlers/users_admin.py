@@ -474,25 +474,39 @@ async def toggle_user_status(callback: CallbackQuery, bot: Bot, user_id: int, bl
         await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
         return
     
+    db = None
     try:
         db = await get_db()
         
         # Проверяем существование пользователя
         user = await db.fetch_one("SELECT id FROM users WHERE id = ?", (user_id,))
         if not user:
-            await db.disconnect()
+            if db:
+                await db.disconnect()
             await callback.answer("❌ Пользователь не найден", show_alert=True)
             return
         
         # Обновляем статус (используем is_active как индикатор блокировки)
-        await db.update(
-            "users",
-            {"is_active": 0 if block else 1},
-            "id = ?",
-            (user_id,)
-        )
-        await db.commit()
-        await db.disconnect()
+        # Метод update уже вызывает commit() внутри, поэтому не нужно вызывать его снова
+        try:
+            result = await db.update(
+                "users",
+                {"is_active": 0 if block else 1},
+                "id = ?",
+                (user_id,)
+            )
+            print(f"[USERS_ADMIN] Updated user {user_id}: is_active = {0 if block else 1}, rows affected: {result}")
+        except Exception as update_error:
+            print(f"[USERS_ADMIN] Error updating user status: {update_error}")
+            import traceback
+            traceback.print_exc()
+            if db:
+                await db.disconnect()
+            await callback.answer(f"❌ Ошибка при обновлении статуса: {str(update_error)}", show_alert=True)
+            return
+        
+        if db:
+            await db.disconnect()
         
         status_text = "заблокирован" if block else "разблокирован"
         await callback.answer(f"✅ Пользователь {status_text}", show_alert=True)
@@ -501,10 +515,15 @@ async def toggle_user_status(callback: CallbackQuery, bot: Bot, user_id: int, bl
         await show_user_details(callback, bot, user_id)
         
     except Exception as e:
-        print(f"Error toggling user status: {e}")
+        print(f"[USERS_ADMIN] Error toggling user status: {e}")
         import traceback
         traceback.print_exc()
-        await callback.answer("❌ Ошибка при изменении статуса пользователя.", show_alert=True)
+        if db:
+            try:
+                await db.disconnect()
+            except:
+                pass
+        await callback.answer(f"❌ Ошибка при изменении статуса пользователя: {str(e)}", show_alert=True)
 
 
 async def show_user_orders(callback: CallbackQuery, bot: Bot, user_id: int, page: int = 0):
