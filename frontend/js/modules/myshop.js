@@ -474,26 +474,38 @@
         const elements = getElements();
         const utils = getUtils();
         
-        console.log('[MY SHOP] Rendering shop page, shop:', state.myShop);
+        console.log('[MY SHOP] ========== Rendering shop page ==========');
+        console.log('[MY SHOP] Shop data:', state.myShop);
         console.log('[MY SHOP] Elements check:', {
             shopCreateSection: !!elements?.shopCreateSection,
             shopBlockedSection: !!elements?.shopBlockedSection,
             shopDashboard: !!elements?.shopDashboard,
-            dashboardShopName: !!elements?.dashboardShopName
+            dashboardShopName: !!elements?.dashboardShopName,
+            myShopPage: !!elements?.myShopPage
         });
         
-        // Проверяем, что элементы существуют
+        // Проверяем, что элементы существуют, и находим их если нужно
         if (!elements?.shopBlockedSection) {
-            console.error('[MY SHOP] ❌ shopBlockedSection element not found in DOM!');
-            // Пытаемся найти элемент напрямую
+            console.warn('[MY SHOP] ⚠️ shopBlockedSection not in elements, trying getElementById...');
             const blockedSection = document.getElementById('shopBlockedSection');
             if (blockedSection) {
-                console.log('[MY SHOP] Found shopBlockedSection via getElementById');
-                elements.shopBlockedSection = blockedSection;
+                console.log('[MY SHOP] ✅ Found shopBlockedSection via getElementById');
+                if (elements) {
+                    elements.shopBlockedSection = blockedSection;
+                }
             } else {
-                console.error('[MY SHOP] shopBlockedSection not found in DOM at all!');
+                console.error('[MY SHOP] ❌ shopBlockedSection not found in DOM!');
+                console.error('[MY SHOP] Available elements in myShopPage:', 
+                    elements?.myShopPage ? Array.from(elements.myShopPage.children).map(c => c.id || c.className) : 'myShopPage not found');
             }
+        } else {
+            console.log('[MY SHOP] ✅ shopBlockedSection found in elements');
         }
+        
+        // Получаем актуальную ссылку на элемент
+        const shopBlockedSection = elements?.shopBlockedSection || document.getElementById('shopBlockedSection');
+        const shopCreateSection = elements?.shopCreateSection || document.getElementById('shopCreateSection');
+        const shopDashboard = elements?.shopDashboard || document.getElementById('shopDashboard');
         
         const getMediaUrl = utils.getMediaUrl || ((url) => {
             if (!url) return '';
@@ -520,55 +532,80 @@
             
             if (isBlocked) {
                 // Показываем сообщение о блокировке
-                console.log('[MY SHOP] ⚠️ Shop is BLOCKED, showing blocked message');
+                console.log('[MY SHOP] ⚠️⚠️⚠️ Shop is BLOCKED, showing blocked message ⚠️⚠️⚠️');
                 
                 // Скрываем все остальные секции
-                if (elements?.shopCreateSection) {
-                    elements.shopCreateSection.hidden = true;
-                    console.log('[MY SHOP] shopCreateSection hidden');
+                if (shopCreateSection) {
+                    shopCreateSection.hidden = true;
+                    shopCreateSection.style.display = 'none';
+                    console.log('[MY SHOP] ✅ shopCreateSection hidden');
                 }
-                if (elements?.shopDashboard) {
-                    elements.shopDashboard.hidden = true;
-                    console.log('[MY SHOP] shopDashboard hidden');
+                if (shopDashboard) {
+                    shopDashboard.hidden = true;
+                    shopDashboard.style.display = 'none';
+                    console.log('[MY SHOP] ✅ shopDashboard hidden');
                 }
                 
                 // Показываем блокированную секцию
-                const blockedSection = elements?.shopBlockedSection || document.getElementById('shopBlockedSection');
-                if (blockedSection) {
-                    blockedSection.hidden = false;
-                    blockedSection.style.display = 'block';
-                    console.log('[MY SHOP] ✅ shopBlockedSection shown');
+                if (shopBlockedSection) {
+                    shopBlockedSection.removeAttribute('hidden');
+                    shopBlockedSection.hidden = false;
+                    shopBlockedSection.style.display = 'block';
+                    shopBlockedSection.style.visibility = 'visible';
+                    console.log('[MY SHOP] ✅✅✅ shopBlockedSection SHOWN (hidden=false, display=block)');
+                    console.log('[MY SHOP] Blocked section computed style:', window.getComputedStyle(shopBlockedSection).display);
                 } else {
-                    console.error('[MY SHOP] ❌ shopBlockedSection element not found!');
+                    console.error('[MY SHOP] ❌❌❌ shopBlockedSection element STILL NOT FOUND!');
                     // Создаем временное сообщение, если элемент не найден
-                    if (elements?.myShopPage) {
+                    const myShopPage = elements?.myShopPage || document.getElementById('myShopPage');
+                    if (myShopPage) {
                         const tempMsg = document.createElement('div');
                         tempMsg.className = 'shop-blocked-section';
+                        tempMsg.id = 'shopBlockedSection';
                         tempMsg.innerHTML = `
                             <div class="blocked-message">
                                 <div class="blocked-icon">🚫</div>
                                 <h2>Магазин заблокирован</h2>
                                 <p>Ваш магазин был заблокирован администратором.</p>
                                 <p>Для получения дополнительной информации и решения вопроса, пожалуйста, обратитесь в поддержку.</p>
+                                <button class="support-btn" id="contactSupportBtn">
+                                    <span>Связаться с поддержкой</span>
+                                </button>
                             </div>
                         `;
-                        elements.myShopPage.appendChild(tempMsg);
-                        console.log('[MY SHOP] Created temporary blocked message');
+                        myShopPage.appendChild(tempMsg);
+                        console.log('[MY SHOP] Created temporary blocked message element');
+                        // Инициализируем обработчик для кнопки
+                        const supportBtn = tempMsg.querySelector('#contactSupportBtn');
+                        if (supportBtn) {
+                            supportBtn.addEventListener('click', () => {
+                                const botUsername = 'Daribri_bot';
+                                const supportUrl = `https://t.me/${botUsername}?start=support`;
+                                if (window.Telegram?.WebApp?.openTelegramLink) {
+                                    window.Telegram.WebApp.openTelegramLink(supportUrl);
+                                } else {
+                                    window.open(supportUrl, '_blank');
+                                }
+                            });
+                        }
                     }
                 }
                 return;
             }
             
             // Показываем панель управления (магазин не заблокирован)
-            console.log('[MY SHOP] Shop is active, showing dashboard');
-            if (elements?.shopCreateSection) elements.shopCreateSection.hidden = true;
-            if (elements?.shopBlockedSection) {
-                elements.shopBlockedSection.hidden = true;
-                elements.shopBlockedSection.style.display = 'none';
+            console.log('[MY SHOP] ✅ Shop is ACTIVE, showing dashboard');
+            if (shopCreateSection) {
+                shopCreateSection.hidden = true;
+                shopCreateSection.style.display = 'none';
             }
-            if (elements?.shopDashboard) {
-                elements.shopDashboard.hidden = false;
-                elements.shopDashboard.style.display = 'block';
+            if (shopBlockedSection) {
+                shopBlockedSection.hidden = true;
+                shopBlockedSection.style.display = 'none';
+            }
+            if (shopDashboard) {
+                shopDashboard.hidden = false;
+                shopDashboard.style.display = 'block';
             }
             
             // Заполняем данные магазина
