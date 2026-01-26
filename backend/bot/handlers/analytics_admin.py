@@ -141,7 +141,42 @@ async def show_platform_statistics(callback: CallbackQuery, bot: Bot):
             pass
 
 
-async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "month"):
+async def show_revenue_report_menu(callback: CallbackQuery, bot: Bot):
+    """Показывает меню выбора типа финансового отчета."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        text = """
+<b>💰 Финансовые отчеты</b>
+
+Выберите тип отчета:
+"""
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📊 Общая статистика", callback_data="admin_analytics_revenue_all")],
+            [InlineKeyboardButton(text="🏪 По магазину", callback_data="admin_analytics_revenue_shops")],
+            [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_menu")]
+        ])
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing revenue report menu: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            await callback.answer("❌ Ошибка при загрузке меню.", show_alert=True)
+        except:
+            pass
+
+
+async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "month", shop_id: int = None):
     """Показывает финансовый отчет."""
     if not is_admin(callback.from_user.id):
         await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
@@ -154,6 +189,17 @@ async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "
         db = DatabaseService(db_path=settings.DATABASE_PATH)
         await db.connect()
         
+        # Получаем информацию о магазине, если указан shop_id
+        shop_name = None
+        if shop_id:
+            try:
+                shop = await db.fetch_one("SELECT name FROM shops WHERE id = ?", (shop_id,))
+                if shop:
+                    shop_name = shop.get("name")
+            except Exception as shop_error:
+                print(f"[ANALYTICS] Error fetching shop name: {shop_error}")
+                shop_name = None
+        
         period_map = {
             "day": "-1 day",
             "week": "-7 days",
@@ -162,31 +208,46 @@ async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "
         
         period_sql = period_map.get(period, "-30 days")
         
-        # Выручка за период
+        # Формируем условия для запроса
+        conditions = ["status = 'delivered'", f"created_at >= datetime('now', '{period_sql}')"]
+        params = []
+        
+        if shop_id:
+            conditions.append("shop_id = ?")
+            params.append(shop_id)
+        
+        where_clause = " AND ".join(conditions)
+        
+        # Выручка за период (только выполненные заказы)
         revenue = await db.fetch_one(
             f"""SELECT COALESCE(SUM(total_amount), 0) as total 
                FROM orders 
-               WHERE created_at >= datetime('now', '{period_sql}')"""
+               WHERE {where_clause}""",
+            tuple(params)
         )
         
-        # Количество заказов за период
+        # Количество заказов за период (только выполненные)
         orders_count = await db.fetch_one(
             f"""SELECT COUNT(*) as cnt 
                FROM orders 
-               WHERE created_at >= datetime('now', '{period_sql}')"""
+               WHERE {where_clause}""",
+            tuple(params)
         )
         
-        # Средний чек за период
+        # Средний чек за период (только выполненные)
         avg_order = await db.fetch_one(
             f"""SELECT COALESCE(AVG(total_amount), 0) as avg 
                FROM orders 
-               WHERE created_at >= datetime('now', '{period_sql}')"""
+               WHERE {where_clause}""",
+            tuple(params)
         )
         
         await db.disconnect()
         
         report = {
             "period": period,
+            "shop_id": shop_id,
+            "shop_name": shop_name,
             "revenue": float(revenue["total"]) if revenue and isinstance(revenue["total"], Decimal) else (revenue["total"] if revenue else 0),
             "orders_count": orders_count["cnt"] if orders_count else 0,
             "average_order": float(avg_order["avg"]) if avg_order and isinstance(avg_order["avg"], Decimal) else (avg_order["avg"] if avg_order else 0)
@@ -198,24 +259,35 @@ async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "
             "month": "За месяц"
         }
         
+        title = "💰 Финансовый отчет"
+        if shop_name:
+            title = f"💰 Финансовый отчет: {shop_name}"
+        
         text = f"""
-<b>💰 Финансовый отчет</b>
+<b>{title}</b>
 
 <b>Период:</b> {period_names.get(period, period)}
+<b>Статус:</b> Только выполненные заказы
 
 <b>Выручка:</b> {report.get('revenue', 0):.2f} ₽
 <b>Количество заказов:</b> {report.get('orders_count', 0)}
 <b>Средний чек:</b> {report.get('average_order', 0):.2f} ₽
 """
         
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        keyboard_buttons = [
             [
-                InlineKeyboardButton(text="📅 День", callback_data="admin_analytics_revenue_day"),
-                InlineKeyboardButton(text="📅 Неделя", callback_data="admin_analytics_revenue_week"),
-                InlineKeyboardButton(text="📅 Месяц", callback_data="admin_analytics_revenue_month")
-            ],
-            [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_menu")]
-        ])
+                InlineKeyboardButton(text="📅 День", callback_data=f"admin_analytics_revenue_period_day_{shop_id or 'all'}"),
+                InlineKeyboardButton(text="📅 Неделя", callback_data=f"admin_analytics_revenue_period_week_{shop_id or 'all'}"),
+                InlineKeyboardButton(text="📅 Месяц", callback_data=f"admin_analytics_revenue_period_month_{shop_id or 'all'}")
+            ]
+        ]
+        
+        if shop_id:
+            keyboard_buttons.append([InlineKeyboardButton(text="◀️ Назад к выбору магазина", callback_data="admin_analytics_revenue_shops")])
+        else:
+            keyboard_buttons.append([InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_revenue_menu")])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         
         try:
             await callback.message.edit_text(text, reply_markup=keyboard)
@@ -233,6 +305,92 @@ async def show_revenue_report(callback: CallbackQuery, bot: Bot, period: str = "
             pass
 
 
+async def show_shops_for_revenue(callback: CallbackQuery, bot: Bot):
+    """Показывает список магазинов для выбора финансового отчета."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        from backend.app.services.database import DatabaseService
+        from decimal import Decimal
+        
+        db = DatabaseService(db_path=settings.DATABASE_PATH)
+        await db.connect()
+        
+        # Получаем все магазины с выручкой от выполненных заказов
+        shops = await db.fetch_all(
+            """SELECT s.id, s.name, s.is_active, s.is_verified,
+                      COALESCE(SUM(CASE WHEN o.status = 'delivered' THEN o.total_amount ELSE 0 END), 0) as revenue,
+                      COUNT(CASE WHEN o.status = 'delivered' THEN o.id END) as orders_count
+               FROM shops s
+               LEFT JOIN orders o ON s.id = o.shop_id
+               GROUP BY s.id, s.name, s.is_active, s.is_verified
+               ORDER BY revenue DESC"""
+        )
+        
+        await db.disconnect()
+        
+        # Преобразуем Decimal в float
+        shops_list = []
+        for shop in shops:
+            shop_dict = dict(shop)
+            if shop_dict.get("revenue") is not None:
+                if isinstance(shop_dict["revenue"], Decimal):
+                    shop_dict["revenue"] = float(shop_dict["revenue"])
+            shops_list.append(shop_dict)
+        
+        shops = shops_list
+        
+        if not shops:
+            text = "<b>🏪 Выбор магазина</b>\n\nМагазинов не найдено."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_revenue_menu")]
+            ])
+            await callback.message.edit_text(text, reply_markup=keyboard)
+            await callback.answer()
+            return
+        
+        text = "<b>🏪 Выберите магазин для финансового отчета:</b>\n\n"
+        keyboard_buttons = []
+        
+        for shop in shops:
+            shop_id = shop.get("id")
+            shop_name = shop.get("name", "Без названия")
+            revenue = shop.get("revenue", 0)
+            orders_count = shop.get("orders_count", 0)
+            is_active = shop.get("is_active", 1)
+            
+            status_emoji = "✅" if is_active else "❌"
+            text += f"{status_emoji} <b>{shop_name}</b>\n"
+            text += f"   Выручка: {revenue:.2f} ₽ ({orders_count} заказов)\n\n"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=f"{shop_name} ({revenue:.0f} ₽)",
+                    callback_data=f"admin_analytics_revenue_shop_{shop_id}"
+                )
+            ])
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_analytics_revenue_menu")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing shops for revenue: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке магазинов.", show_alert=True)
+
+
 async def show_top_shops(callback: CallbackQuery, bot: Bot, limit: int = 10):
     """Показывает топ магазинов по выручке."""
     if not is_admin(callback.from_user.id):
@@ -248,8 +406,8 @@ async def show_top_shops(callback: CallbackQuery, bot: Bot, limit: int = 10):
         
         shops = await db.fetch_all(
             """SELECT s.id, s.name, s.is_active, s.is_verified,
-                      COALESCE(SUM(o.total_amount), 0) as revenue,
-                      COUNT(o.id) as orders_count
+                      COALESCE(SUM(CASE WHEN o.status = 'delivered' THEN o.total_amount ELSE 0 END), 0) as revenue,
+                      COUNT(CASE WHEN o.status = 'delivered' THEN o.id END) as orders_count
                FROM shops s
                LEFT JOIN orders o ON s.id = o.shop_id
                GROUP BY s.id
@@ -403,12 +561,63 @@ async def callback_analytics_platform(callback: CallbackQuery, bot: Bot):
     await show_platform_statistics(callback, bot)
 
 
-@router.callback_query(F.data.startswith("admin_analytics_revenue"))
+@router.callback_query(F.data == "admin_analytics_revenue")
 async def callback_analytics_revenue(callback: CallbackQuery, bot: Bot):
-    """Обработчик финансовых отчетов."""
-    parts = callback.data.split("_")
-    period = parts[3] if len(parts) > 3 else "month"
-    await show_revenue_report(callback, bot, period)
+    """Обработчик кнопки финансовых отчетов - показывает меню выбора."""
+    await show_revenue_report_menu(callback, bot)
+
+
+@router.callback_query(F.data == "admin_analytics_revenue_menu")
+async def callback_analytics_revenue_menu(callback: CallbackQuery, bot: Bot):
+    """Обработчик возврата в меню финансовых отчетов."""
+    await show_revenue_report_menu(callback, bot)
+
+
+@router.callback_query(F.data == "admin_analytics_revenue_all")
+async def callback_analytics_revenue_all(callback: CallbackQuery, bot: Bot):
+    """Обработчик общей статистики финансовых отчетов."""
+    await show_revenue_report(callback, bot, period="month", shop_id=None)
+
+
+@router.callback_query(F.data == "admin_analytics_revenue_shops")
+async def callback_analytics_revenue_shops(callback: CallbackQuery, bot: Bot):
+    """Обработчик выбора магазина для финансового отчета."""
+    await show_shops_for_revenue(callback, bot)
+
+
+@router.callback_query(F.data.startswith("admin_analytics_revenue_shop_"))
+async def callback_analytics_revenue_shop(callback: CallbackQuery, bot: Bot):
+    """Обработчик выбора конкретного магазина для финансового отчета."""
+    try:
+        parts = callback.data.split("_")
+        shop_id = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else None
+        if shop_id:
+            await show_revenue_report(callback, bot, period="month", shop_id=shop_id)
+        else:
+            await callback.answer("❌ Неверный ID магазина.", show_alert=True)
+    except Exception as e:
+        print(f"[ANALYTICS] Error in callback_analytics_revenue_shop: {e}")
+        await callback.answer("❌ Ошибка при выборе магазина.", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("admin_analytics_revenue_period_"))
+async def callback_analytics_revenue_period(callback: CallbackQuery, bot: Bot):
+    """Обработчик выбора периода для финансового отчета."""
+    try:
+        # Формат: admin_analytics_revenue_period_{period}_{shop_id_or_all}
+        parts = callback.data.split("_")
+        if len(parts) >= 5:
+            period = parts[4]  # day, week, month
+            shop_param = parts[5] if len(parts) > 5 else "all"  # shop_id или 'all'
+            shop_id = int(shop_param) if shop_param.isdigit() else None
+            await show_revenue_report(callback, bot, period=period, shop_id=shop_id)
+        else:
+            await callback.answer("❌ Неверный формат запроса.", show_alert=True)
+    except Exception as e:
+        print(f"[ANALYTICS] Error in callback_analytics_revenue_period: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при обработке запроса.", show_alert=True)
 
 
 @router.callback_query(F.data == "admin_analytics_top_shops")
