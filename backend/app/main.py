@@ -472,6 +472,11 @@ async def get_my_shop_direct(
     if not shop:
         return None
     
+    # Явно конвертируем is_active из INTEGER в boolean для корректной работы фронтенда
+    # SQLite возвращает INTEGER (0 или 1), но Pydantic может не всегда корректно конвертировать
+    if "is_active" in shop:
+        shop["is_active"] = bool(shop["is_active"]) if shop["is_active"] is not None else True
+    
     # Получаем статистику
     products_count = await db.fetch_one(
         "SELECT COUNT(*) as cnt FROM products WHERE shop_id = ? AND is_active = 1 AND quantity > 0",

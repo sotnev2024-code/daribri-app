@@ -438,11 +438,19 @@
         const state = getState();
         const api = getApi();
         const utils = getUtils();
+        const elements = getElements();
         
         console.log('[MY SHOP] Loading shop data...');
+        console.log('[MY SHOP] Elements check:', {
+            shopBlockedSection: !!elements?.shopBlockedSection,
+            shopCreateSection: !!elements?.shopCreateSection,
+            shopDashboard: !!elements?.shopDashboard
+        });
+        
         try {
             state.myShop = await api.getMyShop();
             console.log('[MY SHOP] Shop loaded:', state.myShop);
+            console.log('[MY SHOP] Shop is_active:', state.myShop?.is_active, 'Type:', typeof state.myShop?.is_active);
             
             try {
                 state.mySubscription = await api.getMySubscription();
@@ -488,10 +496,22 @@
         
         if (state.myShop) {
             // Проверяем, заблокирован ли магазин
-            if (state.myShop.is_active === false || state.myShop.is_active === 0) {
+            // is_active может быть boolean (false) или integer (0) в зависимости от источника данных
+            const isActive = state.myShop.is_active;
+            const isBlocked = isActive === false || isActive === 0 || isActive === '0' || String(isActive).toLowerCase() === 'false';
+            
+            console.log('[MY SHOP] Shop is_active value:', isActive, 'Type:', typeof isActive, 'Is blocked:', isBlocked);
+            
+            if (isBlocked) {
                 // Показываем сообщение о блокировке
+                console.log('[MY SHOP] Shop is blocked, showing blocked message');
                 if (elements?.shopCreateSection) elements.shopCreateSection.hidden = true;
-                if (elements?.shopBlockedSection) elements.shopBlockedSection.hidden = false;
+                if (elements?.shopBlockedSection) {
+                    elements.shopBlockedSection.hidden = false;
+                    console.log('[MY SHOP] Blocked section shown');
+                } else {
+                    console.error('[MY SHOP] shopBlockedSection element not found!');
+                }
                 if (elements?.shopDashboard) elements.shopDashboard.hidden = true;
                 return;
             }
