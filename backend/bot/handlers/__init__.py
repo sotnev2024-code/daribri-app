@@ -16,6 +16,7 @@ from .shops_admin import router as shops_admin_router
 from .products_admin import router as products_admin_router
 from .orders_admin import router as orders_admin_router
 from .analytics_admin import router as analytics_admin_router
+from .categories_admin import router as categories_admin_router
 
 router = Router()
 
@@ -33,6 +34,7 @@ router.include_router(products_admin_router)
 router.include_router(orders_admin_router)
 router.include_router(users_admin_router)
 router.include_router(analytics_admin_router)
+router.include_router(categories_admin_router)
 router.include_router(subscriptions_admin_router)
 # Общий админ-роутер (в конце, чтобы обрабатывать только те callback'и, которые не обработаны выше)
 router.include_router(admin_router)

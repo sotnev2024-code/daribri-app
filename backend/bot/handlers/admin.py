@@ -224,6 +224,7 @@ async def show_admin_menu(message: Message, bot: Bot):
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🏪 Магазины", callback_data="admin_shops_menu")],
             [InlineKeyboardButton(text="📦 Товары", callback_data="admin_products_menu")],
+            [InlineKeyboardButton(text="📂 Категории", callback_data="admin_categories_menu")],
             [InlineKeyboardButton(text="📋 Заказы", callback_data="admin_orders_menu")],
             [InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_users_menu")],
             [InlineKeyboardButton(text="📊 Аналитика", callback_data="admin_analytics_menu")],
