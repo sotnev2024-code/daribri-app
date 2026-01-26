@@ -294,6 +294,14 @@ async def admin_callback_handler(callback: CallbackQuery, bot: Bot, state: FSMCo
     elif action == "admin_promos_statistics":
         await show_promo_statistics(callback, bot)
         await callback.answer()
+    elif action.startswith("admin_promo_view_"):
+        promo_id = int(action.split("_")[3])
+        await show_promo_details(callback, bot, promo_id)
+        await callback.answer()
+    elif action.startswith("admin_promo_delete_"):
+        promo_id = int(action.split("_")[3])
+        await delete_promo(callback, bot, promo_id)
+        await callback.answer()
     elif action == "admin_shops_menu":
         from .shops_admin import show_shops_menu
         await show_shops_menu(callback, bot)
@@ -1826,28 +1834,4 @@ async def show_promo_statistics(callback: CallbackQuery, bot: Bot):
         await callback.answer("❌ Ошибка при загрузке статистики промокодов.", show_alert=True)
 
 
-@router.callback_query(F.data.startswith("admin_promo_view_"))
-async def callback_promo_view(callback: CallbackQuery, bot: Bot):
-    """Обработчик просмотра деталей промокода."""
-    try:
-        promo_id = int(callback.data.split("_")[3])
-        await show_promo_details(callback, bot, promo_id)
-    except Exception as e:
-        print(f"Error in callback_promo_view: {e}")
-        import traceback
-        traceback.print_exc()
-        await callback.answer("❌ Ошибка при просмотре промокода.", show_alert=True)
-
-
-@router.callback_query(F.data.startswith("admin_promo_delete_"))
-async def callback_promo_delete(callback: CallbackQuery, bot: Bot):
-    """Обработчик удаления промокода."""
-    try:
-        promo_id = int(callback.data.split("_")[3])
-        await delete_promo(callback, bot, promo_id)
-    except Exception as e:
-        print(f"Error in callback_promo_delete: {e}")
-        import traceback
-        traceback.print_exc()
-        await callback.answer("❌ Ошибка при удалении промокода.", show_alert=True)
 
