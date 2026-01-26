@@ -118,8 +118,12 @@ async def show_products_list(callback: CallbackQuery, bot: Bot, filter_type: str
             conditions.append("p.is_active = 0")
         
         if shop_id:
-            conditions.append("p.shop_id = ?")
-            params.append(shop_id)
+            # Убеждаемся, что shop_id - это число
+            shop_id_int = int(shop_id) if shop_id else None
+            if shop_id_int:
+                conditions.append("p.shop_id = ?")
+                params.append(shop_id_int)
+                print(f"[PRODUCTS_ADMIN] Added shop_id filter: {shop_id_int}")
         
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         limit = 10
