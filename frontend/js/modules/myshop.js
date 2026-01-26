@@ -579,10 +579,11 @@
                         const supportBtn = tempMsg.querySelector('#contactSupportBtn');
                         if (supportBtn) {
                             supportBtn.addEventListener('click', () => {
-                                const botUsername = 'Daribri_bot';
-                                const supportUrl = `https://t.me/${botUsername}?start=support`;
+                                const supportUrl = 'https://t.me/daribri_support';
                                 if (window.Telegram?.WebApp?.openTelegramLink) {
                                     window.Telegram.WebApp.openTelegramLink(supportUrl);
+                                } else if (window.Telegram?.WebApp?.openLink) {
+                                    window.Telegram.WebApp.openLink(supportUrl);
                                 } else {
                                     window.open(supportUrl, '_blank');
                                 }
@@ -1565,12 +1566,9 @@
         
         // Кнопка "Связаться с поддержкой"
         elements?.contactSupportBtn?.addEventListener('click', () => {
-            // Открываем бота для связи с поддержкой
+            // Открываем поддержку через Telegram
+            const supportUrl = 'https://t.me/daribri_support';
             if (window.Telegram && window.Telegram.WebApp) {
-                // Пытаемся открыть бота через Telegram
-                const botUsername = 'Daribri_bot'; // Замените на реальный username бота
-                const supportUrl = `https://t.me/${botUsername}?start=support`;
-                
                 if (window.Telegram.WebApp.openTelegramLink) {
                     window.Telegram.WebApp.openTelegramLink(supportUrl);
                 } else if (window.Telegram.WebApp.openLink) {
@@ -1581,8 +1579,7 @@
                 }
             } else {
                 // Если не в Telegram WebApp, открываем в новом окне
-                const botUsername = 'Daribri_bot'; // Замените на реальный username бота
-                window.open(`https://t.me/${botUsername}?start=support`, '_blank');
+                window.open(supportUrl, '_blank');
             }
         });
     }

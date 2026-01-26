@@ -119,6 +119,10 @@ function initElements() {
         profilePhone: document.getElementById('profilePhone'),
         profileAvatar: document.getElementById('profileAvatar'),
         
+        // User Blocked
+        userBlockedSection: document.getElementById('userBlockedSection'),
+        contactSupportUserBtn: document.getElementById('contactSupportUserBtn'),
+        
         // My Shop
         myShopPage: document.getElementById('myShopPage'),
         shopCreateSection: document.getElementById('shopCreateSection'),

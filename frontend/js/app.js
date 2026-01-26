@@ -327,6 +327,10 @@ function initElements() {
     addToHomeBtn: document.getElementById('addToHomeBtn'),
     addToHomeProfileBtn: document.getElementById('addToHomeProfileBtn'),
     
+    // User Blocked
+    userBlockedSection: document.getElementById('userBlockedSection'),
+    contactSupportUserBtn: document.getElementById('contactSupportUserBtn'),
+    
     // My Shop
     myShopPage: document.getElementById('myShopPage'),
     shopCreateSection: document.getElementById('shopCreateSection'),
@@ -1021,6 +1025,7 @@ async function init() {
             }
             
         // Регистрируем пользователя
+        let currentUser = null;
         try {
             await api.createOrUpdateUser({
                 telegram_id: user.id,
@@ -1030,6 +1035,44 @@ async function init() {
                 language_code: user.language_code,
                 is_premium: user.is_premium || false,
             });
+            
+            // Получаем данные пользователя из БД для проверки статуса
+            try {
+                currentUser = await api.getMe();
+                console.log('[INIT] User data from API:', currentUser);
+                
+                // Проверяем, заблокирован ли пользователь
+                const isActive = currentUser.is_active;
+                const isBlocked = isActive === false || isActive === 0 || isActive === '0' || String(isActive).toLowerCase() === 'false';
+                
+                console.log('[INIT] User is_active value:', isActive, 'Type:', typeof isActive, 'Is blocked:', isBlocked);
+                
+                if (isBlocked) {
+                    // Показываем сообщение о блокировке
+                    console.log('[INIT] ⚠️⚠️⚠️ User is BLOCKED, showing blocked message ⚠️⚠️⚠️');
+                    const userBlockedSection = document.getElementById('userBlockedSection');
+                    if (userBlockedSection) {
+                        userBlockedSection.hidden = false;
+                        userBlockedSection.style.display = 'flex';
+                        // Скрываем весь остальной контент
+                        const app = document.getElementById('app');
+                        if (app) {
+                            const header = app.querySelector('.header');
+                            const mainContent = app.querySelector('.main-content');
+                            const bottomNav = app.querySelector('.bottom-nav');
+                            if (header) header.style.display = 'none';
+                            if (mainContent) mainContent.style.display = 'none';
+                            if (bottomNav) bottomNav.style.display = 'none';
+                        }
+                        console.log('[INIT] ✅✅✅ userBlockedSection SHOWN');
+                    } else {
+                        console.error('[INIT] ❌ userBlockedSection element not found!');
+                    }
+                    return; // Прекращаем инициализацию приложения
+                }
+            } catch (userError) {
+                console.error('[INIT] Error fetching user data:', userError);
+            }
         } catch (error) {
             console.error('Error registering user:', error);
         }
@@ -1088,6 +1131,26 @@ async function init() {
             
             // Останавливаем дальнейшую инициализацию
             return;
+        }
+        
+        // Инициализируем обработчик кнопки поддержки для заблокированного пользователя
+        const contactSupportUserBtn = document.getElementById('contactSupportUserBtn');
+        if (contactSupportUserBtn) {
+            contactSupportUserBtn.addEventListener('click', () => {
+                const supportUrl = 'https://t.me/daribri_support';
+                if (window.Telegram && window.Telegram.WebApp) {
+                    if (window.Telegram.WebApp.openTelegramLink) {
+                        window.Telegram.WebApp.openTelegramLink(supportUrl);
+                    } else if (window.Telegram.WebApp.openLink) {
+                        window.Telegram.WebApp.openLink(supportUrl);
+                    } else {
+                        window.open(supportUrl, '_blank');
+                    }
+                } else {
+                    window.open(supportUrl, '_blank');
+                }
+            });
+            console.log('[INIT] ✅ Contact support button handler initialized');
         }
         
         // Инициализируем делегирование событий для кнопок избранного
