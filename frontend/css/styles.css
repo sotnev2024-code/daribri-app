@@ -2909,6 +2909,63 @@ input {
 }
 
 /* Shop Dashboard */
+.shop-blocked-section {
+    padding: 2rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+}
+
+.blocked-message {
+    text-align: center;
+    max-width: 500px;
+    padding: 2rem;
+    background: var(--card-bg, #fff);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.blocked-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.blocked-message h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary, #1a1a1a);
+    margin-bottom: 1rem;
+}
+
+.blocked-message p {
+    font-size: 1rem;
+    color: var(--text-secondary, #666);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.support-btn {
+    margin-top: 1.5rem;
+    padding: 0.75rem 2rem;
+    background: var(--primary-color, #007bff);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.support-btn:hover {
+    background: var(--primary-hover, #0056b3);
+}
+
+.support-btn:active {
+    transform: scale(0.98);
+}
+
 .shop-dashboard {
     padding: 16px;
     overflow-y: auto;

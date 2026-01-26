@@ -122,6 +122,8 @@ function initElements() {
         // My Shop
         myShopPage: document.getElementById('myShopPage'),
         shopCreateSection: document.getElementById('shopCreateSection'),
+        shopBlockedSection: document.getElementById('shopBlockedSection'),
+        contactSupportBtn: document.getElementById('contactSupportBtn'),
         shopDashboard: document.getElementById('shopDashboard'),
         shopCreateForm: document.getElementById('shopCreateForm'),
         shopName: document.getElementById('shopName'),

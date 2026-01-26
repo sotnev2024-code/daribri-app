@@ -487,8 +487,18 @@
         });
         
         if (state.myShop) {
+            // Проверяем, заблокирован ли магазин
+            if (state.myShop.is_active === false || state.myShop.is_active === 0) {
+                // Показываем сообщение о блокировке
+                if (elements?.shopCreateSection) elements.shopCreateSection.hidden = true;
+                if (elements?.shopBlockedSection) elements.shopBlockedSection.hidden = false;
+                if (elements?.shopDashboard) elements.shopDashboard.hidden = true;
+                return;
+            }
+            
             // Показываем панель управления
             if (elements?.shopCreateSection) elements.shopCreateSection.hidden = true;
+            if (elements?.shopBlockedSection) elements.shopBlockedSection.hidden = true;
             if (elements?.shopDashboard) elements.shopDashboard.hidden = false;
             
             // Заполняем данные магазина
@@ -1443,6 +1453,33 @@
         });
     }
     
+    function initShopBlockedHandlers() {
+        const elements = getElements();
+        
+        // Кнопка "Связаться с поддержкой"
+        elements?.contactSupportBtn?.addEventListener('click', () => {
+            // Открываем бота для связи с поддержкой
+            if (window.Telegram && window.Telegram.WebApp) {
+                // Пытаемся открыть бота через Telegram
+                const botUsername = 'Daribri_bot'; // Замените на реальный username бота
+                const supportUrl = `https://t.me/${botUsername}?start=support`;
+                
+                if (window.Telegram.WebApp.openTelegramLink) {
+                    window.Telegram.WebApp.openTelegramLink(supportUrl);
+                } else if (window.Telegram.WebApp.openLink) {
+                    window.Telegram.WebApp.openLink(supportUrl);
+                } else {
+                    // Fallback: открываем в новом окне
+                    window.open(supportUrl, '_blank');
+                }
+            } else {
+                // Если не в Telegram WebApp, открываем в новом окне
+                const botUsername = 'Daribri_bot'; // Замените на реальный username бота
+                window.open(`https://t.me/${botUsername}?start=support`, '_blank');
+            }
+        });
+    }
+    
     // Экспорт функций
     window.App = window.App || {};
     window.App.myshop = {
@@ -2394,6 +2431,18 @@
     window.initProductFormHandlers = initProductFormHandlers;
     window.renderPhotosPreviews = renderPhotosPreviews;
     window.handleAddProduct = handleAddProduct;
+    
+    // Инициализируем обработчики при загрузке модуля
+    if (typeof document !== 'undefined') {
+        // Ждем загрузки DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                initShopBlockedHandlers();
+            });
+        } else {
+            initShopBlockedHandlers();
+        }
+    }
     
     // Экспортируем в модуль
     if (!window.App) window.App = {};
