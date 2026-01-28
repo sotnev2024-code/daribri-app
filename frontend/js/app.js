@@ -1168,6 +1168,14 @@ async function init() {
         console.log('[INIT] API baseUrl:', api.baseUrl);
         console.log('[INIT] Current location:', window.location.href);
         
+        // Показываем индикатор загрузки
+        const utils = window.App?.utils || {};
+        if (utils.showLoading) {
+            utils.showLoading(true);
+        } else if (typeof showLoading === 'function') {
+            showLoading(true);
+        }
+        
         try {
             // Загружаем по очереди для лучшей диагностики
             await loadCategories();
@@ -1187,6 +1195,10 @@ async function init() {
             
             // Теперь загружаем товары - они будут рендериться с правильными сердечками
             await loadProducts();
+            
+            // Минимальная задержка для плавности (500мс)
+            // Это гарантирует, что товары успеют отрендериться
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             // Pull-to-refresh отключен
             // initPullToRefresh();
@@ -1231,6 +1243,13 @@ async function init() {
                         </button>
                     </div>
                 `;
+            }
+        } finally {
+            // Скрываем индикатор загрузки после завершения загрузки данных
+            if (utils.showLoading) {
+                utils.showLoading(false);
+            } else if (typeof showLoading === 'function') {
+                showLoading(false);
             }
         }
         
