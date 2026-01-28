@@ -922,6 +922,13 @@
             checkoutState.recipientName = recipientInput.value.trim();
             if (commentInput) checkoutState.deliveryComment = commentInput.value;
             
+            // Сохраняем текст открытки
+            const giftMessageInput = document.getElementById('giftMessage');
+            if (giftMessageInput) {
+                checkoutState.giftMessage = giftMessageInput.value.trim() || null;
+                console.log('[CHECKOUT] Saved giftMessage:', checkoutState.giftMessage);
+            }
+            
             if (checkoutState.deliveryType === 'delivery') {
                 checkoutState.address = addressInput.value.trim();
                 
