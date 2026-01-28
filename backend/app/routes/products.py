@@ -297,20 +297,23 @@ async def get_product(
     """Получает товар по ID с медиа и информацией о магазине.
     Для владельца магазина возвращает товар даже если он неактивен.
     """
-    # Сначала проверяем, является ли пользователь владельцем
+    # Получаем информацию о пользователе один раз
+    user_id = None
     is_owner = False
     if x_telegram_id:
         user = await db.fetch_one(
             "SELECT id FROM users WHERE telegram_id = ?", (x_telegram_id,)
         )
         if user:
+            user_id = user["id"]
+            # Проверяем, является ли пользователь владельцем
             product_check = await db.fetch_one(
                 """SELECT s.owner_id FROM products p
                    JOIN shops s ON p.shop_id = s.id
                    WHERE p.id = ?""",
                 (product_id,)
             )
-            if product_check and product_check["owner_id"] == user["id"]:
+            if product_check and product_check["owner_id"] == user_id:
                 is_owner = True
     
     # Если владелец - показываем товар даже если неактивен, иначе только активный
@@ -352,12 +355,28 @@ async def get_product(
         (product["shop_id"],)
     )
     
-    # Увеличиваем счётчик просмотров
-    await db.execute(
-        "UPDATE products SET views_count = views_count + 1 WHERE id = ?",
-        (product_id,)
-    )
-    await db.commit()
+    # Увеличиваем счётчик просмотров только для уникальных просмотров
+    # Если пользователь авторизован, проверяем уникальность просмотра
+    if user_id:
+        existing_view = await db.fetch_one(
+            "SELECT id FROM product_views WHERE product_id = ? AND user_id = ?",
+            (product_id, user_id)
+        )
+        
+        # Если просмотр еще не был засчитан для этого пользователя
+        if not existing_view:
+            # Добавляем запись о просмотре
+            await db.insert("product_views", {
+                "product_id": product_id,
+                "user_id": user_id
+            })
+            # Увеличиваем счётчик просмотров
+            await db.execute(
+                "UPDATE products SET views_count = views_count + 1 WHERE id = ?",
+                (product_id,)
+            )
+            await db.commit()
+    # Если пользователь не авторизован, не считаем просмотры
     
     # Получаем медиа (видео сначала)
     media = await db.fetch_all(

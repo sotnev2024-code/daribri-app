@@ -365,6 +365,24 @@ async def lifespan(app: FastAPI):
             """)
             await database._db_service.commit()
             print("[MIGRATION] banners table created successfully")
+        
+        # Проверяем, существует ли таблица product_views для отслеживания уникальных просмотров
+        product_views_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='product_views'")
+        if not product_views_table:
+            print("[MIGRATION] Creating product_views table...")
+            await database._db_service.execute("""
+                CREATE TABLE IF NOT EXISTS product_views (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    product_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE(product_id, user_id)
+                )
+            """)
+            await database._db_service.commit()
+            print("[MIGRATION] product_views table created successfully")
     
     except Exception as migration_error:
         print(f"[WARNING] Migration error (may be expected if column exists): {migration_error}")
