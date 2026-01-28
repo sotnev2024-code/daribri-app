@@ -1917,6 +1917,46 @@ input {
     width: 20px;
     height: 20px;
     display: flex;
+}
+
+/* Кнопка "Остались вопросы?" */
+.support-question-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: var(--bg-secondary, #F9FAFB);
+    border: 1px solid var(--border-color, #E5E7EB);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.support-question-btn:hover {
+    background: var(--bg-tertiary, #F3F4F6);
+    border-color: var(--border-hover, #D1D5DB);
+}
+
+.support-question-btn:active {
+    background: var(--bg-quaternary, #E5E7EB);
+    transform: scale(0.98);
+}
+
+.support-question-btn svg {
+    flex-shrink: 0;
+    color: var(--primary, #007AFF);
+}
+
+.support-question-btn span {
+    flex: 1;
+    text-align: left;
+}
     align-items: center;
     justify-content: center;
 }

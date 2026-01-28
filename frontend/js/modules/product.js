@@ -341,6 +341,33 @@
                 }
             }
             
+            // Обработчик кнопки "Остались вопросы?"
+            const supportQuestionBtn = document.getElementById('supportQuestionBtn');
+            if (supportQuestionBtn) {
+                supportQuestionBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // Открываем чат @daribri_support через Telegram
+                    const supportUrl = 'https://t.me/daribri_support';
+                    const tg = window.Telegram?.WebApp;
+                    
+                    if (tg) {
+                        if (tg.openTelegramLink) {
+                            tg.openTelegramLink(supportUrl);
+                        } else if (tg.openLink) {
+                            tg.openLink(supportUrl);
+                        } else {
+                            // Fallback: открываем в новом окне
+                            window.open(supportUrl, '_blank');
+                        }
+                    } else {
+                        // Если не в Telegram WebApp, открываем в новом окне
+                        window.open(supportUrl, '_blank');
+                    }
+                };
+            }
+            
             // Загружаем товары продавца
             await loadSellerProducts(product.shop_id, product.id);
             
