@@ -344,24 +344,34 @@
             // Обработчик кнопки "Остались вопросы?"
             const supportQuestionBtn = document.getElementById('supportQuestionBtn');
             if (supportQuestionBtn) {
-                supportQuestionBtn.onclick = (e) => {
+                // Удаляем старые обработчики
+                const newBtn = supportQuestionBtn.cloneNode(true);
+                supportQuestionBtn.parentNode.replaceChild(newBtn, supportQuestionBtn);
+                
+                newBtn.onclick = (e) => {
                     e.stopPropagation();
                     e.preventDefault();
                     
+                    console.log('[SUPPORT] Button clicked, opening support chat');
+                    
                     // Открываем чат @daribri_support через Telegram
                     const supportUrl = 'https://t.me/daribri_support';
-                    const tg = window.Telegram?.WebApp;
                     
-                    if (tg) {
-                        if (tg.openTelegramLink) {
-                            tg.openTelegramLink(supportUrl);
-                        } else if (tg.openLink) {
-                            tg.openLink(supportUrl);
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        console.log('[SUPPORT] Telegram WebApp available');
+                        if (window.Telegram.WebApp.openTelegramLink) {
+                            console.log('[SUPPORT] Using openTelegramLink');
+                            window.Telegram.WebApp.openTelegramLink(supportUrl);
+                        } else if (window.Telegram.WebApp.openLink) {
+                            console.log('[SUPPORT] Using openLink');
+                            window.Telegram.WebApp.openLink(supportUrl);
                         } else {
+                            console.log('[SUPPORT] Fallback: window.open');
                             // Fallback: открываем в новом окне
                             window.open(supportUrl, '_blank');
                         }
                     } else {
+                        console.log('[SUPPORT] Telegram WebApp not available, using window.open');
                         // Если не в Telegram WebApp, открываем в новом окне
                         window.open(supportUrl, '_blank');
                     }

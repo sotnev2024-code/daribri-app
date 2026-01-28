@@ -1925,17 +1925,17 @@ input {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     padding: 14px 20px;
     background: var(--bg-secondary, #F9FAFB);
     border: 1px solid var(--border-color, #E5E7EB);
     border-radius: 12px;
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary, #111827);
     cursor: pointer;
     transition: all 0.2s ease;
     margin: 0;
+    text-align: center;
 }
 
 .support-question-btn:hover {
@@ -1948,14 +1948,41 @@ input {
     transform: scale(0.98);
 }
 
-.support-question-btn svg {
-    flex-shrink: 0;
-    color: var(--primary, #007AFF);
+.support-question-btn span {
+    text-align: center;
+    width: 100%;
 }
 
-.support-question-btn span {
-    flex: 1;
-    text-align: left;
+/* Темная тема Telegram */
+.tg-theme-dark .support-question-btn {
+    color: #FFFFFF;
+    background: var(--bg-secondary, #1F2937);
+    border-color: var(--border-color, #374151);
+}
+
+.tg-theme-dark .support-question-btn:hover {
+    background: var(--bg-tertiary, #374151);
+    border-color: var(--border-hover, #4B5563);
+}
+
+.tg-theme-dark .support-question-btn:active {
+    background: var(--bg-quaternary, #4B5563);
+}
+
+/* Светлая тема Telegram */
+.tg-theme-light .support-question-btn {
+    color: #111827;
+    background: var(--bg-secondary, #F9FAFB);
+    border-color: var(--border-color, #E5E7EB);
+}
+
+.tg-theme-light .support-question-btn:hover {
+    background: var(--bg-tertiary, #F3F4F6);
+    border-color: var(--border-hover, #D1D5DB);
+}
+
+.tg-theme-light .support-question-btn:active {
+    background: var(--bg-quaternary, #E5E7EB);
 }
     align-items: center;
     justify-content: center;
