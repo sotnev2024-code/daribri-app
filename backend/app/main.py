@@ -343,6 +343,14 @@ async def lifespan(app: FastAPI):
                 )
                 await database._db_service.commit()
                 print("[MIGRATION] delivery_fee column added successfully")
+            
+            if "gift_message" not in orders_column_names:
+                print("[MIGRATION] Adding gift_message column to orders...")
+                await database._db_service.execute(
+                    "ALTER TABLE orders ADD COLUMN gift_message TEXT"
+                )
+                await database._db_service.commit()
+                print("[MIGRATION] gift_message column added successfully")
         
         # Проверяем, существует ли таблица banners
         banners_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='banners'")

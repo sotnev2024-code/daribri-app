@@ -117,6 +117,7 @@
             longitude: savedData?.longitude || null,
             recipientName: savedData?.recipientName || '',
             deliveryComment: savedData?.deliveryComment || '',
+            giftMessage: '',  // Текст для открытки
             deliveryDate: null,  // Дата и время не сохраняем
             deliveryTime: null,  // Дата и время не сохраняем
             shopId: null,
@@ -851,6 +852,17 @@
         if (commentInput) {
             commentInput.addEventListener('input', () => {
                 checkoutState.deliveryComment = commentInput.value;
+            });
+        }
+        
+        // Обработчик для поля "Текст для открытки"
+        const giftMessageInput = document.getElementById('giftMessage');
+        if (giftMessageInput) {
+            // Заполняем сохранённые данные
+            if (checkoutState.giftMessage) giftMessageInput.value = checkoutState.giftMessage;
+            
+            giftMessageInput.addEventListener('input', () => {
+                checkoutState.giftMessage = giftMessageInput.value;
             });
         }
         
@@ -1890,6 +1902,7 @@
                 delivery_latitude: checkoutState.latitude,
                 delivery_longitude: checkoutState.longitude,
                 delivery_comment: checkoutState.deliveryComment || null,
+                gift_message: checkoutState.giftMessage || null,  // Текст для открытки
                 delivery_date: checkoutState.deliveryDate,
                 delivery_time: checkoutState.deliveryTime,
                 delivery_type: deliveryType,  // ЯВНО передаем 'delivery' или 'pickup'
@@ -1968,6 +1981,7 @@
         checkoutState.longitude = savedData?.longitude || null;
         // Сбрасываем остальное
         checkoutState.addressIsValid = null;
+        checkoutState.giftMessage = '';  // Сбрасываем текст открытки
         checkoutState.deliveryDate = null;
         checkoutState.deliveryTime = null;
         checkoutState.shopId = null;

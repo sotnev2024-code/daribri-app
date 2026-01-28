@@ -521,7 +521,8 @@ async def create_order(
                 delivery_date=delivery_date_str,
                 delivery_time=delivery_time_str,
                 customer_telegram_id=current_user.telegram_id,
-                delivery_type=order_data.delivery_type or "delivery"
+                delivery_type=order_data.delivery_type or "delivery",
+                gift_message=order_data.gift_message
             )
         except Exception as e:
             # Не прерываем выполнение, если уведомление не отправилось

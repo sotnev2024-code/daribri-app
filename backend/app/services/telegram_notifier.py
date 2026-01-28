@@ -84,7 +84,8 @@ class TelegramNotifier:
         delivery_date: Optional[str] = None,
         delivery_time: Optional[str] = None,
         customer_telegram_id: Optional[int] = None,
-        delivery_type: str = "delivery"
+        delivery_type: str = "delivery",
+        gift_message: Optional[str] = None
     ) -> bool:
         """
         Отправляет уведомление о новом заказе владельцу магазина.
@@ -103,6 +104,7 @@ class TelegramNotifier:
             delivery_date: Дата доставки
             delivery_time: Время доставки
             customer_telegram_id: Telegram ID клиента (для ссылки)
+            gift_message: Текст для открытки (если указан)
             
         Returns:
             bool: True если уведомление отправлено
@@ -163,6 +165,10 @@ class TelegramNotifier:
 <b>Товары:</b>
 {items_text}
 """
+        
+        # Добавляем текст открытки, если указан
+        if gift_message and gift_message.strip():
+            message += f"\n\n<b>💌 Текст для открытки:</b>\n<i>{gift_message}</i>"
         
         # Добавляем информацию о стоимости
         if not is_pickup and delivery_fee > 0:

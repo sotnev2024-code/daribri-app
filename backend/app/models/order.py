@@ -44,6 +44,7 @@ class OrderBase(BaseModel):
     recipient_name: Optional[str] = None
     recipient_phone: Optional[str] = None
     comment: Optional[str] = None
+    gift_message: Optional[str] = None  # Текст для открытки
     payment_method: Optional[str] = None
     promo_code: Optional[str] = None  # Промокод
 
