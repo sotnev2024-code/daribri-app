@@ -1911,6 +1911,7 @@
             
             console.log('[CHECKOUT] Order data to send:', JSON.stringify(orderData, null, 2));
             console.log('[CHECKOUT] delivery_type in orderData:', orderData.delivery_type);
+            console.log('[CHECKOUT] gift_message in orderData:', orderData.gift_message);
             console.log('[CHECKOUT] Type of delivery_type:', typeof orderData.delivery_type);
             console.log('[CHECKOUT] ======================================');
             

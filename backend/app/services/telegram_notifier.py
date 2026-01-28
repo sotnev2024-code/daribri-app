@@ -109,6 +109,8 @@ class TelegramNotifier:
         Returns:
             bool: True если уведомление отправлено
         """
+        print(f"[TELEGRAM] send_order_notification called with gift_message: '{gift_message}'")
+        
         items_text = "\n".join([
             f"• {item.get('name', 'Товар')} × {item.get('quantity', 1)} — {item.get('total', 0):.2f} ₽"
             for item in items
