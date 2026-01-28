@@ -340,7 +340,10 @@ async def show_category_details(callback: CallbackQuery, bot: Bot, category_id: 
         # Если есть фото, отправляем фото с подписью
         if category.get("photo_url"):
             try:
-                photo_path = settings.UPLOADS_DIR.parent / category["photo_url"].lstrip("/")
+                # photo_url начинается с /media/, убираем это и ищем в UPLOADS_DIR
+                relative_path = category["photo_url"].replace("/media/", "")
+                photo_path = settings.UPLOADS_DIR / relative_path
+                print(f"[CATEGORY DETAILS] Looking for photo at: {photo_path}")
                 if photo_path.exists():
                     await callback.message.delete()
                     await bot.send_photo(
@@ -350,6 +353,7 @@ async def show_category_details(callback: CallbackQuery, bot: Bot, category_id: 
                         reply_markup=keyboard
                     )
                 else:
+                    print(f"[CATEGORY DETAILS] Photo not found at: {photo_path}")
                     await callback.message.edit_text(text, reply_markup=keyboard)
             except Exception as photo_error:
                 print(f"Error sending photo: {photo_error}")
@@ -529,8 +533,8 @@ async def process_category_photo(message: Message, state: FSMContext, bot: Bot):
         photo = message.photo[-1]  # Берем самое большое фото
         file = await bot.get_file(photo.file_id)
         
-        # Создаем директорию для фото категорий
-        categories_dir = settings.UPLOADS_DIR.parent / "media" / "categories"
+        # Создаем директорию для фото категорий в UPLOADS_DIR
+        categories_dir = settings.UPLOADS_DIR / "categories"
         categories_dir.mkdir(parents=True, exist_ok=True)
         
         # Генерируем имя файла
@@ -541,10 +545,12 @@ async def process_category_photo(message: Message, state: FSMContext, bot: Bot):
         
         # Скачиваем и сохраняем файл
         await bot.download_file(file.file_path, str(file_path))
+        print(f"[CATEGORY PHOTO] Saved to: {file_path}")
         
-        # Сохраняем путь в state
+        # Сохраняем путь в state (относительно /media/)
         photo_url = f"/media/categories/{filename}"
         await state.update_data(photo_url=photo_url)
+        print(f"[CATEGORY PHOTO] URL: {photo_url}")
         
         await message.answer(
             "<b>Шаг 3/4: Описание (необязательно)</b>\n\n"
@@ -560,7 +566,55 @@ async def process_category_photo(message: Message, state: FSMContext, bot: Bot):
         await message.answer("❌ Ошибка при сохранении фото. Попробуйте еще раз или отправьте '-' для пропуска:")
 
 
-@router.message(CategoryCreateStates.waiting_for_photo, ~F.photo)
+@router.message(CategoryCreateStates.waiting_for_photo, F.document)
+async def process_category_photo_document(message: Message, state: FSMContext, bot: Bot):
+    """Обрабатывает фото как документ (PNG файлы часто отправляются так)."""
+    try:
+        document = message.document
+        mime_type = document.mime_type or ""
+        
+        # Проверяем, что это изображение
+        if not mime_type.startswith("image/"):
+            await message.answer("❌ Пожалуйста, отправьте изображение (JPG, PNG, WEBP) или '-' для пропуска:")
+            return
+        
+        file = await bot.get_file(document.file_id)
+        
+        # Создаем директорию для фото категорий
+        categories_dir = settings.UPLOADS_DIR / "categories"
+        categories_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Генерируем имя файла
+        file_hash = hashlib.md5(f"{document.file_id}_{message.from_user.id}".encode()).hexdigest()[:12]
+        original_name = document.file_name or "category.png"
+        extension = Path(original_name).suffix or ".png"
+        filename = f"category_{file_hash}{extension}"
+        file_path = categories_dir / filename
+        
+        # Скачиваем и сохраняем файл
+        await bot.download_file(file.file_path, str(file_path))
+        print(f"[CATEGORY PHOTO DOC] Saved to: {file_path}")
+        
+        # Сохраняем путь в state
+        photo_url = f"/media/categories/{filename}"
+        await state.update_data(photo_url=photo_url)
+        print(f"[CATEGORY PHOTO DOC] URL: {photo_url}")
+        
+        await message.answer(
+            "<b>Шаг 3/4: Описание (необязательно)</b>\n\n"
+            "Введите описание категории или '-' для пропуска:",
+            reply_markup=get_cancel_keyboard()
+        )
+        await state.set_state(CategoryCreateStates.waiting_for_description)
+        
+    except Exception as e:
+        print(f"Error processing category photo document: {e}")
+        import traceback
+        traceback.print_exc()
+        await message.answer("❌ Ошибка при сохранении фото. Попробуйте еще раз или отправьте '-' для пропуска:")
+
+
+@router.message(CategoryCreateStates.waiting_for_photo, ~F.photo, ~F.document)
 async def process_category_photo_skip(message: Message, state: FSMContext):
     """Обрабатывает пропуск фото."""
     if message.text == "❌ Отменить":
@@ -792,9 +846,12 @@ async def delete_category(callback: CallbackQuery, bot: Bot, category_id: int, f
         # Если есть фото, удаляем файл
         if category.get("photo_url"):
             try:
-                photo_path = settings.UPLOADS_DIR.parent / category["photo_url"].lstrip("/")
+                # photo_url начинается с /media/, убираем это и ищем в UPLOADS_DIR
+                relative_path = category["photo_url"].replace("/media/", "")
+                photo_path = settings.UPLOADS_DIR / relative_path
                 if photo_path.exists():
                     photo_path.unlink()
+                    print(f"[CATEGORY DELETE] Deleted photo: {photo_path}")
             except Exception as e:
                 print(f"Error deleting photo: {e}")
         

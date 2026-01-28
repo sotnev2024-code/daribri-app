@@ -300,9 +300,24 @@
             btn.dataset.category = cat.id;
             
             const getIconHTML = (category) => {
+                const utils = getUtils();
+                const getMediaUrl = utils.getMediaUrl || window.getMediaUrl || ((url) => url);
+                const emoji = category.icon || '📦';
+                
+                // Если есть photo_url (загруженное фото), используем его
+                if (category.photo_url) {
+                    const photoUrl = getMediaUrl(category.photo_url);
+                    return `
+                        <img src="${photoUrl}" alt="${category.name}" class="category-icon-img" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
+                             loading="lazy" style="display:block;">
+                        <span class="category-icon-emoji" style="display:none; font-size: 1.1rem;">${emoji}</span>
+                    `;
+                }
+                
+                // Иначе используем стандартные иконки
                 const iconFileName = getCategoryIconFileName(category);
                 const iconPath = `images/icons/${iconFileName}?v=3`;
-                const emoji = category.icon || '📦';
                 return `
                     <img src="${iconPath}" alt="${category.name}" class="category-icon-img" 
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"

@@ -12,6 +12,7 @@ class CategoryBase(BaseModel):
     name: str = Field(..., max_length=255)
     slug: str = Field(..., max_length=255)
     icon: Optional[str] = None
+    photo_url: Optional[str] = None
     description: Optional[str] = None
     sort_order: int = 0
 
