@@ -681,7 +681,6 @@
         let startX = 0;
         let currentX = 0;
         let isDragging = false;
-        let autoSlideInterval = null;
         
         function manageVideos(activeIndex) {
             slides.forEach((slide, index) => {
@@ -736,7 +735,6 @@
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
             isHorizontalSwipe = null;
-            if (autoSlideInterval) clearInterval(autoSlideInterval);
         }, { passive: true });
         
         slider.addEventListener('touchmove', (e) => {
@@ -781,34 +779,23 @@
             
             currentX = 0;
             isHorizontalSwipe = null;
-            startAutoSlide();
+            // Автоматическое перелистывание отключено - только ручное управление
         });
         
         dots.forEach((dot, index) => {
             dot.addEventListener('click', (e) => {
                 e.stopPropagation();
                 updatePosition(index);
-                startAutoSlide();
+                // Автоматическое перелистывание отключено - только ручное управление
             });
         });
         
-        function startAutoSlide() {
-            if (autoSlideInterval) clearInterval(autoSlideInterval);
-            autoSlideInterval = setInterval(() => {
-                updatePosition(currentIndex + 1);
-            }, 4000);
-        }
+        // Функция автоматического перелистывания отключена
+        // Товары перелистываются только при ручном действии пользователя (свайп или клик на точку)
         
-        startAutoSlide();
         manageVideos(0);
         
-        slider.addEventListener('mouseenter', () => {
-            if (autoSlideInterval) clearInterval(autoSlideInterval);
-        });
-        
-        slider.addEventListener('mouseleave', () => {
-            startAutoSlide();
-        });
+        // Обработчики мыши больше не нужны, так как автоматическое перелистывание отключено
         
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
