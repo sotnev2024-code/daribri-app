@@ -522,7 +522,7 @@ async def get_my_shop_direct(
         (shop["id"],)
     )
     orders_count = await db.fetch_one(
-        "SELECT COUNT(*) as cnt FROM orders WHERE shop_id = ?",
+        "SELECT COUNT(*) as cnt FROM orders WHERE shop_id = ? AND status = 'delivered'",
         (shop["id"],)
     )
     subscription = await db.fetch_one(

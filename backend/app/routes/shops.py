@@ -74,14 +74,14 @@ async def get_shop_statistics(
     start_str = start_dt.strftime("%Y-%m-%d")
     end_str = end_dt.strftime("%Y-%m-%d")
     
-    # Общая статистика заказов
+    # Общая статистика заказов (только доставленные)
     total_orders_result = await db.fetch_one(
         """SELECT 
                COUNT(*) as total_orders,
                COALESCE(SUM(total_amount), 0) as total_revenue,
                COALESCE(AVG(total_amount), 0) as avg_order_value
            FROM orders
-           WHERE shop_id = ? AND DATE(created_at) BETWEEN ? AND ?""",
+           WHERE shop_id = ? AND status = 'delivered' AND DATE(created_at) BETWEEN ? AND ?""",
         (shop_id, start_str, end_str)
     )
     
@@ -99,13 +99,13 @@ async def get_shop_statistics(
     )
     orders_by_status_dict = {row["status"]: row["count"] for row in orders_by_status}
     
-    # Заказы по дням
+    # Заказы по дням (только доставленные)
     orders_by_day = await db.fetch_all(
         """SELECT 
                DATE(created_at) as date,
                COUNT(*) as count
            FROM orders
-           WHERE shop_id = ? AND DATE(created_at) BETWEEN ? AND ?
+           WHERE shop_id = ? AND status = 'delivered' AND DATE(created_at) BETWEEN ? AND ?
            GROUP BY DATE(created_at)
            ORDER BY date""",
         (shop_id, start_str, end_str)
@@ -115,13 +115,13 @@ async def get_shop_statistics(
         for row in orders_by_day
     ]
     
-    # Доходы по дням
+    # Доходы по дням (только доставленные)
     revenue_by_day = await db.fetch_all(
         """SELECT 
                DATE(created_at) as date,
                COALESCE(SUM(total_amount), 0) as revenue
            FROM orders
-           WHERE shop_id = ? AND DATE(created_at) BETWEEN ? AND ?
+           WHERE shop_id = ? AND status = 'delivered' AND DATE(created_at) BETWEEN ? AND ?
            GROUP BY DATE(created_at)
            ORDER BY date""",
         (shop_id, start_str, end_str)
@@ -131,7 +131,7 @@ async def get_shop_statistics(
         for row in revenue_by_day
     ]
     
-    # Топ товаров
+    # Топ товаров (только доставленные заказы)
     top_products = await db.fetch_all(
         """SELECT 
                COALESCE(oi.product_name, p.name) as product_name,
@@ -140,7 +140,7 @@ async def get_shop_statistics(
            FROM order_items oi
            LEFT JOIN products p ON oi.product_id = p.id
            JOIN orders o ON oi.order_id = o.id
-           WHERE o.shop_id = ? AND DATE(o.created_at) BETWEEN ? AND ?
+           WHERE o.shop_id = ? AND o.status = 'delivered' AND DATE(o.created_at) BETWEEN ? AND ?
            GROUP BY oi.product_id, COALESCE(oi.product_name, p.name)
            ORDER BY total_quantity DESC
            LIMIT 10""",
@@ -290,7 +290,7 @@ async def get_shop(
         (shop_id,)
     )
     orders_count = await db.fetch_one(
-        "SELECT COUNT(*) as cnt FROM orders WHERE shop_id = ?",
+        "SELECT COUNT(*) as cnt FROM orders WHERE shop_id = ? AND status = 'delivered'",
         (shop_id,)
     )
     
