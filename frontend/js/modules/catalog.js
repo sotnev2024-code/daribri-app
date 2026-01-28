@@ -442,7 +442,7 @@
                                 return `
                                 <div class="product-slider-slide" data-index="${i}">
                                     ${m.media_type === 'video' 
-                                        ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>` 
+                                        ? `<video src="${mediaUrl}" preload="auto" muted playsinline loop autoplay style="width:100%;height:100%;object-fit:cover;"></video>` 
                                         : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
                                     }
                                 </div>
@@ -459,7 +459,7 @@
                 imageHTML = `
                     <div class="product-single-image">
                         ${media[0].media_type === 'video'
-                            ? `<video src="${mediaUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>`
+                            ? `<video src="${mediaUrl}" preload="auto" muted playsinline loop autoplay style="width:100%;height:100%;object-fit:cover;"></video>`
                             : `<img src="${mediaUrl}" alt="${product.name}" loading="lazy">`
                         }
                     </div>
@@ -569,6 +569,27 @@
             } else if (media[0]?.media_type === 'video') {
                 // Для одного видео тоже инициализируем слайдер для управления воспроизведением
                 initProductCardSlider(card, product.id, 1);
+            } else {
+                // Для одного изображения без слайдера - убеждаемся, что видео воспроизводится
+                const singleVideo = card.querySelector('.product-single-image video');
+                if (singleVideo) {
+                    // Добавляем обработчик для автоматического воспроизведения после загрузки
+                    singleVideo.addEventListener('loadeddata', () => {
+                        singleVideo.play().catch(err => {
+                            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                                console.log('[VIDEO] Auto-play error:', err);
+                            }
+                        });
+                    });
+                    // Если видео уже загружено, запускаем сразу
+                    if (singleVideo.readyState >= 2) {
+                        singleVideo.play().catch(err => {
+                            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                                console.log('[VIDEO] Auto-play error:', err);
+                            }
+                        });
+                    }
+                }
             }
         }
         
@@ -651,7 +672,7 @@
                     <div class="product-image-slider" data-product-id="${productId}">
                         <div class="product-slider-track">
                             <div class="product-slider-slide" data-index="0">
-                                <video src="${videoUrl}" preload="metadata" muted playsinline loop style="width:100%;height:100%;object-fit:cover;"></video>
+                                <video src="${videoUrl}" preload="auto" muted playsinline loop autoplay style="width:100%;height:100%;object-fit:cover;"></video>
                             </div>
                         </div>
                     </div>
