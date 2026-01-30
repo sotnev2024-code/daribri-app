@@ -8,6 +8,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKey
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from datetime import date, datetime
+from typing import Optional
 import re
 
 from backend.app.services.database import DatabaseService
@@ -38,7 +39,7 @@ async def get_db():
     return db
 
 
-def parse_date(date_str: str) -> date | None:
+def parse_date(date_str: str) -> Optional[date]:
     """Парсит дату из строки в форматах DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD."""
     date_str = date_str.strip()
     
