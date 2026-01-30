@@ -47,6 +47,11 @@ async def main(bot_token: str, webapp_url: str):
     
     logger.info("Bot starting...")
     
+    # Запускаем периодическую проверку напоминаний в фоне
+    from backend.app.services.reminder_service import reminder_service
+    reminder_task = asyncio.create_task(reminder_service.start_periodic_check(interval_minutes=5))
+    logger.info("Reminder service started (checking every 5 minutes)")
+    
     try:
         # Удаляем webhook если был (с несколькими попытками)
         try:
@@ -68,6 +73,12 @@ async def main(bot_token: str, webapp_url: str):
         # Запускаем polling
         await dp.start_polling(bot, allowed_updates=["message", "callback_query", "pre_checkout_query", "successful_payment"])
     finally:
+        # Отменяем задачу проверки напоминаний
+        reminder_task.cancel()
+        try:
+            await reminder_task
+        except asyncio.CancelledError:
+            pass
         await bot.session.close()
 
 

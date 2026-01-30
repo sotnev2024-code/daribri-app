@@ -17,6 +17,7 @@ from .products_admin import router as products_admin_router
 from .orders_admin import router as orders_admin_router
 from .analytics_admin import router as analytics_admin_router
 from .categories_admin import router as categories_admin_router
+from .reminders import router as reminders_router
 
 router = Router()
 
@@ -28,6 +29,7 @@ router.include_router(add_shop_router)
 router.include_router(subscription_router)
 router.include_router(banners_router)
 router.include_router(orders_router)
+router.include_router(reminders_router)
 # Специфичные админ-роутеры (должны быть перед общим admin_router)
 router.include_router(shops_admin_router)
 router.include_router(products_admin_router)

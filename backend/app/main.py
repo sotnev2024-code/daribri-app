@@ -391,6 +391,25 @@ async def lifespan(app: FastAPI):
             """)
             await database._db_service.commit()
             print("[MIGRATION] product_views table created successfully")
+        
+        # Проверяем, существует ли таблица reminders для напоминаний о событиях
+        reminders_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='reminders'")
+        if not reminders_table:
+            print("[MIGRATION] Creating reminders table...")
+            await database._db_service.execute("""
+                CREATE TABLE IF NOT EXISTS reminders (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    event_date DATE NOT NULL,
+                    event_description TEXT NOT NULL,
+                    is_sent INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    sent_at TIMESTAMP NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+            await database._db_service.commit()
+            print("[MIGRATION] reminders table created successfully")
     
     except Exception as migration_error:
         print(f"[WARNING] Migration error (may be expected if column exists): {migration_error}")
