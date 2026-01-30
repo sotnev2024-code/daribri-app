@@ -76,7 +76,7 @@
     
     /* Дополнительный отступ для контента на iOS с вырезом */
     .main-content {
-        padding-top: calc(env(safe-area-inset-top, 0px) + 20px + 50px + 60px + 10px);
+        padding-top: calc(max(60px, calc(40px + env(safe-area-inset-top, 0px))) + 50px + 60px + 10px);
     }
     
     .categories-section {
@@ -511,10 +511,8 @@ input {
 /* Header */
 .header {
     position: fixed;
-    /* Позиционируем между кнопками Telegram (назад и три точки) */
-    /* Используем safe-area-inset-top + небольшой отступ для центрирования между кнопками */
-    /* Кнопки Telegram обычно находятся на высоте safe-area + ~20-24px */
-    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    /* Поднимаем чуть ниже кнопок Telegram */
+    top: max(60px, calc(40px + env(safe-area-inset-top, 0px)));
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -529,10 +527,10 @@ input {
 .header::before {
     content: '';
     position: absolute;
-    top: calc(-1 * calc(env(safe-area-inset-top, 0px) + 20px));
+    top: calc(-1 * max(60px, calc(40px + env(safe-area-inset-top, 0px))));
     left: -50vw;
     right: -50vw;
-    height: calc(env(safe-area-inset-top, 0px) + 20px);
+    height: max(60px, calc(40px + env(safe-area-inset-top, 0px)));
     background: #dbff00;
 }
 
@@ -601,7 +599,7 @@ input {
 /* Search Bar */
 .search-bar {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 20px + 50px);
+    top: calc(max(60px, calc(40px + env(safe-area-inset-top, 0px))) + 50px);
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -724,8 +722,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: safe-area + отступ для кнопок Telegram (20px) + header (50px) + search bar (60px) */
-    padding-top: calc(env(safe-area-inset-top, 0px) + 20px + 50px + 60px);
+    /* Отступ сверху: Android 60px, iOS 40px + safe-area, + header (50px) + search bar (60px) */
+    padding-top: calc(max(60px, calc(40px + env(safe-area-inset-top, 0px))) + 50px + 60px);
     /* Отступ снизу: nav + safe-area + немного padding */
     padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
