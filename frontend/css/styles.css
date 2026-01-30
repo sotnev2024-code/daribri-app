@@ -548,7 +548,7 @@ input {
     color: #000000;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0;
 }
 
 .logo-icon {
