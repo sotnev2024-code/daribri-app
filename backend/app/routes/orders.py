@@ -560,7 +560,8 @@ async def create_order(
                 items=order_items_info,
                 delivery_fee=float(delivery_fee),
                 total_amount=float(total_amount),
-                delivery_type=order_data.delivery_type or "delivery"
+                delivery_type=order_data.delivery_type or "delivery",
+                shop_owner_telegram_id=shop.get("telegram_id")
             )
         except Exception as e:
             # Не прерываем выполнение, если уведомление не отправилось

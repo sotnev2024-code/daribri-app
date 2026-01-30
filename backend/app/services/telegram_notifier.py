@@ -291,7 +291,8 @@ class TelegramNotifier:
         items: list,
         delivery_fee: float,
         total_amount: float = 0.0,
-        delivery_type: str = "delivery"
+        delivery_type: str = "delivery",
+        shop_owner_telegram_id: Optional[int] = None
     ) -> bool:
         """
         Отправляет сообщение с подтверждением заказа покупателю.
@@ -307,6 +308,7 @@ class TelegramNotifier:
             items: Список товаров в заказе
             delivery_fee: Стоимость доставки
             total_amount: Общая сумма заказа
+            shop_owner_telegram_id: Telegram ID продавца (для ссылки)
             
         Returns:
             bool: True если сообщение отправлено
@@ -364,14 +366,39 @@ class TelegramNotifier:
 
 Спасибо за ваш заказ! В ближайшее время с вами свяжется менеджер"""
         
+        # Формируем клавиатуру с кнопкой для связи с продавцом
+        keyboard_buttons = []
+        if shop_owner_telegram_id:
+            # Создаем ссылку на продавца с предзаполненным текстом
+            # Используем формат tg://msg?to=ID&text=TEXT для предзаполнения текста
+            prefill_text = f"Пишу с платформы Дарибри по заказу #{order_number} хочу уточнить детали"
+            # Кодируем текст для URL
+            from urllib.parse import quote
+            encoded_text = quote(prefill_text)
+            # Создаем ссылку с предзаполненным текстом
+            # Формат tg://msg?to=ID&text=TEXT работает в большинстве клиентов Telegram
+            seller_url = f"tg://msg?to={shop_owner_telegram_id}&text={encoded_text}"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text="💬 Написать продавцу",
+                    url=seller_url
+                )
+            ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons) if keyboard_buttons else None
+        
         print(f"[TELEGRAM] Sending order confirmation to customer {customer_telegram_id}")
         print(f"[TELEGRAM] Order: {order_number}, Total: {total_amount:.2f} ₽")
+        if shop_owner_telegram_id:
+            print(f"[TELEGRAM] Adding seller link button for shop owner {shop_owner_telegram_id}")
         
         try:
             await bot.send_message(
                 chat_id=customer_telegram_id,
                 text=message,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard
             )
             print(f"[TELEGRAM] Order confirmation sent successfully!")
             return True
