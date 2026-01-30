@@ -76,7 +76,7 @@
     
     /* Дополнительный отступ для контента на iOS с вырезом */
     .main-content {
-        padding-top: calc(max(40px, calc(20px + env(safe-area-inset-top, 0px))) + 50px + 60px + 10px);
+        padding-top: calc(max(40px, env(safe-area-inset-top, 0px)) + 50px + 60px + 10px);
     }
     
     .categories-section {
@@ -512,7 +512,7 @@ input {
 .header {
     position: fixed;
     /* Поднимаем чуть ниже кнопок Telegram */
-    top: max(40px, calc(20px + env(safe-area-inset-top, 0px)));
+    top: max(40px, env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -527,10 +527,10 @@ input {
 .header::before {
     content: '';
     position: absolute;
-    top: calc(-1 * max(40px, calc(20px + env(safe-area-inset-top, 0px))));
+    top: calc(-1 * max(40px, env(safe-area-inset-top, 0px)));
     left: -50vw;
     right: -50vw;
-    height: max(40px, calc(20px + env(safe-area-inset-top, 0px)));
+    height: max(40px, env(safe-area-inset-top, 0px));
     background: #dbff00;
 }
 
@@ -599,7 +599,7 @@ input {
 /* Search Bar */
 .search-bar {
     position: fixed;
-    top: calc(max(40px, calc(20px + env(safe-area-inset-top, 0px))) + 50px);
+    top: calc(max(40px, env(safe-area-inset-top, 0px)) + 50px);
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -722,8 +722,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: Android 40px, iOS 20px + safe-area, + header (50px) + search bar (60px) */
-    padding-top: calc(max(40px, calc(20px + env(safe-area-inset-top, 0px))) + 50px + 60px);
+    /* Отступ сверху: Android 40px, iOS safe-area, + header (50px) + search bar (60px) */
+    padding-top: calc(max(40px, env(safe-area-inset-top, 0px)) + 50px + 60px);
     /* Отступ снизу: nav + safe-area + немного padding */
     padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */
