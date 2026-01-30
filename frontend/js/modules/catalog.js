@@ -355,6 +355,11 @@
             card.className = 'subcategory-card';
             card.dataset.category = sub.id;
             
+            // Устанавливаем активное состояние, если это выбранная категория
+            if (state.currentCategory == sub.id) {
+                card.classList.add('active');
+            }
+            
             card.innerHTML = `<span class="subcategory-name">${sub.name}</span>`;
             card.addEventListener('click', () => selectCategory(sub.id));
             elements.subcategoriesGrid.appendChild(card);
@@ -387,6 +392,13 @@
         elements.categoriesSlider.querySelectorAll('.category-chip').forEach(chip => {
             chip.classList.toggle('active', chip.dataset.category == categoryId);
         });
+        
+        // Обновляем активное состояние подкатегорий
+        if (elements.subcategoriesGrid) {
+            elements.subcategoriesGrid.querySelectorAll('.subcategory-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.category == categoryId);
+            });
+        }
         
         if (categoryId === 'all') {
             if (elements.productsTitle) elements.productsTitle.textContent = 'Все товары';
