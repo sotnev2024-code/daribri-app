@@ -287,7 +287,11 @@
             
             // Основная информация о товаре
             elements.productName.textContent = product.name;
-            elements.productDescription.textContent = product.description || 'Описание отсутствует';
+            // Сохраняем переносы строк в описании
+            if (elements.productDescription) {
+                const description = product.description || 'Описание отсутствует';
+                elements.productDescription.textContent = description;
+            }
             
             // Цена - используем такую же логику, как в каталоге
             const price = parseFloat(product.price) || 0;
