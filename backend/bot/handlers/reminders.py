@@ -72,6 +72,7 @@ def parse_date(date_str: str) -> date | None:
 @router.message(Command("remind", "напомнить", "напомни"))
 async def cmd_remind(message: Message, state: FSMContext):
     """Команда для создания напоминания о событии."""
+    print(f"[REMIND] Command received from user {message.from_user.id}")
     try:
         db = await get_db()
         

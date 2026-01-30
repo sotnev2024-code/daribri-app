@@ -22,8 +22,11 @@ from .categories_admin import router as categories_admin_router
 try:
     from .reminders import router as reminders_router
     REMINDERS_AVAILABLE = True
+    print("[HANDLERS] Reminders router imported successfully")
 except Exception as e:
     print(f"[HANDLERS] Warning: Failed to import reminders router: {e}")
+    import traceback
+    traceback.print_exc()
     REMINDERS_AVAILABLE = False
     reminders_router = None
 
@@ -33,13 +36,16 @@ router = Router()
 # ВАЖНО: Специфичные админ-роутеры должны быть зарегистрированы ПЕРЕД общим admin_router,
 # чтобы их обработчики проверялись первыми
 router.include_router(start_router)
+# Регистрируем роутер напоминаний раньше, чтобы команда /remind не перехватывалась другими обработчиками
+if REMINDERS_AVAILABLE and reminders_router:
+    router.include_router(reminders_router)
+    print("[HANDLERS] Reminders router registered successfully")
+else:
+    print("[HANDLERS] Reminders router NOT registered (not available or None)")
 router.include_router(add_shop_router)
 router.include_router(subscription_router)
 router.include_router(banners_router)
 router.include_router(orders_router)
-# Регистрируем роутер напоминаний только если он доступен
-if REMINDERS_AVAILABLE and reminders_router:
-    router.include_router(reminders_router)
 # Специфичные админ-роутеры (должны быть перед общим admin_router)
 router.include_router(shops_admin_router)
 router.include_router(products_admin_router)
