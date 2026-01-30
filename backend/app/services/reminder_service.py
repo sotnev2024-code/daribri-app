@@ -5,7 +5,14 @@
 import asyncio
 from datetime import date, datetime, time
 from typing import Optional
-import pytz
+
+try:
+    import pytz
+    PYTZ_AVAILABLE = True
+except ImportError:
+    PYTZ_AVAILABLE = False
+    print("[REMINDER SERVICE] WARNING: pytz not installed. Reminder service will not work.")
+
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -38,6 +45,10 @@ class ReminderService:
     @classmethod
     async def check_and_send_reminders(cls):
         """Проверяет напоминания и отправляет уведомления."""
+        if not PYTZ_AVAILABLE:
+            print("[REMINDER SERVICE] pytz not available, skipping reminder check")
+            return
+        
         try:
             # Получаем текущее время в Екатеринбурге
             ekb_tz = pytz.timezone('Asia/Yekaterinburg')

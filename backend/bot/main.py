@@ -47,10 +47,17 @@ async def main(bot_token: str, webapp_url: str):
     
     logger.info("Bot starting...")
     
-    # Запускаем периодическую проверку напоминаний в фоне
-    from backend.app.services.reminder_service import reminder_service
-    reminder_task = asyncio.create_task(reminder_service.start_periodic_check(interval_minutes=5))
-    logger.info("Reminder service started (checking every 5 minutes)")
+    # Запускаем периодическую проверку напоминаний в фоне (с обработкой ошибок)
+    reminder_task = None
+    try:
+        from backend.app.services.reminder_service import reminder_service
+        reminder_task = asyncio.create_task(reminder_service.start_periodic_check(interval_minutes=5))
+        logger.info("Reminder service started (checking every 5 minutes)")
+    except Exception as e:
+        logger.error(f"Failed to start reminder service: {e}")
+        import traceback
+        traceback.print_exc()
+        # Продолжаем работу бота даже если сервис напоминаний не запустился
     
     try:
         # Удаляем webhook если был (с несколькими попытками)
@@ -74,11 +81,14 @@ async def main(bot_token: str, webapp_url: str):
         await dp.start_polling(bot, allowed_updates=["message", "callback_query", "pre_checkout_query", "successful_payment"])
     finally:
         # Отменяем задачу проверки напоминаний
-        reminder_task.cancel()
-        try:
-            await reminder_task
-        except asyncio.CancelledError:
-            pass
+        if reminder_task:
+            reminder_task.cancel()
+            try:
+                await reminder_task
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.warning(f"Error cancelling reminder task: {e}")
         await bot.session.close()
 
 
