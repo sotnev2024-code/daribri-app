@@ -4744,14 +4744,15 @@ input {
 }
 
 .product-gallery-header-icon {
-    width: 24px;
-    height: 24px;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
+    border-radius: 8px;
 }
 
 .product-gallery-header-text {
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 700;
     color: var(--text-primary);
 }
 
