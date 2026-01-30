@@ -180,10 +180,21 @@
             document.getElementById('subscriptionManagementPage')
         ].filter(p => p);
         
-        // Скрываем все страницы
+        // Скрываем все страницы с анимацией закрытия для productPage
         allPages.forEach(p => {
-            p.setAttribute('hidden', '');
-            p.style.display = 'none';
+            if (p === elements.productPage && p.style.display !== 'none' && !p.hasAttribute('hidden')) {
+                // Добавляем класс для анимации закрытия
+                p.classList.add('closing');
+                // Ждем завершения анимации перед скрытием
+                setTimeout(() => {
+                    p.setAttribute('hidden', '');
+                    p.style.display = 'none';
+                    p.classList.remove('closing');
+                }, 300); // Длительность анимации
+            } else {
+                p.setAttribute('hidden', '');
+                p.style.display = 'none';
+            }
         });
         
         // Показываем нужную страницу
@@ -194,6 +205,8 @@
                 
             case 'product':
                 if (elements.productPage) {
+                    // Убираем класс closing если был
+                    elements.productPage.classList.remove('closing');
                     elements.productPage.removeAttribute('hidden');
                     elements.productPage.style.display = 'flex';
                     setTimeout(() => {

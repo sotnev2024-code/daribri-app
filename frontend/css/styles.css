@@ -4573,6 +4573,38 @@ input {
     padding-top: 0 !important;
 }
 
+/* Анимация открытия страницы товара справа налево */
+#productPage.page:not([hidden]) {
+    animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100%) translateX(-50%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%);
+        opacity: 1;
+    }
+}
+
+/* Анимация закрытия страницы товара слева направо */
+#productPage.page.closing {
+    animation: slideOutToRight 0.3s ease-in;
+}
+
+@keyframes slideOutToRight {
+    from {
+        transform: translateX(-50%);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%) translateX(-50%);
+        opacity: 0;
+    }
+}
+
 .product-page-content {
     flex: 1;
     overflow-y: auto;
