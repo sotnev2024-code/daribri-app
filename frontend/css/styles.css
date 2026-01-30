@@ -4739,7 +4739,7 @@ input {
 .product-gallery-header-logo {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     justify-content: center;
 }
 
