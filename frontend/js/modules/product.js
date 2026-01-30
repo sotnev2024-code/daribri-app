@@ -79,6 +79,25 @@
         const api = getApi();
         if (!state || !elements || !api) return;
         
+        // Сразу показываем страницу товара с индикатором загрузки
+        if (window.navigateTo) window.navigateTo('product');
+        
+        // Показываем индикатор загрузки
+        if (elements.productGallery) {
+            elements.productGallery.innerHTML = '<div class="product-gallery-placeholder" style="display:flex;align-items:center;justify-content:center;height:100%;min-height:300px;"><div class="loading-spinner"><div class="spinner"></div></div></div>';
+        }
+        if (elements.productName) elements.productName.textContent = 'Загрузка...';
+        if (elements.productDescription) elements.productDescription.textContent = '';
+        if (elements.productPrice) elements.productPrice.textContent = '';
+        if (elements.productOldPrice) {
+            elements.productOldPrice.textContent = '';
+            elements.productOldPrice.hidden = true;
+        }
+        if (elements.productDiscount) {
+            elements.productDiscount.textContent = '';
+            elements.productDiscount.hidden = true;
+        }
+        
         try {
             const product = await api.getProduct(productId);
             state.currentProduct = product;
@@ -398,9 +417,7 @@
             
             // Обновляем заголовок страницы
             // Название товара больше не отображается в шапке
-            
-            // Показываем страницу товара
-            if (window.navigateTo) window.navigateTo('product');
+            // Страница уже показана в начале функции
             
             // Обновляем UI кнопок корзины
             if (window.updateProductPageCartUI) {
@@ -408,6 +425,20 @@
             }
         } catch (error) {
             console.error('Error loading product:', error);
+            
+            // Показываем ошибку на уже открытой странице
+            if (elements.productGallery) {
+                elements.productGallery.innerHTML = `
+                    <div class="product-gallery-placeholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;padding:20px;text-align:center;">
+                        <div style="font-size:48px;margin-bottom:16px;">❌</div>
+                        <h3 style="margin-bottom:8px;color:var(--text-primary);">Не удалось загрузить товар</h3>
+                        <p style="color:var(--text-secondary);font-size:14px;">Попробуйте обновить страницу</p>
+                    </div>
+                `;
+            }
+            if (elements.productName) elements.productName.textContent = 'Ошибка загрузки';
+            if (elements.productDescription) elements.productDescription.textContent = 'Не удалось загрузить информацию о товаре. Попробуйте позже.';
+            
             const utils = getUtils();
             if (utils.showToast) utils.showToast('Не удалось загрузить товар', 'error');
         }
