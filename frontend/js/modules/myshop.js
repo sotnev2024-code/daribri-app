@@ -1985,6 +1985,9 @@
         const productPhotos = document.getElementById('productPhotos');
         
         if (addPhotoBtn && productPhotos) {
+            // Убираем атрибут capture если он есть (для предотвращения режима 4:3)
+            productPhotos.removeAttribute('capture');
+            
             addPhotoBtn.onclick = () => productPhotos.click();
             
             productPhotos.onchange = (e) => {
