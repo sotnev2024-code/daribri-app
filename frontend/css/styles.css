@@ -76,7 +76,7 @@
     
     /* Дополнительный отступ для контента на iOS с вырезом */
     .main-content {
-        padding-top: calc(max(70px, calc(50px + env(safe-area-inset-top, 0px))) + var(--header-height) + 10px);
+        padding-top: calc(max(60px, calc(40px + env(safe-area-inset-top, 0px))) + 50px + 60px + 10px);
     }
     
     .categories-section {
@@ -511,13 +511,13 @@ input {
 /* Header */
 .header {
     position: fixed;
-    /* Android: 70px, iOS: 50px + safe-area (примерно 97px) */
-    top: max(70px, calc(50px + env(safe-area-inset-top, 0px)));
+    /* Поднимаем чуть ниже кнопок Telegram */
+    top: max(60px, calc(40px + env(safe-area-inset-top, 0px)));
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: var(--header-height);
+    height: 50px;
     background: #dbff00;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
@@ -527,17 +527,17 @@ input {
 .header::before {
     content: '';
     position: absolute;
-    top: calc(-1 * max(70px, calc(50px + env(safe-area-inset-top, 0px))));
+    top: calc(-1 * max(60px, calc(40px + env(safe-area-inset-top, 0px))));
     left: -50vw;
     right: -50vw;
-    height: max(70px, calc(50px + env(safe-area-inset-top, 0px)));
+    height: max(60px, calc(40px + env(safe-area-inset-top, 0px)));
     background: #dbff00;
 }
 
 .header-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     height: 100%;
     padding: 0 16px;
 }
@@ -596,6 +596,89 @@ input {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+/* Search Bar */
+.search-bar {
+    position: fixed;
+    top: calc(max(60px, calc(40px + env(safe-area-inset-top, 0px))) + 50px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    z-index: 99;
+}
+
+.search-bar .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.search-bar .search-input-wrapper .search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.search-bar #searchInputBar {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    outline: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.search-bar #searchInputBar::placeholder {
+    color: var(--text-muted);
+}
+
+.search-bar #searchInputBar:focus {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(219, 255, 0, 0.2);
+}
+
+.search-bar .clear-search-btn {
+    position: absolute;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.search-bar .clear-search-btn:hover {
+    color: var(--text-primary);
+}
+
+.search-results-bar {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
 
 .header-actions {
     display: flex;
@@ -639,8 +722,8 @@ input {
 /* Main Content */
 .main-content {
     flex: 1;
-    /* Отступ сверху: Android 70px, iOS 50px + safe-area, + header */
-    padding-top: calc(max(70px, calc(50px + env(safe-area-inset-top, 0px))) + var(--header-height));
+    /* Отступ сверху: Android 60px, iOS 40px + safe-area, + header (50px) + search bar (60px) */
+    padding-top: calc(max(60px, calc(40px + env(safe-area-inset-top, 0px))) + 50px + 60px);
     /* Отступ снизу: nav + safe-area + немного padding */
     padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
     /* Предотвращаем случайное закрытие при свайпе вниз */

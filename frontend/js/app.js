@@ -223,13 +223,13 @@ window.tg = tg;
 function initElements() {
     elements = {
         // Header
-        searchBtn: document.getElementById('searchBtn'),
-        favoritesBtn: document.getElementById('favoritesBtn'),
-        cartBtn: document.getElementById('cartBtn'),
-        favoritesBadge: document.getElementById('favoritesBadge'),
-        cartBadge: document.getElementById('cartBadge'),
+        // Кнопки убраны из header
     
     // Search
+    searchBar: document.getElementById('searchBar'),
+    searchInputBar: document.getElementById('searchInputBar'),
+    clearSearchBtnBar: document.getElementById('clearSearchBtnBar'),
+    searchResultsBar: document.getElementById('searchResultsBar'),
     searchModal: document.getElementById('searchModal'),
     searchInput: document.getElementById('searchInput'),
     closeSearch: document.getElementById('closeSearch'),
@@ -1430,26 +1430,34 @@ function initEventListeners() {
         return;
     }
     
-    // Кнопки header
-    if (elements.searchBtn) {
-        elements.searchBtn.addEventListener('click', () => {
-            openSearch();
+    // Строка поиска
+    if (elements.searchInputBar) {
+        elements.searchInputBar.addEventListener('input', debounce(() => {
+            if (window.handleSearchInput) {
+                window.handleSearchInput();
+            }
+        }, 300));
+        
+        // Показываем/скрываем кнопку очистки
+        elements.searchInputBar.addEventListener('input', () => {
+            if (elements.clearSearchBtnBar) {
+                elements.clearSearchBtnBar.style.display = elements.searchInputBar.value.trim() ? 'flex' : 'none';
+            }
         });
     }
     
-    if (elements.favoritesBtn) {
-        elements.favoritesBtn.addEventListener('click', () => {
-            navigateTo('favorites');
+    if (elements.clearSearchBtnBar) {
+        elements.clearSearchBtnBar.addEventListener('click', () => {
+            if (elements.searchInputBar) {
+                elements.searchInputBar.value = '';
+                if (window.handleSearchInput) {
+                    window.handleSearchInput();
+                }
+            }
         });
     }
     
-    if (elements.cartBtn) {
-        elements.cartBtn.addEventListener('click', () => {
-            navigateTo('cart');
-        });
-    }
-    
-    // Модальное окно поиска
+    // Модальное окно поиска (оставляем для обратной совместимости)
     if (elements.closeSearch) {
         elements.closeSearch.addEventListener('click', closeSearch);
     }

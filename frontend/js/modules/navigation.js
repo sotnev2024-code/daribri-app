@@ -397,33 +397,47 @@
     // Живой поиск с debounce
     function handleSearchInput() {
         const elements = getElements();
-        if (!elements?.searchInput) return;
+        // Используем новое поле поиска, если доступно, иначе старое
+        const searchInput = elements?.searchInputBar || elements?.searchInput;
+        if (!searchInput) return;
         
-        const query = elements.searchInput.value.trim();
+        const query = searchInput.value.trim();
         
         // Очищаем предыдущий таймер
         if (searchDebounceTimer) {
             clearTimeout(searchDebounceTimer);
         }
         
-        // Если пустой запрос - показываем подсказки
+        // Если пустой запрос - скрываем результаты
         if (query.length === 0) {
-            showSearchSuggestions();
+            if (elements?.searchResultsBar) {
+                elements.searchResultsBar.hidden = true;
+            }
+            if (elements?.searchResults) {
+                showSearchSuggestions();
+            }
             return;
         }
         
         // Если меньше 2 символов - ничего не делаем
         if (query.length < 2) {
+            if (elements?.searchResultsBar) {
+                elements.searchResultsBar.hidden = true;
+            }
             return;
         }
         
         // Показываем индикатор загрузки
-        elements.searchResults.innerHTML = `
-            <div class="search-loading">
-                <div class="spinner"></div>
-                <span>Поиск...</span>
-            </div>
-        `;
+        const resultsContainer = elements?.searchResultsBar || elements?.searchResults;
+        if (resultsContainer) {
+            resultsContainer.hidden = false;
+            resultsContainer.innerHTML = `
+                <div class="search-loading">
+                    <div class="spinner"></div>
+                    <span>Поиск...</span>
+                </div>
+            `;
+        }
         
         // Debounce - ждём 300мс после последнего ввода
         searchDebounceTimer = setTimeout(() => {
@@ -438,7 +452,11 @@
         const api = window.api;
         if (!elements || !api) return;
         
-        const query = elements.searchInput.value.trim();
+        // Используем новое поле поиска, если доступно, иначе старое
+        const searchInput = elements?.searchInputBar || elements?.searchInput;
+        if (!searchInput) return;
+        
+        const query = searchInput.value.trim();
         
         if (query.length < 2) {
             showSearchSuggestions();
@@ -465,14 +483,20 @@
                 saveToSearchHistory(query);
             }
             
+            // Используем новый контейнер результатов, если доступен
+            const resultsContainer = elements?.searchResultsBar || elements?.searchResults;
+            
             if (productsList.length === 0) {
-                elements.searchResults.innerHTML = `
-                    <div class="search-empty">
-                        <div class="search-empty-icon">🔍</div>
-                        <div class="search-empty-title">Ничего не найдено</div>
-                        <div class="search-empty-text">Попробуйте изменить запрос или посмотрите популярные товары</div>
-                    </div>
-                `;
+                if (resultsContainer) {
+                    resultsContainer.hidden = false;
+                    resultsContainer.innerHTML = `
+                        <div class="search-empty">
+                            <div class="search-empty-icon">🔍</div>
+                            <div class="search-empty-title">Ничего не найдено</div>
+                            <div class="search-empty-text">Попробуйте изменить запрос или посмотрите популярные товары</div>
+                        </div>
+                    `;
+                }
                 return;
             }
             
@@ -524,16 +548,23 @@
                 `;
             }).join('');
             
-            elements.searchResults.innerHTML = html;
+            // Используем новый контейнер результатов, если доступен
+            if (resultsContainer) {
+                resultsContainer.hidden = false;
+                resultsContainer.innerHTML = html;
+            }
         } catch (error) {
             console.error('[SEARCH] Search error:', error);
-            elements.searchResults.innerHTML = `
-                <div class="search-empty">
-                    <div class="search-empty-icon">⚠️</div>
-                    <div class="search-empty-title">Ошибка поиска</div>
-                    <div class="search-empty-text">Попробуйте еще раз</div>
-                </div>
-            `;
+            if (resultsContainer) {
+                resultsContainer.hidden = false;
+                resultsContainer.innerHTML = `
+                    <div class="search-empty">
+                        <div class="search-empty-icon">⚠️</div>
+                        <div class="search-empty-title">Ошибка поиска</div>
+                        <div class="search-empty-text">Попробуйте еще раз</div>
+                    </div>
+                `;
+            }
         }
     }
     
