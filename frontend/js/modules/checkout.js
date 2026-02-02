@@ -1473,9 +1473,55 @@
             { value: '18:00-21:00', start: 18, end: 21 }
         ];
         
-        // Устанавливаем минимальную дату (сегодня)
+        // Функция для получения текущего часа в Екатеринбурге (UTC+5)
+        function getYekaterinburgHour() {
+            const now = new Date();
+            // Екатеринбург UTC+5 (Asia/Yekaterinburg)
+            // Используем Intl.DateTimeFormat для получения часа в нужном часовом поясе
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Yekaterinburg',
+                hour: 'numeric',
+                hour12: false
+            });
+            const hour = parseInt(formatter.format(now), 10);
+            return hour;
+        }
+        
+        // Функция для проверки, можно ли оформить заказ на сегодня
+        function canOrderToday() {
+            // Проверка только для доставки, не для самовывоза
+            if (checkoutState.deliveryType !== 'delivery') {
+                return true;
+            }
+            
+            const currentHour = getYekaterinburgHour();
+            
+            // Если время >= 18:00, нельзя оформить заказ на сегодня
+            return currentHour < 18;
+        }
+        
+        // Устанавливаем минимальную дату
         const today = new Date();
-        dateInput.min = today.toISOString().split('T')[0];
+        const canOrderTodayFlag = canOrderToday();
+        
+        if (canOrderTodayFlag) {
+            // Можно оформить на сегодня
+            dateInput.min = today.toISOString().split('T')[0];
+        } else {
+            // Нельзя оформить на сегодня (время >= 18:00), минимальная дата - завтра
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.min = tomorrow.toISOString().split('T')[0];
+            
+            // Если была выбрана сегодняшняя дата, сбрасываем её
+            if (dateInput.value === today.toISOString().split('T')[0]) {
+                dateInput.value = '';
+                checkoutState.deliveryDate = null;
+                timeSelect.innerHTML = '<option value="">Выберите время</option>';
+                checkoutState.deliveryTime = null;
+                timeSelect.value = '';
+            }
+        }
         
         // Восстанавливаем сохранённые значения
         if (checkoutState.deliveryDate) dateInput.value = checkoutState.deliveryDate;
@@ -1484,12 +1530,13 @@
         function updateTimeSlots() {
             const selectedDate = dateInput.value;
             const isToday = selectedDate === today.toISOString().split('T')[0];
-            const currentHour = new Date().getHours();
+            // Используем время Екатеринбурга для фильтрации слотов
+            const currentHour = isToday ? getYekaterinburgHour() : -1;
             
             timeSelect.innerHTML = '<option value="">Выберите время</option>';
             
             timeSlots.forEach(slot => {
-                // Если сегодня, фильтруем прошедшие слоты
+                // Если сегодня, фильтруем прошедшие слоты (по времени Екатеринбурга)
                 if (isToday && slot.end <= currentHour) return;
                 
                 const option = document.createElement('option');
@@ -1514,25 +1561,43 @@
             
             // Проверяем, что дата не прошедшая
             let isDateValid = true;
+            let dateErrorMessage = null;
+            
             if (hasDate) {
                 const selectedDate = new Date(dateInput.value + 'T00:00:00');
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
+                // Проверка на прошедшую дату
                 if (selectedDate < today) {
                     isDateValid = false;
-                    // Очищаем выбранную дату, если она прошедшая
                     dateInput.value = '';
                     checkoutState.deliveryDate = null;
                     timeSelect.innerHTML = '<option value="">Выберите время</option>';
                     checkoutState.deliveryTime = null;
                     timeSelect.value = '';
                     
-                    const message = checkoutState.deliveryType === 'pickup' 
+                    dateErrorMessage = checkoutState.deliveryType === 'pickup' 
                         ? 'Нельзя выбрать прошедшую дату для получения заказа' 
                         : 'Нельзя выбрать прошедшую дату для доставки';
-                    showToast(message, 'error');
                 }
+                // Проверка: если время >= 18:00 по Екатеринбургу и выбрана доставка, нельзя оформить на сегодня
+                else if (checkoutState.deliveryType === 'delivery' && selectedDate.getTime() === today.getTime()) {
+                    if (!canOrderToday()) {
+                        isDateValid = false;
+                        dateInput.value = '';
+                        checkoutState.deliveryDate = null;
+                        timeSelect.innerHTML = '<option value="">Выберите время</option>';
+                        checkoutState.deliveryTime = null;
+                        timeSelect.value = '';
+                        
+                        dateErrorMessage = 'После 18:00 заказы на доставку можно оформить только на следующий день';
+                    }
+                }
+            }
+            
+            if (dateErrorMessage) {
+                showToast(dateErrorMessage, 'error');
             }
             
             const isValid = hasDate && hasTime && isDateValid;
@@ -1546,18 +1611,33 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
+            let shouldReset = false;
+            let errorMessage = null;
+            
             // Проверяем, что выбранная дата не прошедшая
             if (selectedDate < today) {
+                shouldReset = true;
+                errorMessage = checkoutState.deliveryType === 'pickup' 
+                    ? 'Нельзя выбрать прошедшую дату для забора заказа' 
+                    : 'Нельзя выбрать прошедшую дату для доставки';
+            }
+            // Проверка: если время >= 18:00 по Екатеринбургу и выбрана доставка, нельзя оформить на сегодня
+            else if (checkoutState.deliveryType === 'delivery' && selectedDate.getTime() === today.getTime()) {
+                if (!canOrderToday()) {
+                    shouldReset = true;
+                    errorMessage = 'После 18:00 заказы на доставку можно оформить только на следующий день';
+                }
+            }
+            
+            if (shouldReset) {
                 dateInput.value = '';
                 checkoutState.deliveryDate = null;
                 timeSelect.innerHTML = '<option value="">Выберите время</option>';
                 checkoutState.deliveryTime = null;
                 timeSelect.value = '';
-                
-                const message = checkoutState.deliveryType === 'pickup' 
-                    ? 'Нельзя выбрать прошедшую дату для забора заказа' 
-                    : 'Нельзя выбрать прошедшую дату для доставки';
-                showToast(message, 'error');
+                if (errorMessage) {
+                    showToast(errorMessage, 'error');
+                }
             } else {
                 checkoutState.deliveryDate = dateInput.value;
             }
@@ -1581,11 +1661,27 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
+                let shouldBlock = false;
+                let errorMessage = null;
+                
                 if (selectedDate < today) {
-                    const message = checkoutState.deliveryType === 'pickup' 
+                    shouldBlock = true;
+                    errorMessage = checkoutState.deliveryType === 'pickup' 
                         ? 'Нельзя выбрать прошедшую дату для получения заказа' 
                         : 'Нельзя выбрать прошедшую дату для доставки';
-                    showToast(message, 'error');
+                }
+                // Проверка: если время >= 18:00 по Екатеринбургу и выбрана доставка, нельзя оформить на сегодня
+                else if (checkoutState.deliveryType === 'delivery' && selectedDate.getTime() === today.getTime()) {
+                    if (!canOrderToday()) {
+                        shouldBlock = true;
+                        errorMessage = 'После 18:00 заказы на доставку можно оформить только на следующий день';
+                    }
+                }
+                
+                if (shouldBlock) {
+                    if (errorMessage) {
+                        showToast(errorMessage, 'error');
+                    }
                     dateInput.value = '';
                     checkoutState.deliveryDate = null;
                     timeSelect.innerHTML = '<option value="">Выберите время</option>';
