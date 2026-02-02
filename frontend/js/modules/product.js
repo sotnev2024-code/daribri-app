@@ -375,18 +375,32 @@
                     e.stopPropagation();
                     e.preventDefault();
                     
-                    console.log('[SUPPORT] Button clicked, opening support chat');
+                    console.log('[SUPPORT] Button clicked, opening support chat with product info');
                     
-                    // Открываем чат @daribri_support через Telegram
-                    const supportUrl = 'https://t.me/daribri_support';
+                    // Формируем текст сообщения с информацией о товаре
+                    const productName = product.name || 'Товар';
+                    const productId = product.id;
+                    
+                    // Формируем ссылку на товар (можно использовать deep link или просто ID)
+                    // Предполагаем, что есть способ открыть товар по ID
+                    const productLink = `https://t.me/daribri_bot?start=product_${productId}`;
+                    
+                    // Формируем текст сообщения
+                    const messageText = `Здравствуйте, у меня вопрос по товару: ${productName}\n${productLink}`;
+                    
+                    // Кодируем текст для URL
+                    const encodedText = encodeURIComponent(messageText);
+                    
+                    // Открываем чат @daribri_support с предзаполненным текстом
+                    const supportUrl = `https://t.me/daribri_support?text=${encodedText}`;
                     
                     if (window.Telegram && window.Telegram.WebApp) {
                         console.log('[SUPPORT] Telegram WebApp available');
                         if (window.Telegram.WebApp.openTelegramLink) {
-                            console.log('[SUPPORT] Using openTelegramLink');
+                            console.log('[SUPPORT] Using openTelegramLink with text');
                             window.Telegram.WebApp.openTelegramLink(supportUrl);
                         } else if (window.Telegram.WebApp.openLink) {
-                            console.log('[SUPPORT] Using openLink');
+                            console.log('[SUPPORT] Using openLink with text');
                             window.Telegram.WebApp.openLink(supportUrl);
                         } else {
                             console.log('[SUPPORT] Fallback: window.open');
