@@ -408,7 +408,32 @@
             const category = findCategory(categoryId);
             if (category) {
                 if (elements.productsTitle) elements.productsTitle.textContent = category.name;
-                renderSubcategories(category);
+                
+                // Если выбрана подкатегория (не имеет children), находим родительскую категорию
+                if (!category.children || category.children.length === 0) {
+                    // Ищем родительскую категорию
+                    let parentCategory = null;
+                    for (const cat of state.categories) {
+                        if (cat.children) {
+                            const found = cat.children.find(c => c.id == categoryId);
+                            if (found) {
+                                parentCategory = cat;
+                                break;
+                            }
+                        }
+                    }
+                    // Отображаем подкатегории родительской категории
+                    if (parentCategory) {
+                        renderSubcategories(parentCategory);
+                    } else {
+                        // Если родительская категория не найдена, скрываем подкатегории
+                        if (elements.subcategoriesSection) elements.subcategoriesSection.hidden = true;
+                    }
+                } else {
+                    // Если выбрана основная категория, отображаем её подкатегории
+                    renderSubcategories(category);
+                }
+                
                 if (elements.bannerSection) elements.bannerSection.hidden = true;
             }
         }
