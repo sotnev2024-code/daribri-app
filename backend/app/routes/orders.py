@@ -272,7 +272,7 @@ async def create_order(
     
     # Проверяем магазин и получаем информацию о владельце
     shop = await db.fetch_one(
-        """SELECT s.id, s.name, s.owner_id, u.telegram_id 
+        """SELECT s.id, s.name, s.owner_id, u.telegram_id, u.username 
            FROM shops s
            JOIN users u ON s.owner_id = u.id
            WHERE s.id = ? AND s.is_active = 1""",
@@ -561,7 +561,7 @@ async def create_order(
                 delivery_fee=float(delivery_fee),
                 total_amount=float(total_amount),
                 delivery_type=order_data.delivery_type or "delivery",
-                shop_owner_telegram_id=shop.get("telegram_id")
+                shop_owner_username=shop.get("username")
             )
         except Exception as e:
             # Не прерываем выполнение, если уведомление не отправилось

@@ -292,7 +292,7 @@ class TelegramNotifier:
         delivery_fee: float,
         total_amount: float = 0.0,
         delivery_type: str = "delivery",
-        shop_owner_telegram_id: Optional[int] = None
+        shop_owner_username: Optional[str] = None
     ) -> bool:
         """
         Отправляет сообщение с подтверждением заказа покупателю.
@@ -308,7 +308,7 @@ class TelegramNotifier:
             items: Список товаров в заказе
             delivery_fee: Стоимость доставки
             total_amount: Общая сумма заказа
-            shop_owner_telegram_id: Telegram ID продавца (для ссылки)
+            shop_owner_username: Username продавца (для ссылки)
             
         Returns:
             bool: True если сообщение отправлено
@@ -356,7 +356,7 @@ class TelegramNotifier:
         
         # Формируем текст для сообщения продавцу
         prefill_text = ""
-        if shop_owner_telegram_id:
+        if shop_owner_username:
             prefill_text = f"Пишу с платформы Дарибри по заказу #{order_number} хочу уточнить детали"
         
         message = f"""<b>Заказ {order_number} успешно оформлен</b>
@@ -371,16 +371,25 @@ class TelegramNotifier:
 
 Спасибо за ваш заказ! В ближайшее время с вами свяжется менеджер"""
         
-        # Добавляем информацию о связи с продавцом
-        if shop_owner_telegram_id and prefill_text:
-            message += f"\n\n💬 <b>Для связи с продавцом:</b>\nИспользуйте кнопку ниже, чтобы открыть чат. Текст для сообщения:\n<code>{prefill_text}</code>"
-        
         # Формируем клавиатуру с кнопкой для связи с продавцом
         keyboard_buttons = []
-        if shop_owner_telegram_id:
-            # Используем простой формат tg://user?id=ID, который точно работает
-            # Этот формат открывает чат с пользователем
-            seller_url = f"tg://user?id={shop_owner_telegram_id}"
+        if shop_owner_username and prefill_text:
+            # Используем формат https://t.me/username?text=text для предзаполнения текста
+            # Кодируем текст для URL
+            from urllib.parse import quote
+            encoded_text = quote(prefill_text)
+            # Формат для предзаполнения текста через username
+            seller_url = f"https://t.me/{shop_owner_username}?text={encoded_text}"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text="💬 Написать продавцу",
+                    url=seller_url
+                )
+            ])
+        elif shop_owner_username:
+            # Если нет текста для предзаполнения, просто открываем чат
+            seller_url = f"https://t.me/{shop_owner_username}"
             
             keyboard_buttons.append([
                 InlineKeyboardButton(
@@ -393,8 +402,8 @@ class TelegramNotifier:
         
         print(f"[TELEGRAM] Sending order confirmation to customer {customer_telegram_id}")
         print(f"[TELEGRAM] Order: {order_number}, Total: {total_amount:.2f} ₽")
-        if shop_owner_telegram_id:
-            print(f"[TELEGRAM] Adding seller link button for shop owner {shop_owner_telegram_id}")
+        if shop_owner_username:
+            print(f"[TELEGRAM] Adding seller link button for shop owner @{shop_owner_username} with pre-filled text")
         
         try:
             await bot.send_message(
