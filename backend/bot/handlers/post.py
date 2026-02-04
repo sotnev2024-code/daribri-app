@@ -332,16 +332,22 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Получаем URL WebApp из бота
-        webapp_url = getattr(bot, 'webapp_url', 'http://localhost:8081')
+        # Получаем username бота для deep link
+        try:
+            bot_info = await bot.get_me()
+            bot_username = bot_info.username
+        except Exception as e:
+            print(f"[POST] Error getting bot info: {e}")
+            bot_username = "daribri_bot"  # Fallback
         
-        # Создаём URL для открытия магазина в WebApp
-        # Используем параметр shop для открытия карточки магазина
-        shop_webapp_url = f"{webapp_url}?shop={shop_id}"
+        # Создаём deep link для открытия магазина через бота
+        # Это откроет бота, который затем откроет WebApp с параметром start=shop_{shop_id}
+        shop_deep_link = f"https://t.me/{bot_username}?start=shop_{shop_id}"
         
-        # Создаём кнопку с WebApp
+        # Создаём кнопку с URL (deep link)
+        # В каналах нельзя использовать WebApp кнопки напрямую, поэтому используем deep link
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🛍 Открыть магазин", web_app=WebAppInfo(url=shop_webapp_url))
+            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_deep_link)
         ]])
         
         # Публикуем пост в канал
