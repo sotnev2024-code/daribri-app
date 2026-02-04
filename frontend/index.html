@@ -13,6 +13,13 @@
     <link rel="stylesheet" href="css/styles.css?v=104">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- vConsole для отладки в Telegram (временно) -->
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // Включаем vConsole для отладки
+        var vConsole = new window.VConsole();
+        console.log('[DEBUG] vConsole initialized');
+    </script>
 </head>
 <body>
     <div id="app">
@@ -1798,7 +1805,7 @@
     <script src="js/modules/shop.js?v=6"></script>
     <script src="js/modules/checkout.js?v=25"></script>
     <script src="js/modules/orders.js?v=3"></script>
-    <script src="js/modules/myshop.js?v=13"></script>
+    <script src="js/modules/myshop.js?v=14"></script>
     <script src="js/app.js?v=62"></script>
 </body>
 </html>
