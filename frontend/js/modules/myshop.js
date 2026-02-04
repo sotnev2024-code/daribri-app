@@ -2338,7 +2338,17 @@
         const discountPercent = parseInt(document.getElementById('productDiscountInput').value) || null;
         const quantity = parseInt(document.getElementById('productQuantityInput').value) || 0;
         const costPriceInput = document.getElementById('productCostPriceInput');
-        const costPrice = costPriceInput && costPriceInput.value.trim() ? parseFloat(costPriceInput.value) : null;
+        // Обрабатываем себестоимость: если поле заполнено - парсим число, иначе null
+        let costPrice = null;
+        if (costPriceInput && costPriceInput.value.trim()) {
+            const parsed = parseFloat(costPriceInput.value);
+            // Проверяем, что parseFloat вернул валидное число (не NaN)
+            if (!isNaN(parsed) && parsed >= 0) {
+                costPrice = parsed;
+            }
+        }
+        console.log('[SAVE PRODUCT] costPriceInput value:', costPriceInput?.value);
+        console.log('[SAVE PRODUCT] costPrice parsed:', costPrice);
         const isTrending = document.getElementById('productTrendingInput').checked;
         
         // Валидация

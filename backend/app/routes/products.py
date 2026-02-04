@@ -642,6 +642,12 @@ async def update_product(
                 # Для остальных полей исключаем None
                 update_data[key] = value
         
+        print(f"[UPDATE PRODUCT] update_data_raw: {update_data_raw}")
+        print(f"[UPDATE PRODUCT] update_data: {update_data}")
+        print(f"[UPDATE PRODUCT] cost_price in update_data: {'cost_price' in update_data}")
+        if 'cost_price' in update_data:
+            print(f"[UPDATE PRODUCT] cost_price value: {update_data['cost_price']}, type: {type(update_data['cost_price'])}")
+        
         # Обновляем товар
         if update_data:
             # Формируем UPDATE запрос
@@ -658,6 +664,9 @@ async def update_product(
                     from decimal import Decimal
                     if isinstance(value, Decimal):
                         values.append(float(value))
+                    elif value is None:
+                        # Для None значений устанавливаем NULL в SQL
+                        values.append(None)
                     else:
                         values.append(value)
             
