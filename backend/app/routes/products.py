@@ -703,10 +703,15 @@ async def update_product(
             await db.commit()
             
             print(f"[UPDATE] Product {product_id} updated: {list(update_data.keys())}, rows affected: {cursor.rowcount}")
+            print(f"[UPDATE] SQL Query: {query}")
+            print(f"[UPDATE] SQL Values: {values}")
         
+        # Проверяем, что cost_price действительно обновился
         updated = await db.fetch_one("SELECT * FROM products WHERE id = ?", (product_id,))
         if not updated:
             raise HTTPException(status_code=404, detail="Product not found after update")
+        
+        print(f"[UPDATE] Product after update - cost_price: {updated.get('cost_price')}, type: {type(updated.get('cost_price'))}")
         
         return Product(**updated)
     except Exception as e:
