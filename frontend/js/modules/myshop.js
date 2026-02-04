@@ -2395,19 +2395,24 @@
                 
                 console.log('[SAVE] Updating product:', productId);
                 
+                // Формируем данные для обновления
+                const updateData = {
+                    name,
+                    description: description || null,
+                    category_id: parseInt(categoryId),
+                    price,
+                    discount_price: discountPrice,
+                    discount_percent: discountPercent,
+                    cost_price: costPrice, // Может быть null - это важно для очистки себестоимости
+                    quantity,
+                    is_trending: isTrending
+                };
+                
+                console.log('[UPDATE PRODUCT] Sending data:', updateData);
+                
                 await api.request(`/products/${productId}`, {
                     method: 'PATCH',
-                    body: JSON.stringify({
-                        name,
-                        description,
-                        category_id: parseInt(categoryId),
-                        price,
-                        discount_price: discountPrice,
-                        discount_percent: discountPercent,
-                        cost_price: costPrice,
-                        quantity,
-                        is_trending: isTrending
-                    })
+                    body: JSON.stringify(updateData)
                 });
                 
                 // Удаляем существующие медиа, которые были удалены пользователем
@@ -2420,20 +2425,25 @@
                 // (это можно улучшить, сохранив оригинальный список медиа)
             } else {
                 // Создаём новый товар
+                // Формируем данные товара
+                const productData = {
+                    name,
+                    description: description || null,
+                    category_id: parseInt(categoryId),
+                    price,
+                    discount_price: discountPrice,
+                    discount_percent: discountPercent,
+                    cost_price: costPrice, // Может быть null
+                    quantity,
+                    is_trending: isTrending,
+                    media: [] // Сначала создаём без медиа
+                };
+                
+                console.log('[CREATE PRODUCT] Sending data:', productData);
+                
                 const productResponse = await api.request('/products/', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        name,
-                        description,
-                        category_id: parseInt(categoryId),
-                        price,
-                        discount_price: discountPrice,
-                        discount_percent: discountPercent,
-                        cost_price: costPrice,
-                        quantity,
-                        is_trending: isTrending,
-                        media: [] // Сначала создаём без медиа
-                    })
+                    body: JSON.stringify(productData)
                 });
                 
                 productId = productResponse.id;
