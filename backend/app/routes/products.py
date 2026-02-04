@@ -628,64 +628,53 @@ async def update_product(
         raise HTTPException(status_code=404, detail="Product not found or access denied")
     
     try:
-        # Получаем все поля модели для отладки
+        from decimal import Decimal
+        
+        # Получаем все поля модели (включая дефолтные)
         all_fields = product_update.model_dump(exclude_unset=False, exclude_none=False)
         print(f"[UPDATE PRODUCT] All model fields: {all_fields}")
         
         # Получаем только явно переданные поля
-        # exclude_unset=True - только явно переданные поля
-        # exclude_none=False - включаем None значения
         update_data_raw = product_update.model_dump(exclude_unset=True, exclude_none=False)
+        print(f"[UPDATE PRODUCT] update_data_raw: {update_data_raw}")
         
-        print(f"[UPDATE PRODUCT] Received product_update: {product_update}")
-        print(f"[UPDATE PRODUCT] update_data_raw (exclude_unset=True, exclude_none=False): {update_data_raw}")
-        print(f"[UPDATE PRODUCT] cost_price in update_data_raw: {'cost_price' in update_data_raw}")
+        # Проверяем model_fields_set (Pydantic v2)
+        fields_set = getattr(product_update, 'model_fields_set', set())
+        print(f"[UPDATE PRODUCT] model_fields_set: {fields_set}")
+        print(f"[UPDATE PRODUCT] cost_price in model_fields_set: {'cost_price' in fields_set}")
+        print(f"[UPDATE PRODUCT] product_update.cost_price: {product_update.cost_price}")
         
-        # ВАЖНО: Проверяем, было ли cost_price установлено в модели (даже если None)
-        # Если cost_price есть в модели (даже как None), значит оно было передано
-        cost_price_was_provided = hasattr(product_update, 'cost_price') and product_update.cost_price is not None or \
-                                  (hasattr(product_update, '__pydantic_fields_set__') and 'cost_price' in product_update.__pydantic_fields_set__)
-        
-        print(f"[UPDATE PRODUCT] cost_price_was_provided: {cost_price_was_provided}")
-        if 'cost_price' in update_data_raw:
-            print(f"[UPDATE PRODUCT] cost_price value: {update_data_raw['cost_price']}, type: {type(update_data_raw['cost_price'])}")
-        
-        # Для cost_price: если оно явно передано (даже как None), включаем его в обновление
-        # Для остальных полей: исключаем None значения
+        # Формируем данные для обновления
         update_data = {}
         for key, value in update_data_raw.items():
-            if key == "cost_price":
-                # cost_price всегда включаем, даже если None (для возможности очистки)
-                # Конвертируем Decimal в float, если нужно
-                from decimal import Decimal
-                if value is None:
-                    update_data[key] = None
-                elif isinstance(value, Decimal):
-                    update_data[key] = float(value)
-                elif isinstance(value, (int, float)):
+            if value is not None:
+                if isinstance(value, Decimal):
                     update_data[key] = float(value)
                 else:
-                    try:
-                        update_data[key] = float(value)
-                    except (ValueError, TypeError):
-                        print(f"[UPDATE] Warning: Could not convert cost_price {value} to float")
-                        update_data[key] = None
-            elif value is not None:
-                # Для остальных полей исключаем None
-                update_data[key] = value
+                    update_data[key] = value
+            # Для None значений — пропускаем (кроме cost_price)
         
-        # Если cost_price не попал в update_data_raw, но было передано, добавляем его вручную
-        if 'cost_price' not in update_data_raw and cost_price_was_provided:
-            cost_price_value = getattr(product_update, 'cost_price', None)
-            from decimal import Decimal
-            if cost_price_value is not None:
-                if isinstance(cost_price_value, Decimal):
-                    update_data['cost_price'] = float(cost_price_value)
-                else:
-                    update_data['cost_price'] = float(cost_price_value)
+        # ВАЖНО: cost_price всегда включаем из модели, т.к. frontend всегда его отправляет
+        # Pydantic v2 не включает null в model_fields_set если дефолт тоже None
+        # Поэтому берем значение напрямую из модели
+        cost_price_value = product_update.cost_price
+        if cost_price_value is not None:
+            if isinstance(cost_price_value, Decimal):
+                update_data['cost_price'] = float(cost_price_value)
             else:
+                update_data['cost_price'] = float(cost_price_value)
+        else:
+            # Если cost_price = None, проверяем, было ли оно в исходных данных
+            # Для этого используем all_fields — если там None, значит пользователь очистил поле
+            # Но мы не можем отличить "не передано" от "передано null"
+            # Решение: если в all_fields cost_price есть (даже None), считаем что оно было передано
+            # Это работает, потому что frontend ВСЕГДА передает cost_price
+            if 'cost_price' in all_fields:
                 update_data['cost_price'] = None
-            print(f"[UPDATE PRODUCT] Added cost_price manually: {update_data['cost_price']}")
+                print(f"[UPDATE PRODUCT] cost_price set to None (clearing)")
+        
+        print(f"[UPDATE PRODUCT] Final update_data: {update_data}")
+        print(f"[UPDATE PRODUCT] cost_price in final: {'cost_price' in update_data}, value: {update_data.get('cost_price')}")
         
         print(f"[UPDATE PRODUCT] Final update_data: {update_data}")
         print(f"[UPDATE PRODUCT] cost_price in final update_data: {'cost_price' in update_data}")
