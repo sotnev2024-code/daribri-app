@@ -482,6 +482,8 @@ async def create_product(
         product_dict["price"] = float(product_dict["price"])
     if product_dict.get("discount_price") is not None:
         product_dict["discount_price"] = float(product_dict["discount_price"])
+    if product_dict.get("cost_price") is not None:
+        product_dict["cost_price"] = float(product_dict["cost_price"])
     
     product_id = await db.insert("products", product_dict)
     

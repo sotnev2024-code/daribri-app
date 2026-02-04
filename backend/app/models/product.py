@@ -34,6 +34,7 @@ class ProductBase(BaseModel):
     price: Decimal = Field(..., ge=0)
     discount_price: Optional[Decimal] = Field(None, ge=0)
     discount_percent: Optional[int] = Field(None, ge=0, le=100)
+    cost_price: Optional[Decimal] = Field(None, ge=0, description="Себестоимость товара (опционально)")
     quantity: int = Field(0, ge=0)
     is_trending: bool = False
     category_id: Optional[int] = None
@@ -51,6 +52,7 @@ class ProductUpdate(BaseModel):
     price: Optional[Decimal] = Field(None, ge=0)
     discount_price: Optional[Decimal] = Field(None, ge=0)
     discount_percent: Optional[int] = Field(None, ge=0, le=100)
+    cost_price: Optional[Decimal] = Field(None, ge=0, description="Себестоимость товара (опционально)")
     quantity: Optional[int] = Field(None, ge=0)
     is_trending: Optional[bool] = None
     is_active: Optional[bool] = None

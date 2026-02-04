@@ -1789,6 +1789,7 @@
             const priceInput = document.getElementById('productPriceInput');
             const discountInput = document.getElementById('productDiscountInput');
             const quantityInput = document.getElementById('productQuantityInput');
+            const costPriceInput = document.getElementById('productCostPriceInput');
             const trendingInput = document.getElementById('productTrendingInput');
             
             if (nameInput) nameInput.value = product.name || '';
@@ -1802,8 +1803,9 @@
                     Math.round((1 - product.discount_price / product.price) * 100) : null);
             if (discountInput) discountInput.value = discountPercent || '';
             
-            // Количество, тренд и активность
+            // Количество, себестоимость, тренд и активность
             if (quantityInput) quantityInput.value = product.quantity || 0;
+            if (costPriceInput) costPriceInput.value = product.cost_price || '';
             if (trendingInput) trendingInput.checked = product.is_trending || false;
             
             // Статус активности (если есть поле)
@@ -2306,6 +2308,8 @@
         const price = parseFloat(document.getElementById('productPriceInput').value);
         const discountPercent = parseInt(document.getElementById('productDiscountInput').value) || null;
         const quantity = parseInt(document.getElementById('productQuantityInput').value) || 0;
+        const costPriceInput = document.getElementById('productCostPriceInput');
+        const costPrice = costPriceInput && costPriceInput.value.trim() ? parseFloat(costPriceInput.value) : null;
         const isTrending = document.getElementById('productTrendingInput').checked;
         
         // Валидация
@@ -2371,6 +2375,7 @@
                         price,
                         discount_price: discountPrice,
                         discount_percent: discountPercent,
+                        cost_price: costPrice,
                         quantity,
                         is_trending: isTrending
                     })
@@ -2395,6 +2400,7 @@
                         price,
                         discount_price: discountPrice,
                         discount_percent: discountPercent,
+                        cost_price: costPrice,
                         quantity,
                         is_trending: isTrending,
                         media: [] // Сначала создаём без медиа

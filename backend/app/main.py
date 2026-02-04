@@ -410,6 +410,20 @@ async def lifespan(app: FastAPI):
             """)
             await database._db_service.commit()
             print("[MIGRATION] reminders table created successfully")
+        
+        # Проверяем, существует ли поле cost_price в таблице products
+        products_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
+        if products_table:
+            products_columns = await database._db_service.fetch_all("PRAGMA table_info(products)")
+            products_column_names = [col["name"] for col in products_columns]
+            
+            if "cost_price" not in products_column_names:
+                print("[MIGRATION] Adding cost_price column to products table...")
+                await database._db_service.execute(
+                    "ALTER TABLE products ADD COLUMN cost_price DECIMAL(10, 2)"
+                )
+                await database._db_service.commit()
+                print("[MIGRATION] cost_price column added successfully")
     
     except Exception as migration_error:
         print(f"[WARNING] Migration error (may be expected if column exists): {migration_error}")
