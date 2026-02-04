@@ -2,7 +2,7 @@
 API Routes для товаров.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, Request, Request
 from typing import List, Optional
 
 from ..models.product import Product, ProductCreate, ProductUpdate, ProductWithMedia, ProductMedia
@@ -613,7 +613,8 @@ async def update_product(
     product_id: int,
     product_update: ProductUpdate,
     current_user: User = Depends(get_current_user),
-    db: DatabaseService = Depends(get_db)
+    db: DatabaseService = Depends(get_db),
+    request: Request = None
 ):
     """Обновляет товар."""
     # Проверяем владельца
