@@ -1205,7 +1205,7 @@ async function init() {
             
             console.log('[INIT] ✅ Данные загружены успешно');
             
-            // Проверяем deep link параметр для открытия товара
+            // Проверяем deep link параметр для открытия товара или магазина
             const urlParams = new URLSearchParams(window.location.search);
             const productIdParam = urlParams.get('product');
             if (productIdParam) {
@@ -1215,6 +1215,32 @@ async function init() {
                     setTimeout(() => {
                         window.openProductPage(productId);
                     }, 300);
+                }
+            }
+            
+            // Проверяем параметр start из Telegram (start_param)
+            const tg = window.Telegram?.WebApp;
+            if (tg && tg.initDataUnsafe?.start_param) {
+                const startParam = tg.initDataUnsafe.start_param;
+                console.log('[INIT] Telegram start_param:', startParam);
+                
+                // Обрабатываем формат: product_123 или shop_456
+                if (startParam.startsWith('product_')) {
+                    const productId = parseInt(startParam.replace('product_', ''));
+                    if (productId && window.openProductPage) {
+                        console.log('[INIT] Opening product from Telegram start_param:', productId);
+                        setTimeout(() => {
+                            window.openProductPage(productId);
+                        }, 300);
+                    }
+                } else if (startParam.startsWith('shop_')) {
+                    const shopId = parseInt(startParam.replace('shop_', ''));
+                    if (shopId && window.openShopPage) {
+                        console.log('[INIT] Opening shop from Telegram start_param:', shopId);
+                        setTimeout(() => {
+                            window.openShopPage(shopId);
+                        }, 300);
+                    }
                 }
             }
         } catch (error) {
