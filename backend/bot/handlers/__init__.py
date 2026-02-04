@@ -30,6 +30,18 @@ except Exception as e:
     REMINDERS_AVAILABLE = False
     reminders_router = None
 
+# Безопасный импорт роутера постов
+try:
+    from .post import router as post_router
+    POST_AVAILABLE = True
+    print("[HANDLERS] Post router imported successfully")
+except Exception as e:
+    print(f"[HANDLERS] Warning: Failed to import post router: {e}")
+    import traceback
+    traceback.print_exc()
+    POST_AVAILABLE = False
+    post_router = None
+
 router = Router()
 
 # Регистрируем только необходимые роутеры
@@ -42,6 +54,12 @@ if REMINDERS_AVAILABLE and reminders_router:
     print("[HANDLERS] Reminders router registered successfully")
 else:
     print("[HANDLERS] Reminders router NOT registered (not available or None)")
+# Регистрируем роутер постов раньше, чтобы команда /post не перехватывалась другими обработчиками
+if POST_AVAILABLE and post_router:
+    router.include_router(post_router)
+    print("[HANDLERS] Post router registered successfully")
+else:
+    print("[HANDLERS] Post router NOT registered (not available or None)")
 router.include_router(add_shop_router)
 router.include_router(subscription_router)
 router.include_router(banners_router)

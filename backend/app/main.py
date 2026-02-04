@@ -424,6 +424,24 @@ async def lifespan(app: FastAPI):
                 )
                 await database._db_service.commit()
                 print("[MIGRATION] cost_price column added successfully")
+        
+        # Проверяем, существует ли таблица shop_channels для связи магазинов с каналами
+        shop_channels_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='shop_channels'")
+        if not shop_channels_table:
+            print("[MIGRATION] Creating shop_channels table...")
+            await database._db_service.execute("""
+                CREATE TABLE IF NOT EXISTS shop_channels (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    shop_id INTEGER NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    channel_username TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE,
+                    UNIQUE(shop_id, channel_id)
+                )
+            """)
+            await database._db_service.commit()
+            print("[MIGRATION] shop_channels table created successfully")
     
     except Exception as migration_error:
         print(f"[WARNING] Migration error (may be expected if column exists): {migration_error}")
