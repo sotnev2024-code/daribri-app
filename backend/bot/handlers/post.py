@@ -294,9 +294,16 @@ async def process_photo_invalid(message: Message, state: FSMContext):
     )
 
 
-@router.message(PostStates.waiting_for_text, F.text)
+@router.message(PostStates.waiting_for_text)
 async def process_text(message: Message, state: FSMContext, bot: Bot):
     """Обрабатывает текст поста и публикует его в канал."""
+    if not message.text:
+        await message.answer(
+            "Пожалуйста, отправьте текст поста.",
+            reply_markup=get_cancel_keyboard()
+        )
+        return
+    
     if message.text == "❌ Отменить":
         await state.clear()
         await message.answer("❌ Создание поста отменено.", reply_markup=ReplyKeyboardRemove())
