@@ -2359,11 +2359,14 @@
             }
             // Если поле пустое, costPrice остается null - это нормально
         }
-        console.log('[SAVE PRODUCT] costPriceInput element:', costPriceInput);
-        console.log('[SAVE PRODUCT] costPriceInput value:', costPriceInput?.value);
-        console.log('[SAVE PRODUCT] costPriceInput value type:', typeof costPriceInput?.value);
-        console.log('[SAVE PRODUCT] costPrice parsed:', costPrice);
+        // ОТЛАДКА: выводим информацию о cost_price
+        console.log('=== COST_PRICE DEBUG ===');
+        console.log('[SAVE PRODUCT] costPriceInput element found:', !!costPriceInput);
+        console.log('[SAVE PRODUCT] costPriceInput.value:', costPriceInput?.value);
+        console.log('[SAVE PRODUCT] costPriceInput.value.trim():', costPriceInput?.value?.trim());
+        console.log('[SAVE PRODUCT] costPrice final value:', costPrice);
         console.log('[SAVE PRODUCT] costPrice type:', typeof costPrice);
+        console.log('========================');
         const isTrending = document.getElementById('productTrendingInput').checked;
         
         // Валидация

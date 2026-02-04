@@ -349,6 +349,9 @@ async def get_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
+    # Логируем cost_price для отладки
+    print(f"[GET PRODUCT] product_id={product_id}, cost_price={product.get('cost_price')}, type={type(product.get('cost_price'))}")
+    
     # Получаем количество отзывов магазина
     reviews_count = await db.fetch_one(
         "SELECT COUNT(*) as cnt FROM shop_reviews WHERE shop_id = ?",
