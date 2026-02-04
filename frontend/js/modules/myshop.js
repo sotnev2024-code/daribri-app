@@ -2406,6 +2406,7 @@
                 console.log('[SAVE] Updating product:', productId);
                 
                 // Формируем данные для обновления
+                // ВАЖНО: cost_price всегда передаем явно, даже если null
                 const updateData = {
                     name,
                     description: description || null,
@@ -2413,12 +2414,14 @@
                     price,
                     discount_price: discountPrice,
                     discount_percent: discountPercent,
-                    cost_price: costPrice, // Может быть null - это важно для очистки себестоимости
+                    cost_price: costPrice !== undefined ? costPrice : null, // Всегда передаем, даже если null
                     quantity,
                     is_trending: isTrending
                 };
                 
-                console.log('[UPDATE PRODUCT] Sending data:', updateData);
+                console.log('[UPDATE PRODUCT] costPriceInput:', costPriceInput?.value);
+                console.log('[UPDATE PRODUCT] costPrice parsed:', costPrice);
+                console.log('[UPDATE PRODUCT] Sending data:', JSON.stringify(updateData, null, 2));
                 
                 await api.request(`/products/${productId}`, {
                     method: 'PATCH',
