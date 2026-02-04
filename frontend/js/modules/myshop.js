@@ -2339,16 +2339,26 @@
         const quantity = parseInt(document.getElementById('productQuantityInput').value) || 0;
         const costPriceInput = document.getElementById('productCostPriceInput');
         // Обрабатываем себестоимость: если поле заполнено - парсим число, иначе null
+        // ВАЖНО: Всегда передаем cost_price, даже если null, чтобы backend мог его обновить
         let costPrice = null;
-        if (costPriceInput && costPriceInput.value.trim()) {
-            const parsed = parseFloat(costPriceInput.value);
-            // Проверяем, что parseFloat вернул валидное число (не NaN)
-            if (!isNaN(parsed) && parsed >= 0) {
-                costPrice = parsed;
+        if (costPriceInput) {
+            const inputValue = costPriceInput.value.trim();
+            if (inputValue) {
+                const parsed = parseFloat(inputValue);
+                // Проверяем, что parseFloat вернул валидное число (не NaN)
+                if (!isNaN(parsed) && parsed >= 0) {
+                    costPrice = parsed;
+                } else {
+                    console.warn('[SAVE PRODUCT] Invalid cost_price value:', inputValue);
+                }
             }
+            // Если поле пустое, costPrice остается null - это нормально
         }
+        console.log('[SAVE PRODUCT] costPriceInput element:', costPriceInput);
         console.log('[SAVE PRODUCT] costPriceInput value:', costPriceInput?.value);
+        console.log('[SAVE PRODUCT] costPriceInput value type:', typeof costPriceInput?.value);
         console.log('[SAVE PRODUCT] costPrice parsed:', costPrice);
+        console.log('[SAVE PRODUCT] costPrice type:', typeof costPrice);
         const isTrending = document.getElementById('productTrendingInput').checked;
         
         // Валидация
@@ -2414,14 +2424,20 @@
                     price,
                     discount_price: discountPrice,
                     discount_percent: discountPercent,
-                    cost_price: costPrice !== undefined ? costPrice : null, // Всегда передаем, даже если null
+                    cost_price: costPrice, // Может быть null или числом - всегда передаем
                     quantity,
                     is_trending: isTrending
                 };
                 
-                console.log('[UPDATE PRODUCT] costPriceInput:', costPriceInput?.value);
+                console.log('[UPDATE PRODUCT] ====== SENDING UPDATE REQUEST ======');
+                console.log('[UPDATE PRODUCT] costPriceInput element exists:', !!costPriceInput);
+                console.log('[UPDATE PRODUCT] costPriceInput.value:', costPriceInput?.value);
                 console.log('[UPDATE PRODUCT] costPrice parsed:', costPrice);
-                console.log('[UPDATE PRODUCT] Sending data:', JSON.stringify(updateData, null, 2));
+                console.log('[UPDATE PRODUCT] costPrice type:', typeof costPrice);
+                console.log('[UPDATE PRODUCT] Full updateData:', updateData);
+                console.log('[UPDATE PRODUCT] updateData JSON:', JSON.stringify(updateData, null, 2));
+                console.log('[UPDATE PRODUCT] cost_price in updateData:', 'cost_price' in updateData);
+                console.log('[UPDATE PRODUCT] ======================================');
                 
                 await api.request(`/products/${productId}`, {
                     method: 'PATCH',
