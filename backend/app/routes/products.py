@@ -613,7 +613,8 @@ async def update_product(
     product_id: int,
     product_update: ProductUpdate,
     current_user: User = Depends(get_current_user),
-    db: DatabaseService = Depends(get_db)
+    db: DatabaseService = Depends(get_db),
+    request: Request = None
 ):
     """Обновляет товар."""
     # Проверяем владельца
@@ -627,6 +628,19 @@ async def update_product(
         raise HTTPException(status_code=404, detail="Product not found or access denied")
     
     try:
+        # Получаем исходный JSON для отладки
+        if request:
+            try:
+                body = await request.body()
+                import json
+                raw_data = json.loads(body.decode()) if body else {}
+                print(f"[UPDATE PRODUCT] Raw request body: {raw_data}")
+                print(f"[UPDATE PRODUCT] cost_price in raw_data: {'cost_price' in raw_data}")
+                if 'cost_price' in raw_data:
+                    print(f"[UPDATE PRODUCT] Raw cost_price: {raw_data['cost_price']}, type: {type(raw_data['cost_price'])}")
+            except Exception as e:
+                print(f"[UPDATE PRODUCT] Could not parse request body: {e}")
+        
         # Получаем все поля, включая те, что были переданы как None
         # exclude_unset=True - только явно переданные поля
         # exclude_none=False - включаем None значения
