@@ -623,14 +623,20 @@ async def update_product(
         raise HTTPException(status_code=404, detail="Product not found or access denied")
     
     try:
-        # Используем exclude_unset=False, чтобы включить все поля, даже если они None
-        # Это нужно для возможности установки cost_price в None (очистка себестоимости)
-        update_data = product_update.model_dump(exclude_unset=False)
+        # Получаем только явно переданные поля (exclude_unset=True)
+        # Это позволяет различать "поле не передано" и "поле передано как None"
+        update_data_raw = product_update.model_dump(exclude_unset=True)
         
-        # Удаляем только те поля, которые не были переданы (exclude_unset=True по умолчанию)
-        # Но оставляем None значения, если они были явно переданы
-        # Для cost_price: если оно передано (даже как None), обновляем его
-        update_data = {k: v for k, v in update_data.items() if k in product_update.model_fields}
+        # Для cost_price: если оно явно передано (даже как None), включаем его в обновление
+        # Для остальных полей: исключаем None значения
+        update_data = {}
+        for key, value in update_data_raw.items():
+            if key == "cost_price":
+                # cost_price всегда включаем, даже если None (для возможности очистки)
+                update_data[key] = value
+            elif value is not None:
+                # Для остальных полей исключаем None
+                update_data[key] = value
         
         # Обновляем товар
         if update_data:
