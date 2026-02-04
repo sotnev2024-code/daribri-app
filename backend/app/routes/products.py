@@ -639,6 +639,13 @@ async def update_product(
         print(f"[UPDATE PRODUCT] Received product_update: {product_update}")
         print(f"[UPDATE PRODUCT] update_data_raw (exclude_unset=True, exclude_none=False): {update_data_raw}")
         print(f"[UPDATE PRODUCT] cost_price in update_data_raw: {'cost_price' in update_data_raw}")
+        
+        # ВАЖНО: Проверяем, было ли cost_price установлено в модели (даже если None)
+        # Если cost_price есть в модели (даже как None), значит оно было передано
+        cost_price_was_provided = hasattr(product_update, 'cost_price') and product_update.cost_price is not None or \
+                                  (hasattr(product_update, '__pydantic_fields_set__') and 'cost_price' in product_update.__pydantic_fields_set__)
+        
+        print(f"[UPDATE PRODUCT] cost_price_was_provided: {cost_price_was_provided}")
         if 'cost_price' in update_data_raw:
             print(f"[UPDATE PRODUCT] cost_price value: {update_data_raw['cost_price']}, type: {type(update_data_raw['cost_price'])}")
         
@@ -650,17 +657,34 @@ async def update_product(
                 # cost_price всегда включаем, даже если None (для возможности очистки)
                 # Конвертируем Decimal в float, если нужно
                 from decimal import Decimal
-                if isinstance(value, Decimal):
-                    update_data[key] = float(value) if value is not None else None
-                elif value is not None:
-                    # Если это число, конвертируем в float
+                if value is None:
+                    update_data[key] = None
+                elif isinstance(value, Decimal):
+                    update_data[key] = float(value)
+                elif isinstance(value, (int, float)):
                     update_data[key] = float(value)
                 else:
-                    # Если None, оставляем None
-                    update_data[key] = None
+                    try:
+                        update_data[key] = float(value)
+                    except (ValueError, TypeError):
+                        print(f"[UPDATE] Warning: Could not convert cost_price {value} to float")
+                        update_data[key] = None
             elif value is not None:
                 # Для остальных полей исключаем None
                 update_data[key] = value
+        
+        # Если cost_price не попал в update_data_raw, но было передано, добавляем его вручную
+        if 'cost_price' not in update_data_raw and cost_price_was_provided:
+            cost_price_value = getattr(product_update, 'cost_price', None)
+            from decimal import Decimal
+            if cost_price_value is not None:
+                if isinstance(cost_price_value, Decimal):
+                    update_data['cost_price'] = float(cost_price_value)
+                else:
+                    update_data['cost_price'] = float(cost_price_value)
+            else:
+                update_data['cost_price'] = None
+            print(f"[UPDATE PRODUCT] Added cost_price manually: {update_data['cost_price']}")
         
         print(f"[UPDATE PRODUCT] Final update_data: {update_data}")
         print(f"[UPDATE PRODUCT] cost_price in final update_data: {'cost_price' in update_data}")
