@@ -129,6 +129,16 @@
             document.getElementById('statTotalRevenue').textContent = formatPrice(stats.total_revenue || 0);
             document.getElementById('statAvgOrderValue').textContent = formatPrice(stats.average_order_value || 0);
             
+            // Отображаем чистый доход, если он есть
+            const netProfitCard = document.getElementById('statNetProfitCard');
+            const netProfitValue = document.getElementById('statNetProfit');
+            if (stats.total_net_profit && stats.total_net_profit > 0) {
+                if (netProfitCard) netProfitCard.hidden = false;
+                if (netProfitValue) netProfitValue.textContent = formatPrice(stats.total_net_profit);
+            } else {
+                if (netProfitCard) netProfitCard.hidden = true;
+            }
+            
             // Отрисовываем графики
             renderStatisticsCharts(stats);
             
@@ -167,20 +177,39 @@
             const date = new Date(item.date);
             return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         });
-        const values = data.map(item => item.revenue);
+        const revenueValues = data.map(item => item.revenue);
+        const netProfitValues = data.map(item => item.net_profit || null);
+        
+        // Проверяем, есть ли данные о чистом доходе
+        const hasNetProfit = netProfitValues.some(v => v !== null && v > 0);
+        
+        const datasets = [{
+            label: 'Выручка, ₽',
+            data: revenueValues,
+            borderColor: '#dbff00',
+            backgroundColor: 'rgba(255, 140, 105, 0.1)',
+            tension: 0.4,
+            fill: true
+        }];
+        
+        // Добавляем линию чистого дохода, если есть данные
+        if (hasNetProfit) {
+            datasets.push({
+                label: 'Чистый доход, ₽',
+                data: netProfitValues,
+                borderColor: '#4ade80',
+                backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderDash: [5, 5]
+            });
+        }
         
         statisticsCharts.revenue = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Выручка, ₽',
-                    data: values,
-                    borderColor: '#dbff00',
-                    backgroundColor: 'rgba(255, 140, 105, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
+                datasets: datasets
             },
             options: {
                 responsive: true,

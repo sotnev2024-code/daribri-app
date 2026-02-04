@@ -22,6 +22,7 @@ class ShopStatistics(BaseModel):
     period_end: str
     total_orders: int
     total_revenue: float
+    total_net_profit: Optional[float] = None  # Чистый доход (доход - себестоимость)
     average_order_value: float
     orders_by_status: dict
     revenue_by_day: List[dict]
@@ -89,6 +90,21 @@ async def get_shop_statistics(
     total_revenue = float(total_orders_result["total_revenue"] or 0)
     average_order_value = float(total_orders_result["avg_order_value"] or 0)
     
+    # Рассчитываем чистый доход (доход - себестоимость)
+    # Чистый доход = сумма (количество * (цена продажи - себестоимость)) для товаров с себестоимостью
+    net_profit_result = await db.fetch_one(
+        """SELECT 
+               COALESCE(SUM(oi.quantity * (oi.price - COALESCE(p.cost_price, 0))), 0) as total_net_profit
+           FROM order_items oi
+           JOIN orders o ON oi.order_id = o.id
+           LEFT JOIN products p ON oi.product_id = p.id
+           WHERE o.shop_id = ? AND o.status = 'delivered' 
+           AND DATE(o.created_at) BETWEEN ? AND ?
+           AND p.cost_price IS NOT NULL AND p.cost_price > 0""",
+        (shop_id, start_str, end_str)
+    )
+    total_net_profit = float(net_profit_result["total_net_profit"] or 0) if net_profit_result else None
+    
     # Заказы по статусам
     orders_by_status = await db.fetch_all(
         """SELECT status, COUNT(*) as count
@@ -118,16 +134,27 @@ async def get_shop_statistics(
     # Доходы по дням (только доставленные)
     revenue_by_day = await db.fetch_all(
         """SELECT 
-               DATE(created_at) as date,
-               COALESCE(SUM(total_amount), 0) as revenue
-           FROM orders
-           WHERE shop_id = ? AND status = 'delivered' AND DATE(created_at) BETWEEN ? AND ?
-           GROUP BY DATE(created_at)
+               DATE(o.created_at) as date,
+               COALESCE(SUM(o.total_amount), 0) as revenue,
+               COALESCE(SUM(CASE 
+                   WHEN p.cost_price IS NOT NULL AND p.cost_price > 0 
+                   THEN oi.quantity * (oi.price - p.cost_price) 
+                   ELSE 0 
+               END), 0) as net_profit
+           FROM orders o
+           LEFT JOIN order_items oi ON o.id = oi.order_id
+           LEFT JOIN products p ON oi.product_id = p.id
+           WHERE o.shop_id = ? AND o.status = 'delivered' AND DATE(o.created_at) BETWEEN ? AND ?
+           GROUP BY DATE(o.created_at)
            ORDER BY date""",
         (shop_id, start_str, end_str)
     )
     revenue_by_day_list = [
-        {"date": row["date"], "revenue": float(row["revenue"] or 0)}
+        {
+            "date": row["date"], 
+            "revenue": float(row["revenue"] or 0),
+            "net_profit": float(row["net_profit"] or 0) if row.get("net_profit") is not None else None
+        }
         for row in revenue_by_day
     ]
     
@@ -136,7 +163,12 @@ async def get_shop_statistics(
         """SELECT 
                COALESCE(oi.product_name, p.name) as product_name,
                SUM(oi.quantity) as total_quantity,
-               SUM(oi.quantity * oi.price) as total_revenue
+               SUM(oi.quantity * oi.price) as total_revenue,
+               COALESCE(SUM(CASE 
+                   WHEN p.cost_price IS NOT NULL AND p.cost_price > 0 
+                   THEN oi.quantity * (oi.price - p.cost_price) 
+                   ELSE 0 
+               END), 0) as net_profit
            FROM order_items oi
            LEFT JOIN products p ON oi.product_id = p.id
            JOIN orders o ON oi.order_id = o.id
@@ -150,7 +182,8 @@ async def get_shop_statistics(
         {
             "product_name": row["product_name"] or "Неизвестный товар",
             "total_quantity": row["total_quantity"],
-            "total_revenue": float(row["total_revenue"] or 0)
+            "total_revenue": float(row["total_revenue"] or 0),
+            "net_profit": float(row["net_profit"] or 0) if row.get("net_profit") is not None else None
         }
         for row in top_products
     ]
@@ -160,6 +193,7 @@ async def get_shop_statistics(
         period_end=end_str,
         total_orders=total_orders,
         total_revenue=total_revenue,
+        total_net_profit=total_net_profit if total_net_profit and total_net_profit > 0 else None,
         average_order_value=average_order_value,
         orders_by_status=orders_by_status_dict,
         revenue_by_day=revenue_by_day_list,
