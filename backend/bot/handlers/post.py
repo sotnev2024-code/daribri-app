@@ -4,7 +4,7 @@
 
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from typing import Optional
@@ -332,10 +332,16 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Создаём кнопку на магазин
-        shop_link = f"https://t.me/daribri_bot?start=shop_{shop_id}"
+        # Получаем URL WebApp из бота
+        webapp_url = getattr(bot, 'webapp_url', 'http://localhost:8081')
+        
+        # Создаём URL для открытия магазина в WebApp
+        # Используем параметр shop для открытия карточки магазина
+        shop_webapp_url = f"{webapp_url}?shop={shop_id}"
+        
+        # Создаём кнопку с WebApp
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_link)
+            InlineKeyboardButton(text="🛍 Открыть магазин", web_app=WebAppInfo(url=shop_webapp_url))
         ]])
         
         # Публикуем пост в канал

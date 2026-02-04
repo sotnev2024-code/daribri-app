@@ -1218,6 +1218,18 @@ async function init() {
                 }
             }
             
+            // Проверяем параметр shop из URL (для WebApp кнопок)
+            const shopIdParam = urlParams.get('shop');
+            if (shopIdParam) {
+                const shopId = parseInt(shopIdParam);
+                if (shopId && window.openShopPage) {
+                    console.log('[INIT] Opening shop from URL param:', shopId);
+                    setTimeout(() => {
+                        window.openShopPage(shopId);
+                    }, 300);
+                }
+            }
+            
             // Проверяем параметр start из Telegram (start_param)
             const tg = window.Telegram?.WebApp;
             if (tg && tg.initDataUnsafe?.start_param) {
