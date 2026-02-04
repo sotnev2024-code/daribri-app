@@ -90,11 +90,14 @@ async def get_shop_statistics(
     total_revenue = float(total_orders_result["total_revenue"] or 0)
     average_order_value = float(total_orders_result["avg_order_value"] or 0)
     
-    # Рассчитываем чистый доход (доход - себестоимость)
-    # Чистый доход = сумма (количество * (цена продажи - себестоимость)) для товаров с себестоимостью
+    # Рассчитываем чистую прибыль (доход - себестоимость)
+    # Чистая прибыль = сумма (количество * (цена продажи - себестоимость)) 
+    # ТОЛЬКО для товаров с указанной себестоимостью
+    # Если у товара нет себестоимости - он не учитывается в расчете
     net_profit_result = await db.fetch_one(
         """SELECT 
-               COALESCE(SUM(oi.quantity * (oi.price - COALESCE(p.cost_price, 0))), 0) as total_net_profit
+               COALESCE(SUM(oi.quantity * (oi.price - p.cost_price)), 0) as total_net_profit,
+               COUNT(*) as items_with_cost_price
            FROM order_items oi
            JOIN orders o ON oi.order_id = o.id
            LEFT JOIN products p ON oi.product_id = p.id
@@ -103,7 +106,11 @@ async def get_shop_statistics(
            AND p.cost_price IS NOT NULL AND p.cost_price > 0""",
         (shop_id, start_str, end_str)
     )
-    total_net_profit = float(net_profit_result["total_net_profit"] or 0) if net_profit_result else None
+    # Если есть товары с себестоимостью - возвращаем сумму, иначе None
+    if net_profit_result and net_profit_result.get("items_with_cost_price", 0) > 0:
+        total_net_profit = float(net_profit_result["total_net_profit"] or 0)
+    else:
+        total_net_profit = None
     
     # Заказы по статусам
     orders_by_status = await db.fetch_all(

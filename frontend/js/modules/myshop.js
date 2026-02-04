@@ -129,14 +129,14 @@
             document.getElementById('statTotalRevenue').textContent = formatPrice(stats.total_revenue || 0);
             document.getElementById('statAvgOrderValue').textContent = formatPrice(stats.average_order_value || 0);
             
-            // Отображаем чистый доход, если он есть
-            const netProfitCard = document.getElementById('statNetProfitCard');
+            // Отображаем чистую прибыль (только для товаров с себестоимостью)
             const netProfitValue = document.getElementById('statNetProfit');
-            if (stats.total_net_profit && stats.total_net_profit > 0) {
-                if (netProfitCard) netProfitCard.hidden = false;
-                if (netProfitValue) netProfitValue.textContent = formatPrice(stats.total_net_profit);
-            } else {
-                if (netProfitCard) netProfitCard.hidden = true;
+            if (netProfitValue) {
+                if (stats.total_net_profit && stats.total_net_profit > 0) {
+                    netProfitValue.textContent = formatPrice(stats.total_net_profit);
+                } else {
+                    netProfitValue.textContent = '—';
+                }
             }
             
             // Отрисовываем графики
