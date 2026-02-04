@@ -667,6 +667,9 @@ async def update_product(
                     elif value is None:
                         # Для None значений устанавливаем NULL в SQL
                         values.append(None)
+                    elif key == "cost_price" and isinstance(value, (int, float)):
+                        # Для cost_price явно конвертируем в float
+                        values.append(float(value))
                     else:
                         values.append(value)
             
