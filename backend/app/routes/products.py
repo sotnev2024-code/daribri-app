@@ -633,56 +633,30 @@ async def update_product(
     try:
         from decimal import Decimal
         
-        # Получаем все поля модели (включая дефолтные)
-        all_fields = product_update.model_dump(exclude_unset=False, exclude_none=False)
-        print(f"[UPDATE PRODUCT] All model fields: {all_fields}")
-        
-        # Получаем только явно переданные поля
+        # Получаем только явно переданные поля (exclude_unset=True)
         update_data_raw = product_update.model_dump(exclude_unset=True, exclude_none=False)
         print(f"[UPDATE PRODUCT] update_data_raw: {update_data_raw}")
-        
-        # Проверяем model_fields_set (Pydantic v2)
-        fields_set = getattr(product_update, 'model_fields_set', set())
-        print(f"[UPDATE PRODUCT] model_fields_set: {fields_set}")
-        print(f"[UPDATE PRODUCT] cost_price in model_fields_set: {'cost_price' in fields_set}")
-        print(f"[UPDATE PRODUCT] product_update.cost_price: {product_update.cost_price}")
         
         # Формируем данные для обновления
         update_data = {}
         for key, value in update_data_raw.items():
-            if value is not None:
+            if key == "cost_price":
+                # cost_price обрабатываем отдельно — включаем даже если None
+                if value is not None:
+                    if isinstance(value, Decimal):
+                        update_data[key] = float(value)
+                    else:
+                        update_data[key] = float(value)
+                else:
+                    # cost_price = None — очистка поля
+                    update_data[key] = None
+            elif value is not None:
                 if isinstance(value, Decimal):
                     update_data[key] = float(value)
                 else:
                     update_data[key] = value
-            # Для None значений — пропускаем (кроме cost_price)
-        
-        # ВАЖНО: cost_price всегда включаем из модели, т.к. frontend всегда его отправляет
-        # Pydantic v2 не включает null в model_fields_set если дефолт тоже None
-        # Поэтому берем значение напрямую из модели
-        cost_price_value = product_update.cost_price
-        if cost_price_value is not None:
-            if isinstance(cost_price_value, Decimal):
-                update_data['cost_price'] = float(cost_price_value)
-            else:
-                update_data['cost_price'] = float(cost_price_value)
-        else:
-            # Если cost_price = None, проверяем, было ли оно в исходных данных
-            # Для этого используем all_fields — если там None, значит пользователь очистил поле
-            # Но мы не можем отличить "не передано" от "передано null"
-            # Решение: если в all_fields cost_price есть (даже None), считаем что оно было передано
-            # Это работает, потому что frontend ВСЕГДА передает cost_price
-            if 'cost_price' in all_fields:
-                update_data['cost_price'] = None
-                print(f"[UPDATE PRODUCT] cost_price set to None (clearing)")
         
         print(f"[UPDATE PRODUCT] Final update_data: {update_data}")
-        print(f"[UPDATE PRODUCT] cost_price in final: {'cost_price' in update_data}, value: {update_data.get('cost_price')}")
-        
-        print(f"[UPDATE PRODUCT] Final update_data: {update_data}")
-        print(f"[UPDATE PRODUCT] cost_price in final update_data: {'cost_price' in update_data}")
-        if 'cost_price' in update_data:
-            print(f"[UPDATE PRODUCT] Final cost_price value: {update_data['cost_price']}, type: {type(update_data['cost_price'])}")
         
         # Обновляем товар
         if update_data:
