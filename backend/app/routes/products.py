@@ -627,9 +627,16 @@ async def update_product(
         raise HTTPException(status_code=404, detail="Product not found or access denied")
     
     try:
-        # Получаем только явно переданные поля (exclude_unset=True)
-        # Это позволяет различать "поле не передано" и "поле передано как None"
-        update_data_raw = product_update.model_dump(exclude_unset=True)
+        # Получаем все поля, включая те, что были переданы как None
+        # exclude_unset=True - только явно переданные поля
+        # exclude_none=False - включаем None значения
+        update_data_raw = product_update.model_dump(exclude_unset=True, exclude_none=False)
+        
+        print(f"[UPDATE PRODUCT] Received product_update: {product_update}")
+        print(f"[UPDATE PRODUCT] update_data_raw (exclude_unset=True, exclude_none=False): {update_data_raw}")
+        print(f"[UPDATE PRODUCT] cost_price in update_data_raw: {'cost_price' in update_data_raw}")
+        if 'cost_price' in update_data_raw:
+            print(f"[UPDATE PRODUCT] cost_price value: {update_data_raw['cost_price']}, type: {type(update_data_raw['cost_price'])}")
         
         # Для cost_price: если оно явно передано (даже как None), включаем его в обновление
         # Для остальных полей: исключаем None значения
@@ -637,16 +644,24 @@ async def update_product(
         for key, value in update_data_raw.items():
             if key == "cost_price":
                 # cost_price всегда включаем, даже если None (для возможности очистки)
-                update_data[key] = value
+                # Конвертируем Decimal в float, если нужно
+                from decimal import Decimal
+                if isinstance(value, Decimal):
+                    update_data[key] = float(value) if value is not None else None
+                elif value is not None:
+                    # Если это число, конвертируем в float
+                    update_data[key] = float(value)
+                else:
+                    # Если None, оставляем None
+                    update_data[key] = None
             elif value is not None:
                 # Для остальных полей исключаем None
                 update_data[key] = value
         
-        print(f"[UPDATE PRODUCT] update_data_raw: {update_data_raw}")
-        print(f"[UPDATE PRODUCT] update_data: {update_data}")
-        print(f"[UPDATE PRODUCT] cost_price in update_data: {'cost_price' in update_data}")
+        print(f"[UPDATE PRODUCT] Final update_data: {update_data}")
+        print(f"[UPDATE PRODUCT] cost_price in final update_data: {'cost_price' in update_data}")
         if 'cost_price' in update_data:
-            print(f"[UPDATE PRODUCT] cost_price value: {update_data['cost_price']}, type: {type(update_data['cost_price'])}")
+            print(f"[UPDATE PRODUCT] Final cost_price value: {update_data['cost_price']}, type: {type(update_data['cost_price'])}")
         
         # Обновляем товар
         if update_data:
