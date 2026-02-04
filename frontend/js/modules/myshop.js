@@ -1834,7 +1834,12 @@
             
             // Количество, себестоимость, тренд и активность
             if (quantityInput) quantityInput.value = product.quantity || 0;
-            if (costPriceInput) costPriceInput.value = product.cost_price || '';
+            console.log('[LOAD PRODUCT] product.cost_price from API:', product.cost_price);
+            console.log('[LOAD PRODUCT] product.cost_price type:', typeof product.cost_price);
+            if (costPriceInput) {
+                costPriceInput.value = product.cost_price || '';
+                console.log('[LOAD PRODUCT] costPriceInput.value set to:', costPriceInput.value);
+            }
             if (trendingInput) trendingInput.checked = product.is_trending || false;
             
             // Статус активности (если есть поле)
