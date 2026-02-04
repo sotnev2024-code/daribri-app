@@ -332,7 +332,7 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Получаем username бота для deep link
+        # Получаем username бота и URL Mini App
         try:
             bot_info = await bot.get_me()
             bot_username = bot_info.username
@@ -340,14 +340,17 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             print(f"[POST] Error getting bot info: {e}")
             bot_username = "daribri_bot"  # Fallback
         
-        # Создаём deep link для открытия магазина через бота
-        # Это откроет бота, который затем откроет WebApp с параметром start=shop_{shop_id}
-        shop_deep_link = f"https://t.me/{bot_username}?start=shop_{shop_id}"
+        # Получаем URL Mini App из бота
+        webapp_url = getattr(bot, 'webapp_url', 'http://localhost:8081')
         
-        # Создаём кнопку с URL (deep link)
-        # В каналах нельзя использовать WebApp кнопки напрямую, поэтому используем deep link
+        # Создаём URL для открытия Mini App напрямую с параметром shop
+        # Это откроет Mini App приложение с карточкой магазина
+        shop_miniapp_url = f"{webapp_url}?shop={shop_id}"
+        
+        # Создаём кнопку с прямым URL на Mini App
+        # Telegram поддерживает прямые URL на Mini App в кнопках каналов
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_deep_link)
+            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_miniapp_url)
         ]])
         
         # Публикуем пост в канал
