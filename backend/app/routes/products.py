@@ -484,6 +484,10 @@ async def create_product(
         product_dict["discount_price"] = float(product_dict["discount_price"])
     if product_dict.get("cost_price") is not None:
         product_dict["cost_price"] = float(product_dict["cost_price"])
+    # Если cost_price не передан или None, оставляем его как None (будет NULL в БД)
+    
+    print(f"[CREATE PRODUCT] product_dict keys: {list(product_dict.keys())}")
+    print(f"[CREATE PRODUCT] cost_price value: {product_dict.get('cost_price')}")
     
     product_id = await db.insert("products", product_dict)
     
