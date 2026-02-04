@@ -285,6 +285,15 @@ async def process_photo_skip(message: Message, state: FSMContext):
         )
 
 
+@router.message(PostStates.waiting_for_photo)
+async def process_photo_invalid(message: Message, state: FSMContext):
+    """Обрабатывает некорректные сообщения в состоянии ожидания фото."""
+    await message.answer(
+        "Пожалуйста, отправьте фото или нажмите 'Пропустить'",
+        reply_markup=get_skip_keyboard()
+    )
+
+
 @router.message(PostStates.waiting_for_text, F.text)
 async def process_text(message: Message, state: FSMContext, bot: Bot):
     """Обрабатывает текст поста и публикует его в канал."""
