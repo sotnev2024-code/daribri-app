@@ -2,7 +2,7 @@
 API Routes для товаров.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, Request
 from typing import List, Optional
 
 from ..models.product import Product, ProductCreate, ProductUpdate, ProductWithMedia, ProductMedia
