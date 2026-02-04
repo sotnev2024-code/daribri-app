@@ -2772,7 +2772,11 @@ async function handleAddProduct(e) {
     const price = parseFloat(document.getElementById('productPriceInput').value);
     const discountPercent = parseInt(document.getElementById('productDiscountInput').value) || null;
     const quantity = parseInt(document.getElementById('productQuantityInput').value) || 0;
+    const costPriceInput = document.getElementById('productCostPriceInput');
+    const costPrice = costPriceInput && costPriceInput.value.trim() ? parseFloat(costPriceInput.value) : null;
     const isTrending = document.getElementById('productTrendingInput').checked;
+    
+    console.log('[APP.JS] costPrice:', costPrice);
     
     // Валидация
     if (!name) {
@@ -2837,6 +2841,7 @@ async function handleAddProduct(e) {
                     price,
                     discount_price: discountPrice,
                     discount_percent: discountPercent,
+                    cost_price: costPrice,
                     quantity,
                     is_trending: isTrending
                 })
@@ -2861,6 +2866,7 @@ async function handleAddProduct(e) {
                     price,
                     discount_price: discountPrice,
                     discount_percent: discountPercent,
+                    cost_price: costPrice,
                     quantity,
                     is_trending: isTrending,
                     media: [] // Сначала создаём без медиа
