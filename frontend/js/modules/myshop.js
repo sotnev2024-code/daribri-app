@@ -10,6 +10,7 @@
     const getElements = () => window.App?.elements;
     const getApi = () => window.api;
     const getUtils = () => window.App?.utils || {};
+    const getTg = () => window.tg || window.Telegram?.WebApp || null;
     
     // Константа города (приложение работает только в Екатеринбурге)
     const APP_CITY = 'Екатеринбург';
