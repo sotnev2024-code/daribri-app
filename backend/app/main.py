@@ -105,6 +105,19 @@ async def lifespan(app: FastAPI):
                 )
                 await database._db_service.commit()
                 print("[MIGRATION] city column added successfully")
+            
+            # Проверяем, существует ли поле pickup_enabled в shops
+            if "pickup_enabled" not in shops_column_names:
+                print("[MIGRATION] Adding pickup_enabled column to shops...")
+                await database._db_service.execute(
+                    "ALTER TABLE shops ADD COLUMN pickup_enabled INTEGER DEFAULT 1"
+                )
+                # Устанавливаем pickup_enabled = 1 для всех существующих магазинов
+                await database._db_service.execute(
+                    "UPDATE shops SET pickup_enabled = 1 WHERE pickup_enabled IS NULL"
+                )
+                await database._db_service.commit()
+                print("[MIGRATION] pickup_enabled column added successfully")
         
         # Проверяем, существует ли поле is_active в таблице users
         users_table = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
@@ -570,10 +583,12 @@ async def get_my_shop_direct(
     if not shop:
         return None
     
-    # Явно конвертируем is_active из INTEGER в boolean для корректной работы фронтенда
+    # Явно конвертируем is_active и pickup_enabled из INTEGER в boolean для корректной работы фронтенда
     # SQLite возвращает INTEGER (0 или 1), но Pydantic может не всегда корректно конвертировать
     if "is_active" in shop:
         shop["is_active"] = bool(shop["is_active"]) if shop["is_active"] is not None else True
+    if "pickup_enabled" in shop:
+        shop["pickup_enabled"] = bool(shop["pickup_enabled"]) if shop["pickup_enabled"] is not None else True
     
     # Получаем статистику
     products_count = await db.fetch_one(

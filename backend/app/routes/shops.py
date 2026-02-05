@@ -326,6 +326,10 @@ async def get_shop(
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
     
+    # Явно конвертируем pickup_enabled из INTEGER в boolean
+    if "pickup_enabled" in shop:
+        shop["pickup_enabled"] = bool(shop["pickup_enabled"]) if shop["pickup_enabled"] is not None else True
+    
     products_count = await db.fetch_one(
         "SELECT COUNT(*) as cnt FROM products WHERE shop_id = ? AND is_active = 1 AND quantity > 0",
         (shop_id,)

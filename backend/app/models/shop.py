@@ -18,6 +18,7 @@ class ShopBase(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     working_hours: Optional[str] = None
+    pickup_enabled: Optional[bool] = True
 
 
 class ShopCreate(ShopBase):
@@ -35,6 +36,7 @@ class ShopUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     working_hours: Optional[str] = None
+    pickup_enabled: Optional[bool] = None
 
 
 class Shop(ShopBase):

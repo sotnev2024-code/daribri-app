@@ -882,6 +882,25 @@ function renderShopSettings() {
                     </div>
                 </div>
                 
+                <!-- Delivery Settings -->
+                <div class="settings-section">
+                    <div class="settings-section-title">Настройки доставки</div>
+                    <div class="settings-item">
+                        <div class="settings-toggle" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                            <div>
+                                <div style="font-weight: 500; margin-bottom: 4px;">Самовывоз</div>
+                                <div style="font-size: 0.9em; color: #666;">Разрешить покупателям забирать заказы самостоятельно</div>
+                            </div>
+                            <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 28px;">
+                                <input type="checkbox" id="settingsPickupEnabled" ${myShop.pickup_enabled !== false ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                                <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${myShop.pickup_enabled !== false ? '#4CAF50' : '#ccc'}; transition: .4s; border-radius: 28px;">
+                                    <span class="toggle-slider-thumb" style="position: absolute; content: ''; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; ${myShop.pickup_enabled !== false ? 'transform: translateX(22px);' : ''}"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
                 <button type="submit" class="btn-primary" style="margin-top:10px;">Сохранить изменения</button>
             </form>
             
@@ -899,6 +918,22 @@ function renderShopSettings() {
     `;
     
     document.getElementById('shopSettingsForm').addEventListener('submit', handleSaveSettings);
+    
+    // Обработчик для переключателя самовывоза
+    const pickupToggle = document.getElementById('settingsPickupEnabled');
+    if (pickupToggle) {
+        pickupToggle.addEventListener('change', function() {
+            const slider = this.nextElementSibling;
+            const thumb = slider.querySelector('.toggle-slider-thumb');
+            if (this.checked) {
+                slider.style.backgroundColor = '#4CAF50';
+                thumb.style.transform = 'translateX(22px)';
+            } else {
+                slider.style.backgroundColor = '#ccc';
+                thumb.style.transform = 'translateX(0)';
+            }
+        });
+    }
 }
 
 async function handleSaveSettings(e) {
@@ -908,12 +943,14 @@ async function handleSaveSettings(e) {
     btn.textContent = 'Сохранение...';
     
     try {
+        const pickupEnabledCheckbox = document.getElementById('settingsPickupEnabled');
         const data = {
             name: document.getElementById('settingsName').value,
             description: document.getElementById('settingsDescription').value || null,
             phone: document.getElementById('settingsPhone').value || null,
             email: document.getElementById('settingsEmail').value || null,
-            address: document.getElementById('settingsAddress').value || null
+            address: document.getElementById('settingsAddress').value || null,
+            pickup_enabled: pickupEnabledCheckbox ? pickupEnabledCheckbox.checked : true
         };
         
         myShop = await apiRequest(`/shops/${myShop.id}`, { method: 'PATCH', body: JSON.stringify(data) });

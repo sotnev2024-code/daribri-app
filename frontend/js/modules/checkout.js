@@ -125,6 +125,7 @@
             shopAddress: null,  // Адрес магазина для самовывоза
             shopLatitude: null,  // Координаты магазина
             shopLongitude: null,
+            shopPickupEnabled: true,  // Разрешен ли самовывоз для магазина
             deliveryType: 'delivery',  // 'delivery' или 'pickup'
             items: [],
             promoCode: null,
@@ -295,12 +296,14 @@
             checkoutState.shopAddress = shop.address || null;
             checkoutState.shopLatitude = shop.latitude || null;
             checkoutState.shopLongitude = shop.longitude || null;
+            checkoutState.shopPickupEnabled = shop.pickup_enabled !== false; // По умолчанию true, если не указано
         } catch (error) {
             console.error('[CHECKOUT] Error loading shop:', error);
             checkoutState.shopCity = APP_CITY; // Всегда Екатеринбург
             checkoutState.shopAddress = null;
             checkoutState.shopLatitude = null;
             checkoutState.shopLongitude = null;
+            checkoutState.shopPickupEnabled = true; // По умолчанию разрешен, если не удалось загрузить
         }
         
         // Открываем модальное окно
@@ -720,8 +723,25 @@
             };
         }
         
+        // Проверяем, разрешен ли самовывоз для магазина
+        const pickupEnabled = checkoutState.shopPickupEnabled !== false;
+        
+        // Скрываем селектор типа доставки, если самовывоз выключен
+        const deliveryTypeSelector = document.querySelector('.delivery-type-selector');
+        if (deliveryTypeSelector) {
+            if (!pickupEnabled) {
+                deliveryTypeSelector.style.display = 'none';
+                // Устанавливаем только доставку, если самовывоз выключен
+                checkoutState.deliveryType = 'delivery';
+            } else {
+                deliveryTypeSelector.style.display = 'flex';
+            }
+        }
+        
         // Инициализируем тип по умолчанию
-        switchDeliveryType(checkoutState.deliveryType || 'delivery');
+        // Если самовывоз выключен, всегда используем доставку
+        const defaultDeliveryType = pickupEnabled ? (checkoutState.deliveryType || 'delivery') : 'delivery';
+        switchDeliveryType(defaultDeliveryType);
         validate(); // Вызываем валидацию после инициализации
         
         // Показываем уведомление о зоне доставки
