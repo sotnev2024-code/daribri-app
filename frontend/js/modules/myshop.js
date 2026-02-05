@@ -810,7 +810,6 @@
     
     function renderShopSettings() {
         const state = getState();
-        const elements = getElements();
         const utils = getUtils();
         
         if (!state.myShop) {
@@ -818,94 +817,41 @@
             return;
         }
         
-        const container = document.getElementById('myShopContent');
+        const container = document.getElementById('shopDeliverySettingsContent');
         if (!container) {
             console.error('[SHOP SETTINGS] Container not found');
             return;
         }
         
         container.innerHTML = `
-            <div style="padding: 15px;">
-                <form id="shopSettingsForm">
-                    <!-- Basic Info -->
-                    <div class="settings-section">
-                        <div class="settings-section-title">Основная информация</div>
-                        <div class="settings-item">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Название магазина</label>
-                                <input type="text" class="form-input" id="settingsName" value="${state.myShop.name || ''}" required>
-                            </div>
-                        </div>
-                        <div class="settings-item">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Описание</label>
-                                <textarea class="form-textarea" id="settingsDescription" rows="3">${state.myShop.description || ''}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Contacts -->
-                    <div class="settings-section">
-                        <div class="settings-section-title">Контакты</div>
-                        <div class="settings-item">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Телефон</label>
-                                <input type="tel" class="form-input" id="settingsPhone" value="${state.myShop.phone || ''}">
-                            </div>
-                        </div>
-                        <div class="settings-item">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-input" id="settingsEmail" value="${state.myShop.email || ''}">
-                            </div>
-                        </div>
-                        <div class="settings-item">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Адрес</label>
-                                <input type="text" class="form-input" id="settingsAddress" value="${state.myShop.address || ''}">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Delivery Settings -->
-                    <div class="settings-section">
-                        <div class="settings-section-title">Настройки доставки</div>
-                        <div class="settings-item">
-                            <div class="settings-toggle" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
-                                <div>
-                                    <div style="font-weight: 500; margin-bottom: 4px;">Самовывоз</div>
-                                    <div style="font-size: 0.9em; color: #666;">Разрешить покупателям забирать заказы самостоятельно</div>
-                                </div>
-                                <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 28px;">
-                                    <input type="checkbox" id="settingsPickupEnabled" ${state.myShop.pickup_enabled !== false ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
-                                    <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${state.myShop.pickup_enabled !== false ? '#4CAF50' : '#ccc'}; transition: .4s; border-radius: 28px;">
-                                        <span class="toggle-slider-thumb" style="position: absolute; content: ''; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; ${state.myShop.pickup_enabled !== false ? 'transform: translateX(22px);' : ''}"></span>
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn-primary" style="margin-top:10px;">Сохранить изменения</button>
-                </form>
-                
-                <!-- Danger Zone -->
-                <div class="settings-section" style="margin-top:20px;">
-                    <div class="settings-section-title" style="color:#dbff00;">Опасная зона</div>
+            <form id="shopDeliverySettingsForm">
+                <!-- Delivery Settings -->
+                <div class="settings-section">
+                    <div class="settings-section-title">Настройки доставки</div>
                     <div class="settings-item">
-                        <div class="settings-toggle">
-                            <span>Деактивировать магазин</span>
-                            <button type="button" class="btn-secondary" style="width:auto;padding:8px 16px;color:#dbff00;" onclick="if(!confirm('Вы уверены? Магазин будет скрыт от покупателей.')) return; alert('Функция деактивации в разработке');">Деактивировать</button>
+                        <div class="settings-toggle" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                            <div style="flex: 1; margin-right: 16px;">
+                                <div style="font-weight: 500; margin-bottom: 4px;">Самовывоз</div>
+                                <div style="font-size: 0.9em; color: #666;">Разрешить покупателям забирать заказы самостоятельно</div>
+                            </div>
+                            <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0;">
+                                <input type="checkbox" id="settingsPickupEnabled" ${state.myShop.pickup_enabled !== false ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                                <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${state.myShop.pickup_enabled !== false ? '#4CAF50' : '#ccc'}; transition: .4s; border-radius: 28px;">
+                                    <span class="toggle-slider-thumb" style="position: absolute; content: ''; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; ${state.myShop.pickup_enabled !== false ? 'transform: translateX(22px);' : ''}"></span>
+                                </span>
+                            </label>
                         </div>
                     </div>
                 </div>
-            </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px; padding: 14px;">Сохранить</button>
+            </form>
         `;
         
         // Обработчик формы
-        const form = document.getElementById('shopSettingsForm');
+        const form = document.getElementById('shopDeliverySettingsForm');
         if (form) {
-            form.addEventListener('submit', handleSaveShopSettings);
+            form.addEventListener('submit', handleSaveShopDeliverySettings);
         }
         
         // Обработчик для переключателя самовывоза
@@ -922,6 +868,98 @@
                     thumb.style.transform = 'translateX(0)';
                 }
             });
+        }
+    }
+    
+    function openShopDeliverySettingsModal() {
+        const state = getState();
+        const utils = getUtils();
+        
+        if (!state.myShop) {
+            if (utils.showToast) utils.showToast('Магазин не найден', 'error');
+            return;
+        }
+        
+        const modal = document.getElementById('shopDeliverySettingsModal');
+        if (!modal) {
+            console.error('[SHOP SETTINGS] Modal not found');
+            return;
+        }
+        
+        // Рендерим содержимое
+        renderShopSettings();
+        
+        // Показываем модальное окно
+        modal.hidden = false;
+        
+        // Настраиваем кнопку "Назад" от Telegram
+        const tg = getTg();
+        if (tg && tg.BackButton) {
+            // Удаляем старый обработчик если есть
+            if (window.shopSettingsBackButtonHandler) {
+                tg.BackButton.offClick(window.shopSettingsBackButtonHandler);
+            }
+            
+            // Создаем новый обработчик
+            window.shopSettingsBackButtonHandler = () => {
+                console.log('[SHOP SETTINGS] Telegram BackButton clicked');
+                closeShopDeliverySettingsModal();
+            };
+            
+            tg.BackButton.onClick(window.shopSettingsBackButtonHandler);
+            tg.BackButton.show();
+        }
+    }
+    
+    function closeShopDeliverySettingsModal() {
+        const modal = document.getElementById('shopDeliverySettingsModal');
+        if (modal) {
+            modal.hidden = true;
+        }
+        
+        // Скрываем кнопку "Назад" от Telegram
+        const tg = getTg();
+        if (tg && tg.BackButton && window.shopSettingsBackButtonHandler) {
+            tg.BackButton.offClick(window.shopSettingsBackButtonHandler);
+            tg.BackButton.hide();
+            window.shopSettingsBackButtonHandler = null;
+        }
+    }
+    
+    async function handleSaveShopDeliverySettings(e) {
+        const state = getState();
+        const api = getApi();
+        const utils = getUtils();
+        
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn?.textContent;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
+        }
+        
+        try {
+            const pickupEnabledCheckbox = document.getElementById('settingsPickupEnabled');
+            const data = {
+                pickup_enabled: pickupEnabledCheckbox ? pickupEnabledCheckbox.checked : true
+            };
+            
+            const shop = await api.updateShop(state.myShop.id, data);
+            state.myShop = { ...state.myShop, ...shop };
+            
+            if (utils.showToast) utils.showToast('Настройки сохранены!', 'success');
+            
+            // Закрываем модальное окно
+            closeShopDeliverySettingsModal();
+        } catch (error) {
+            console.error('Error saving shop delivery settings:', error);
+            if (utils.showToast) utils.showToast('Ошибка: ' + (error.message || 'Не удалось сохранить настройки'), 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText || 'Сохранить';
+            }
         }
     }
     
@@ -1792,7 +1830,9 @@
         openEditShopModal,
         handleUpdateShop,
         renderShopSettings,
-        handleSaveShopSettings,
+        openShopDeliverySettingsModal,
+        closeShopDeliverySettingsModal,
+        handleSaveShopDeliverySettings,
         // Shop Products
         loadMyProducts,
         renderMyProducts,

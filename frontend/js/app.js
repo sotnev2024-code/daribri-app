@@ -1953,7 +1953,7 @@ function initEventListeners() {
         }
     });
     
-    // Используем делегирование событий для кнопки настроек (на случай, если она скрыта при инициализации)
+    // Используем делегирование событий для кнопки настроек
     const quickActions = document.querySelector('.quick-actions');
     if (quickActions) {
         quickActions.addEventListener('click', (e) => {
@@ -1964,62 +1964,10 @@ function initEventListeners() {
                 console.log('[SHOP SETTINGS] Button clicked');
                 
                 if (state.myShop) {
-                    console.log('[SHOP SETTINGS] Shop found, opening settings...');
-                    // Создаем контейнер для настроек
-                    const myShopPage = document.getElementById('myShopPage');
-                    if (!myShopPage) {
-                        console.error('[SHOP SETTINGS] myShopPage not found');
-                        return;
-                    }
-                    
-                    let settingsContainer = document.getElementById('myShopContent');
-                    if (!settingsContainer) {
-                        settingsContainer = document.createElement('div');
-                        settingsContainer.id = 'myShopContent';
-                        settingsContainer.style.cssText = 'padding: 0;';
-                        myShopPage.appendChild(settingsContainer);
-                        console.log('[SHOP SETTINGS] Created settings container');
-                    }
-                    
-                    // Скрываем dashboard и показываем настройки
-                    const shopDashboard = document.getElementById('shopDashboard');
-                    if (shopDashboard) {
-                        shopDashboard.hidden = true;
-                        console.log('[SHOP SETTINGS] Dashboard hidden');
-                    }
-                    settingsContainer.hidden = false;
-                    settingsContainer.style.display = 'block';
-                    
-                    // Добавляем кнопку "Назад" в заголовок страницы
-                    const pageHeader = myShopPage.querySelector('.page-header');
-                    if (pageHeader) {
-                        const backBtn = pageHeader.querySelector('.back-btn');
-                        if (backBtn) {
-                            backBtn.onclick = () => {
-                                console.log('[SHOP SETTINGS] Back button clicked');
-                                // Возвращаемся к dashboard
-                                if (shopDashboard) shopDashboard.hidden = false;
-                                settingsContainer.hidden = true;
-                                settingsContainer.style.display = 'none';
-                            };
-                        }
-                    }
-                    
-                    // Используем функцию из модуля myshop.js
-                    if (window.App?.myshop?.renderShopSettings) {
-                        console.log('[SHOP SETTINGS] Calling renderShopSettings');
-                        window.App.myshop.renderShopSettings();
+                    if (window.App?.myshop?.openShopDeliverySettingsModal) {
+                        window.App.myshop.openShopDeliverySettingsModal();
                     } else {
-                        console.error('[SHOP SETTINGS] renderShopSettings function not found in myshop module');
-                        console.log('[SHOP SETTINGS] Available modules:', Object.keys(window.App || {}));
-                        // Fallback: показываем простую форму настроек
-                        settingsContainer.innerHTML = `
-                            <div style="padding: 15px;">
-                                <h2>Настройки магазина</h2>
-                                <p>Функция настроек загружается...</p>
-                                <p style="color: #999; font-size: 0.9em;">Модуль: ${window.App?.myshop ? 'найден' : 'не найден'}</p>
-                            </div>
-                        `;
+                        console.error('[SHOP SETTINGS] openShopDeliverySettingsModal not found');
                     }
                 } else {
                     console.warn('[SHOP SETTINGS] Shop not found in state');
@@ -2027,53 +1975,40 @@ function initEventListeners() {
             }
         });
         console.log('[EVENTS] ✅ Shop settings button delegation set up');
-    } else {
-        console.warn('[EVENTS] ⚠️ quick-actions container not found');
     }
     
-    // Также устанавливаем прямой обработчик на случай, если делегирование не сработает
+    // Прямой обработчик кнопки
     const shopSettingsBtn = document.getElementById('shopSettingsBtn');
     if (shopSettingsBtn) {
         shopSettingsBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[SHOP SETTINGS] Direct handler triggered');
-            // Логика такая же, как выше
-            if (state.myShop) {
-                const myShopPage = document.getElementById('myShopPage');
-                if (!myShopPage) return;
-                
-                let settingsContainer = document.getElementById('myShopContent');
-                if (!settingsContainer) {
-                    settingsContainer = document.createElement('div');
-                    settingsContainer.id = 'myShopContent';
-                    settingsContainer.style.cssText = 'padding: 0;';
-                    myShopPage.appendChild(settingsContainer);
-                }
-                
-                const shopDashboard = document.getElementById('shopDashboard');
-                if (shopDashboard) shopDashboard.hidden = true;
-                settingsContainer.hidden = false;
-                settingsContainer.style.display = 'block';
-                
-                const pageHeader = myShopPage.querySelector('.page-header');
-                if (pageHeader) {
-                    const backBtn = pageHeader.querySelector('.back-btn');
-                    if (backBtn) {
-                        backBtn.onclick = () => {
-                            if (shopDashboard) shopDashboard.hidden = false;
-                            settingsContainer.hidden = true;
-                            settingsContainer.style.display = 'none';
-                        };
-                    }
-                }
-                
-                if (window.App?.myshop?.renderShopSettings) {
-                    window.App.myshop.renderShopSettings();
+            if (state.myShop && window.App?.myshop?.openShopDeliverySettingsModal) {
+                window.App.myshop.openShopDeliverySettingsModal();
+            }
+        });
+    }
+    
+    // Обработчик закрытия модального окна
+    const closeShopDeliverySettingsBtn = document.getElementById('closeShopDeliverySettingsModal');
+    if (closeShopDeliverySettingsBtn) {
+        closeShopDeliverySettingsBtn.addEventListener('click', () => {
+            if (window.App?.myshop?.closeShopDeliverySettingsModal) {
+                window.App.myshop.closeShopDeliverySettingsModal();
+            }
+        });
+    }
+    
+    // Закрытие модального окна по клику на фон
+    const shopDeliverySettingsModal = document.getElementById('shopDeliverySettingsModal');
+    if (shopDeliverySettingsModal) {
+        shopDeliverySettingsModal.addEventListener('click', (e) => {
+            if (e.target.id === 'shopDeliverySettingsModal') {
+                if (window.App?.myshop?.closeShopDeliverySettingsModal) {
+                    window.App.myshop.closeShopDeliverySettingsModal();
                 }
             }
         });
-        console.log('[EVENTS] ✅ Shop settings button direct handler set up');
     }
 }
 
