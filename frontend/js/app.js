@@ -1952,6 +1952,58 @@ function initEventListeners() {
             navigateTo('shopstatistics');
         }
     });
+    
+    document.getElementById('shopSettingsBtn')?.addEventListener('click', () => {
+        if (state.myShop) {
+            // Создаем контейнер для настроек
+            const myShopPage = document.getElementById('myShopPage');
+            let settingsContainer = document.getElementById('myShopContent');
+            if (!settingsContainer) {
+                settingsContainer = document.createElement('div');
+                settingsContainer.id = 'myShopContent';
+                settingsContainer.style.cssText = 'padding: 0;';
+                myShopPage.appendChild(settingsContainer);
+            }
+            
+            // Скрываем dashboard и показываем настройки
+            const shopDashboard = document.getElementById('shopDashboard');
+            if (shopDashboard) {
+                shopDashboard.hidden = true;
+            }
+            settingsContainer.hidden = false;
+            settingsContainer.style.display = 'block';
+            
+            // Устанавливаем myShop для функции renderShopSettings
+            window.myShop = state.myShop;
+            
+            // Добавляем кнопку "Назад" в заголовок страницы, если её нет
+            const pageHeader = myShopPage.querySelector('.page-header');
+            if (pageHeader) {
+                const backBtn = pageHeader.querySelector('.back-btn');
+                if (backBtn) {
+                    backBtn.onclick = () => {
+                        // Возвращаемся к dashboard
+                        shopDashboard.hidden = false;
+                        settingsContainer.hidden = true;
+                        settingsContainer.style.display = 'none';
+                    };
+                }
+            }
+            
+            if (typeof renderShopSettings === 'function') {
+                renderShopSettings();
+            } else {
+                console.error('renderShopSettings function not found');
+                // Fallback: показываем простую форму настроек
+                settingsContainer.innerHTML = `
+                    <div style="padding: 15px;">
+                        <h2>Настройки магазина</h2>
+                        <p>Функция настроек загружается...</p>
+                    </div>
+                `;
+            }
+        }
+    });
 }
 
 // ==================== Actions ====================
