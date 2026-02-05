@@ -1973,27 +1973,25 @@ function initEventListeners() {
             settingsContainer.hidden = false;
             settingsContainer.style.display = 'block';
             
-            // Устанавливаем myShop для функции renderShopSettings
-            window.myShop = state.myShop;
-            
-            // Добавляем кнопку "Назад" в заголовок страницы, если её нет
+            // Добавляем кнопку "Назад" в заголовок страницы
             const pageHeader = myShopPage.querySelector('.page-header');
             if (pageHeader) {
                 const backBtn = pageHeader.querySelector('.back-btn');
                 if (backBtn) {
                     backBtn.onclick = () => {
                         // Возвращаемся к dashboard
-                        shopDashboard.hidden = false;
+                        if (shopDashboard) shopDashboard.hidden = false;
                         settingsContainer.hidden = true;
                         settingsContainer.style.display = 'none';
                     };
                 }
             }
             
-            if (typeof renderShopSettings === 'function') {
-                renderShopSettings();
+            // Используем функцию из модуля myshop.js
+            if (window.App?.myshop?.renderShopSettings) {
+                window.App.myshop.renderShopSettings();
             } else {
-                console.error('renderShopSettings function not found');
+                console.error('renderShopSettings function not found in myshop module');
                 // Fallback: показываем простую форму настроек
                 settingsContainer.innerHTML = `
                     <div style="padding: 15px;">

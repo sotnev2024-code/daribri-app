@@ -808,6 +808,165 @@
         }
     }
     
+    function renderShopSettings() {
+        const state = getState();
+        const elements = getElements();
+        const utils = getUtils();
+        
+        if (!state.myShop) {
+            console.error('[SHOP SETTINGS] Shop not found');
+            return;
+        }
+        
+        const container = document.getElementById('myShopContent');
+        if (!container) {
+            console.error('[SHOP SETTINGS] Container not found');
+            return;
+        }
+        
+        container.innerHTML = `
+            <div style="padding: 15px;">
+                <form id="shopSettingsForm">
+                    <!-- Basic Info -->
+                    <div class="settings-section">
+                        <div class="settings-section-title">Основная информация</div>
+                        <div class="settings-item">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Название магазина</label>
+                                <input type="text" class="form-input" id="settingsName" value="${state.myShop.name || ''}" required>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Описание</label>
+                                <textarea class="form-textarea" id="settingsDescription" rows="3">${state.myShop.description || ''}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contacts -->
+                    <div class="settings-section">
+                        <div class="settings-section-title">Контакты</div>
+                        <div class="settings-item">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Телефон</label>
+                                <input type="tel" class="form-input" id="settingsPhone" value="${state.myShop.phone || ''}">
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="settingsEmail" value="${state.myShop.email || ''}">
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Адрес</label>
+                                <input type="text" class="form-input" id="settingsAddress" value="${state.myShop.address || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Settings -->
+                    <div class="settings-section">
+                        <div class="settings-section-title">Настройки доставки</div>
+                        <div class="settings-item">
+                            <div class="settings-toggle" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                                <div>
+                                    <div style="font-weight: 500; margin-bottom: 4px;">Самовывоз</div>
+                                    <div style="font-size: 0.9em; color: #666;">Разрешить покупателям забирать заказы самостоятельно</div>
+                                </div>
+                                <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 28px;">
+                                    <input type="checkbox" id="settingsPickupEnabled" ${state.myShop.pickup_enabled !== false ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                                    <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${state.myShop.pickup_enabled !== false ? '#4CAF50' : '#ccc'}; transition: .4s; border-radius: 28px;">
+                                        <span class="toggle-slider-thumb" style="position: absolute; content: ''; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; ${state.myShop.pickup_enabled !== false ? 'transform: translateX(22px);' : ''}"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" style="margin-top:10px;">Сохранить изменения</button>
+                </form>
+                
+                <!-- Danger Zone -->
+                <div class="settings-section" style="margin-top:20px;">
+                    <div class="settings-section-title" style="color:#dbff00;">Опасная зона</div>
+                    <div class="settings-item">
+                        <div class="settings-toggle">
+                            <span>Деактивировать магазин</span>
+                            <button type="button" class="btn-secondary" style="width:auto;padding:8px 16px;color:#dbff00;" onclick="if(!confirm('Вы уверены? Магазин будет скрыт от покупателей.')) return; alert('Функция деактивации в разработке');">Деактивировать</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Обработчик формы
+        const form = document.getElementById('shopSettingsForm');
+        if (form) {
+            form.addEventListener('submit', handleSaveShopSettings);
+        }
+        
+        // Обработчик для переключателя самовывоза
+        const pickupToggle = document.getElementById('settingsPickupEnabled');
+        if (pickupToggle) {
+            pickupToggle.addEventListener('change', function() {
+                const slider = this.nextElementSibling;
+                const thumb = slider.querySelector('.toggle-slider-thumb');
+                if (this.checked) {
+                    slider.style.backgroundColor = '#4CAF50';
+                    thumb.style.transform = 'translateX(22px)';
+                } else {
+                    slider.style.backgroundColor = '#ccc';
+                    thumb.style.transform = 'translateX(0)';
+                }
+            });
+        }
+    }
+    
+    async function handleSaveShopSettings(e) {
+        const state = getState();
+        const api = getApi();
+        const utils = getUtils();
+        
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn?.textContent;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
+        }
+        
+        try {
+            const pickupEnabledCheckbox = document.getElementById('settingsPickupEnabled');
+            const data = {
+                name: document.getElementById('settingsName').value,
+                description: document.getElementById('settingsDescription').value || null,
+                phone: document.getElementById('settingsPhone').value || null,
+                email: document.getElementById('settingsEmail').value || null,
+                address: document.getElementById('settingsAddress').value || null,
+                pickup_enabled: pickupEnabledCheckbox ? pickupEnabledCheckbox.checked : true
+            };
+            
+            const shop = await api.updateShop(state.myShop.id, data);
+            state.myShop = { ...state.myShop, ...shop };
+            
+            if (utils.showToast) utils.showToast('Настройки сохранены!', 'success');
+            
+            // Обновляем отображение
+            renderShopPage();
+        } catch (error) {
+            console.error('Error saving shop settings:', error);
+            if (utils.showToast) utils.showToast('Ошибка: ' + (error.message || 'Не удалось сохранить настройки'), 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText || 'Сохранить изменения';
+            }
+        }
+    }
+    
     async function handleUpdateShop(e) {
         const state = getState();
         const elements = getElements();
@@ -1632,6 +1791,8 @@
         // Shop Editing
         openEditShopModal,
         handleUpdateShop,
+        renderShopSettings,
+        handleSaveShopSettings,
         // Shop Products
         loadMyProducts,
         renderMyProducts,
