@@ -76,6 +76,25 @@ async def lifespan(app: FastAPI):
             await database._db_service.commit()
             print("[MIGRATION] product_name column added successfully")
         
+        # Проверяем, существует ли поле cost_price в order_items
+        if "cost_price" not in column_names:
+            print("[MIGRATION] Adding cost_price column to order_items table...")
+            await database._db_service.execute(
+                "ALTER TABLE order_items ADD COLUMN cost_price DECIMAL(10, 2)"
+            )
+            # Заполняем существующие записи себестоимостью из products
+            await database._db_service.execute(
+                """UPDATE order_items 
+                   SET cost_price = (
+                       SELECT cost_price 
+                       FROM products 
+                       WHERE products.id = order_items.product_id
+                   )
+                   WHERE product_id IS NOT NULL AND cost_price IS NULL"""
+            )
+            await database._db_service.commit()
+            print("[MIGRATION] cost_price column added successfully")
+        
         # Проверяем, существует ли таблица shop_requests
         tables = await database._db_service.fetch_all("SELECT name FROM sqlite_master WHERE type='table' AND name='shop_requests'")
         if tables:

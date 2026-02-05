@@ -93,17 +93,17 @@ async def get_shop_statistics(
     # Рассчитываем чистую прибыль (доход - себестоимость)
     # Чистая прибыль = сумма (количество * (цена продажи - себестоимость)) 
     # ТОЛЬКО для товаров с указанной себестоимостью
+    # Используем себестоимость из order_items (сохраненную на момент заказа)
     # Если у товара нет себестоимости - он не учитывается в расчете
     net_profit_result = await db.fetch_one(
         """SELECT 
-               COALESCE(SUM(oi.quantity * (oi.price - p.cost_price)), 0) as total_net_profit,
+               COALESCE(SUM(oi.quantity * (oi.price - COALESCE(oi.cost_price, 0))), 0) as total_net_profit,
                COUNT(*) as items_with_cost_price
            FROM order_items oi
            JOIN orders o ON oi.order_id = o.id
-           LEFT JOIN products p ON oi.product_id = p.id
            WHERE o.shop_id = ? AND o.status = 'delivered' 
            AND DATE(o.created_at) BETWEEN ? AND ?
-           AND p.cost_price IS NOT NULL AND p.cost_price > 0""",
+           AND oi.cost_price IS NOT NULL AND oi.cost_price > 0""",
         (shop_id, start_str, end_str)
     )
     # Если есть товары с себестоимостью - возвращаем сумму, иначе None
@@ -144,13 +144,12 @@ async def get_shop_statistics(
                DATE(o.created_at) as date,
                COALESCE(SUM(o.total_amount), 0) as revenue,
                COALESCE(SUM(CASE 
-                   WHEN p.cost_price IS NOT NULL AND p.cost_price > 0 
-                   THEN oi.quantity * (oi.price - p.cost_price) 
+                   WHEN oi.cost_price IS NOT NULL AND oi.cost_price > 0 
+                   THEN oi.quantity * (oi.price - oi.cost_price) 
                    ELSE 0 
                END), 0) as net_profit
            FROM orders o
            LEFT JOIN order_items oi ON o.id = oi.order_id
-           LEFT JOIN products p ON oi.product_id = p.id
            WHERE o.shop_id = ? AND o.status = 'delivered' AND DATE(o.created_at) BETWEEN ? AND ?
            GROUP BY DATE(o.created_at)
            ORDER BY date""",
@@ -172,8 +171,8 @@ async def get_shop_statistics(
                SUM(oi.quantity) as total_quantity,
                SUM(oi.quantity * oi.price) as total_revenue,
                COALESCE(SUM(CASE 
-                   WHEN p.cost_price IS NOT NULL AND p.cost_price > 0 
-                   THEN oi.quantity * (oi.price - p.cost_price) 
+                   WHEN oi.cost_price IS NOT NULL AND oi.cost_price > 0 
+                   THEN oi.quantity * (oi.price - oi.cost_price) 
                    ELSE 0 
                END), 0) as net_profit
            FROM order_items oi

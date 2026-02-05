@@ -451,20 +451,21 @@ async def create_order(
     
     # Добавляем товары в заказ и обновляем остатки
     for item in order_data.items:
-        # Получаем полную информацию о товаре для сохранения названия
+        # Получаем полную информацию о товаре для сохранения названия и себестоимости
         product = await db.fetch_one(
-            "SELECT name, price, discount_price FROM products WHERE id = ?",
+            "SELECT name, price, discount_price, cost_price FROM products WHERE id = ?",
             (item.product_id,)
         )
         
-        # Сохраняем название товара в заказе (на случай, если товар будет удален)
+        # Сохраняем название товара и себестоимость в заказе (на случай, если товар будет удален или изменен)
         await db.insert("order_items", {
             "order_id": order_id,
             "product_id": item.product_id,
             "quantity": item.quantity,
             "price": product["price"],
             "discount_price": product["discount_price"],
-            "product_name": product["name"]  # Сохраняем название товара
+            "product_name": product["name"],  # Сохраняем название товара
+            "cost_price": product.get("cost_price")  # Сохраняем себестоимость на момент заказа
         })
         
         # Уменьшаем остаток и увеличиваем счётчик продаж
