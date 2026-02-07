@@ -4,7 +4,7 @@
 
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from typing import Optional
@@ -332,27 +332,11 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Получаем username бота и URL Mini App
-        try:
-            bot_info = await bot.get_me()
-            bot_username = bot_info.username
-        except Exception as e:
-            print(f"[POST] Error getting bot info: {e}")
-            bot_username = "daribri_bot"  # Fallback
+        # Создаём кнопку с прямой ссылкой на сайт
+        shop_url = "https://daribri.ru"
         
-        # Получаем URL Mini App из бота
-        webapp_url = getattr(bot, 'webapp_url', 'http://localhost:8081')
-        
-        # Создаём URL для открытия Mini App напрямую с параметром shop
-        # Это откроет Mini App приложение с карточкой магазина
-        # ВАЖНО: URL должен быть зарегистрирован как Mini App в BotFather
-        # для корректной работы в кнопках каналов
-        shop_miniapp_url = f"{webapp_url}?shop={shop_id}"
-        
-        # Создаём кнопку с прямым URL на Mini App
-        # При нажатии откроется Mini App с карточкой магазина
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_miniapp_url)
+            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_url)
         ]])
         
         # Публикуем пост в канал
