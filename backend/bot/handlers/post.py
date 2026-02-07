@@ -4,7 +4,7 @@
 
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from typing import Optional
@@ -332,11 +332,11 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Создаём кнопку с прямой ссылкой на сайт
+        # Создаём кнопку WebApp для открытия Mini App приложения
         shop_url = "https://daribri.ru"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🛍 Открыть магазин", url=shop_url)
+            InlineKeyboardButton(text="🛍 Открыть магазин", web_app=WebAppInfo(url=shop_url))
         ]])
         
         # Публикуем пост в канал
