@@ -17,6 +17,15 @@ class AuthMiddleware(BaseMiddleware):
         data: Dict[str, Any]
     ) -> Any:
         """Обрабатывает событие."""
+        # Бот отвечает только в личных сообщениях (private)
+        # Игнорируем сообщения из групп, супергрупп и каналов
+        if isinstance(event, Message):
+            if event.chat.type != "private":
+                return  # Игнорируем, не передаём обработчику
+        elif isinstance(event, CallbackQuery):
+            if event.message and event.message.chat.type != "private":
+                return  # Игнорируем callback из групп
+        
         # Получаем пользователя
         user = None
         if isinstance(event, Message):
