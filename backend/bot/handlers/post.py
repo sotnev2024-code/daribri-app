@@ -4,7 +4,7 @@
 
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from typing import Optional
@@ -332,11 +332,20 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Создаём кнопку WebApp для открытия Mini App приложения
-        shop_url = "https://daribri.ru"
+        # Получаем username бота для создания ссылки на Mini App
+        try:
+            bot_info = await bot.get_me()
+            bot_username = bot_info.username
+        except Exception as e:
+            print(f"[POST] Error getting bot info: {e}")
+            bot_username = "Daribri_bot"  # Fallback
+        
+        # Создаём ссылку на Mini App через бота
+        # Формат: https://t.me/bot_username/app открывает Mini App
+        mini_app_url = f"https://t.me/{bot_username}/app"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🛍 Открыть магазин", web_app=WebAppInfo(url=shop_url))
+            InlineKeyboardButton(text="🛍 Открыть магазин", url=mini_app_url)
         ]])
         
         # Публикуем пост в канал
