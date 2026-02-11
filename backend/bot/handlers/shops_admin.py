@@ -254,6 +254,17 @@ async def show_shop_details(callback: CallbackQuery, bot: Bot, shop_id: int):
             (shop_id,)
         )
         
+        # Получаем информацию о текущей подписке
+        subscription = await db.fetch_one(
+            """SELECT ss.*, sp.name as plan_name, sp.duration_days, sp.price as plan_price
+               FROM shop_subscriptions ss
+               JOIN subscription_plans sp ON ss.plan_id = sp.id
+               WHERE ss.shop_id = ? AND ss.is_active = 1 AND ss.end_date > datetime('now')
+               ORDER BY ss.end_date DESC
+               LIMIT 1""",
+            (shop_id,)
+        )
+        
         await db.disconnect()
         
         stats = {
@@ -300,7 +311,24 @@ ID: {shop.get('owner_telegram_id', 'не указан')}
 📊 Средний чек: {stats.get('average_order', 0):.2f} ₽
 
 <b>Рейтинг:</b> {avg_rating:.1f} ⭐ ({shop.get('total_reviews', 0)} отзывов)
+
+<b>Подписка:</b>
 """
+        
+        # Добавляем информацию о подписке
+        if subscription:
+            from datetime import datetime
+            end_date = datetime.fromisoformat(subscription["end_date"].replace("Z", "+00:00"))
+            days_remaining = max(0, (end_date - datetime.now(end_date.tzinfo)).days)
+            subscription_status = "✅ Активна" if days_remaining > 0 else "❌ Истекла"
+            text += f"{subscription_status}\n"
+            text += f"📋 План: {subscription.get('plan_name', 'Не указан')}\n"
+            text += f"📅 Осталось дней: {days_remaining}\n"
+            text += f"📆 До: {end_date.strftime('%d.%m.%Y')}\n"
+        else:
+            text += "❌ Нет активной подписки\n"
+        
+        text += "\n"
         
         keyboard_buttons = []
         
@@ -327,6 +355,12 @@ ID: {shop.get('owner_telegram_id', 'не указан')}
         keyboard_buttons.append([
             InlineKeyboardButton(text="✏️ Редактировать", callback_data=f"admin_shop_edit_{shop_id}"),
             InlineKeyboardButton(text="📊 Статистика", callback_data=f"admin_shop_stats_{shop_id}")
+        ])
+        
+        # Кнопки управления подпиской
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="💳 Продлить подписку", callback_data=f"admin_shop_extend_subscription_{shop_id}"),
+            InlineKeyboardButton(text="🔄 Поменять тариф", callback_data=f"admin_shop_change_plan_{shop_id}")
         ])
         
         keyboard_buttons.append([
@@ -772,4 +806,302 @@ async def callback_shop_edit(callback: CallbackQuery, bot: Bot, state: FSMContex
 async def handle_shop_edit_value(message: Message, bot: Bot, state: FSMContext):
     """Обработчик ввода нового значения для редактирования магазина."""
     await process_edit_shop_value(message, bot, state)
+
+
+async def show_extend_subscription_menu(callback: CallbackQuery, bot: Bot, shop_id: int):
+    """Показывает меню для продления подписки (выбор количества дней)."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        db = await get_db()
+        
+        # Получаем текущую подписку
+        subscription = await db.fetch_one(
+            """SELECT ss.*, sp.name as plan_name, sp.duration_days
+               FROM shop_subscriptions ss
+               JOIN subscription_plans sp ON ss.plan_id = sp.id
+               WHERE ss.shop_id = ? AND ss.is_active = 1
+               ORDER BY ss.end_date DESC
+               LIMIT 1""",
+            (shop_id,)
+        )
+        
+        if not subscription:
+            await db.disconnect()
+            await callback.answer("❌ У магазина нет активной подписки. Используйте 'Поменять тариф' для создания новой.", show_alert=True)
+            return
+        
+        await db.disconnect()
+        
+        text = f"""
+<b>💳 Продление подписки</b>
+
+<b>Магазин:</b> #{shop_id}
+<b>Текущий план:</b> {subscription.get('plan_name', 'Не указан')}
+
+Выберите количество дней для продления:
+"""
+        
+        keyboard_buttons = [
+            [InlineKeyboardButton(text="➕ 7 дней", callback_data=f"admin_shop_extend_days_{shop_id}_7")],
+            [InlineKeyboardButton(text="➕ 14 дней", callback_data=f"admin_shop_extend_days_{shop_id}_14")],
+            [InlineKeyboardButton(text="➕ 30 дней", callback_data=f"admin_shop_extend_days_{shop_id}_30")],
+            [InlineKeyboardButton(text="➕ 60 дней", callback_data=f"admin_shop_extend_days_{shop_id}_60")],
+            [InlineKeyboardButton(text="➕ 90 дней", callback_data=f"admin_shop_extend_days_{shop_id}_90")],
+            [InlineKeyboardButton(text="➕ 180 дней", callback_data=f"admin_shop_extend_days_{shop_id}_180")],
+            [InlineKeyboardButton(text="➕ 365 дней", callback_data=f"admin_shop_extend_days_{shop_id}_365")],
+            [InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_shop_view_{shop_id}")]
+        ]
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing extend subscription menu: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке меню продления.", show_alert=True)
+
+
+async def extend_subscription(callback: CallbackQuery, bot: Bot, shop_id: int, days: int):
+    """Продлевает подписку на указанное количество дней."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        from datetime import datetime, timedelta
+        
+        db = await get_db()
+        
+        # Получаем текущую подписку
+        subscription = await db.fetch_one(
+            """SELECT ss.*, sp.name as plan_name
+               FROM shop_subscriptions ss
+               JOIN subscription_plans sp ON ss.plan_id = sp.id
+               WHERE ss.shop_id = ? AND ss.is_active = 1
+               ORDER BY ss.end_date DESC
+               LIMIT 1""",
+            (shop_id,)
+        )
+        
+        if not subscription:
+            await db.disconnect()
+            await callback.answer("❌ У магазина нет активной подписки.", show_alert=True)
+            return
+        
+        # Вычисляем новую дату окончания
+        current_end_date = datetime.fromisoformat(subscription["end_date"].replace("Z", "+00:00"))
+        new_end_date = current_end_date + timedelta(days=days)
+        
+        # Обновляем подписку
+        await db.update(
+            "shop_subscriptions",
+            {"end_date": new_end_date.isoformat()},
+            "id = ?",
+            (subscription["id"],)
+        )
+        await db.commit()
+        await db.disconnect()
+        
+        await callback.answer(f"✅ Подписка продлена на {days} дней", show_alert=True)
+        
+        # Обновляем детали магазина
+        await show_shop_details(callback, bot, shop_id)
+        
+    except Exception as e:
+        print(f"Error extending subscription: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при продлении подписки.", show_alert=True)
+
+
+async def show_change_plan_menu(callback: CallbackQuery, bot: Bot, shop_id: int):
+    """Показывает меню для смены тарифа (выбор нового плана)."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        db = await get_db()
+        
+        # Получаем все активные планы
+        plans = await db.fetch_all(
+            "SELECT * FROM subscription_plans WHERE is_active = 1 ORDER BY price"
+        )
+        
+        if not plans:
+            await db.disconnect()
+            await callback.answer("❌ Нет доступных планов подписки.", show_alert=True)
+            return
+        
+        # Получаем текущую подписку
+        current_subscription = await db.fetch_one(
+            """SELECT ss.*, sp.name as plan_name, sp.id as plan_id
+               FROM shop_subscriptions ss
+               JOIN subscription_plans sp ON ss.plan_id = sp.id
+               WHERE ss.shop_id = ? AND ss.is_active = 1
+               ORDER BY ss.end_date DESC
+               LIMIT 1""",
+            (shop_id,)
+        )
+        
+        await db.disconnect()
+        
+        current_plan_id = current_subscription.get("plan_id") if current_subscription else None
+        
+        text = f"""
+<b>🔄 Смена тарифа</b>
+
+<b>Магазин:</b> #{shop_id}
+"""
+        
+        if current_subscription:
+            text += f"<b>Текущий план:</b> {current_subscription.get('plan_name', 'Не указан')}\n\n"
+        
+        text += "Выберите новый план подписки:\n"
+        
+        keyboard_buttons = []
+        
+        for plan in plans:
+            price = Decimal(str(plan.get("price", 0)))
+            duration = plan.get("duration_days", 0)
+            max_products = plan.get("max_products", 0)
+            
+            plan_text = f"{plan.get('name', 'Без названия')} - {price:.2f} ₽"
+            if plan.get("id") == current_plan_id:
+                plan_text = f"✅ {plan_text} (текущий)"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    text=plan_text,
+                    callback_data=f"admin_shop_set_plan_{shop_id}_{plan['id']}"
+                )
+            ])
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_shop_view_{shop_id}")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+        
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"Error showing change plan menu: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при загрузке планов.", show_alert=True)
+
+
+async def change_subscription_plan(callback: CallbackQuery, bot: Bot, shop_id: int, plan_id: int):
+    """Меняет тариф подписки на новый план."""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌ У вас нет прав администратора.", show_alert=True)
+        return
+    
+    try:
+        from datetime import datetime, timedelta
+        
+        db = await get_db()
+        
+        # Проверяем существование плана
+        plan = await db.fetch_one(
+            "SELECT * FROM subscription_plans WHERE id = ? AND is_active = 1",
+            (plan_id,)
+        )
+        
+        if not plan:
+            await db.disconnect()
+            await callback.answer("❌ План не найден.", show_alert=True)
+            return
+        
+        # Получаем текущую подписку
+        current_subscription = await db.fetch_one(
+            """SELECT ss.*
+               FROM shop_subscriptions ss
+               WHERE ss.shop_id = ? AND ss.is_active = 1
+               ORDER BY ss.end_date DESC
+               LIMIT 1""",
+            (shop_id,)
+        )
+        
+        # Деактивируем старые подписки
+        await db.update(
+            "shop_subscriptions",
+            {"is_active": False},
+            "shop_id = ?",
+            (shop_id,)
+        )
+        
+        # Создаём новую подписку
+        start_date = datetime.now()
+        end_date = start_date + timedelta(days=plan["duration_days"])
+        
+        subscription_id = await db.insert("shop_subscriptions", {
+            "shop_id": shop_id,
+            "plan_id": plan_id,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "is_active": True,
+            "payment_id": f"admin_manual_{datetime.now().timestamp()}"  # Метка админского изменения
+        })
+        
+        await db.commit()
+        await db.disconnect()
+        
+        await callback.answer(f"✅ Тариф изменён на '{plan.get('name', 'N/A')}'", show_alert=True)
+        
+        # Обновляем детали магазина
+        await show_shop_details(callback, bot, shop_id)
+        
+    except Exception as e:
+        print(f"Error changing subscription plan: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer("❌ Ошибка при смене тарифа.", show_alert=True)
+
+
+# Обработчики callback для управления подпиской
+@router.callback_query(F.data.startswith("admin_shop_extend_subscription_"))
+async def callback_extend_subscription_menu(callback: CallbackQuery, bot: Bot):
+    """Обработчик кнопки продления подписки."""
+    shop_id = int(callback.data.split("_")[4])
+    await show_extend_subscription_menu(callback, bot, shop_id)
+
+
+@router.callback_query(F.data.startswith("admin_shop_extend_days_"))
+async def callback_extend_subscription(callback: CallbackQuery, bot: Bot):
+    """Обработчик продления подписки на указанное количество дней."""
+    parts = callback.data.split("_")
+    shop_id = int(parts[4])
+    days = int(parts[5])
+    await extend_subscription(callback, bot, shop_id, days)
+
+
+@router.callback_query(F.data.startswith("admin_shop_change_plan_"))
+async def callback_change_plan_menu(callback: CallbackQuery, bot: Bot):
+    """Обработчик кнопки смены тарифа."""
+    shop_id = int(callback.data.split("_")[4])
+    await show_change_plan_menu(callback, bot, shop_id)
+
+
+@router.callback_query(F.data.startswith("admin_shop_set_plan_"))
+async def callback_change_plan(callback: CallbackQuery, bot: Bot):
+    """Обработчик смены тарифа на новый план."""
+    parts = callback.data.split("_")
+    shop_id = int(parts[4])
+    plan_id = int(parts[5])
+    await change_subscription_plan(callback, bot, shop_id, plan_id)
 
