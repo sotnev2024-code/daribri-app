@@ -341,9 +341,9 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             bot_username = "Daribri_bot"  # Fallback
         
         # Создаём ссылку на Mini App с параметром shop
-        # Формат: https://t.me/bot_username/app?shop=ID
-        # Frontend обрабатывает параметр ?shop=ID из URL (app.js строка 1222)
-        mini_app_url = f"https://t.me/{bot_username}/app?shop={shop_id}"
+        # Используем формат ?start=shop_ID, который Telegram передаёт через start_param
+        # Frontend обрабатывает start_param в формате shop_ID (app.js строка 1248)
+        mini_app_url = f"https://t.me/{bot_username}/app?start=shop_{shop_id}"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
             InlineKeyboardButton(text="🛍 Открыть магазин", url=mini_app_url)

@@ -1207,34 +1207,18 @@ async function init() {
             
             // Проверяем deep link параметр для открытия товара или магазина
             const urlParams = new URLSearchParams(window.location.search);
-            const productIdParam = urlParams.get('product');
-            if (productIdParam) {
-                const productId = parseInt(productIdParam);
-                if (productId && window.openProductPage) {
-                    console.log('[INIT] Opening product from deep link:', productId);
-                    setTimeout(() => {
-                        window.openProductPage(productId);
-                    }, 300);
-                }
-            }
-            
-            // Проверяем параметр shop из URL (для WebApp кнопок)
-            const shopIdParam = urlParams.get('shop');
-            if (shopIdParam) {
-                const shopId = parseInt(shopIdParam);
-                if (shopId && window.openShopPage) {
-                    console.log('[INIT] Opening shop from URL param:', shopId);
-                    setTimeout(() => {
-                        window.openShopPage(shopId);
-                    }, 300);
-                }
-            }
-            
-            // Проверяем параметр start из Telegram (start_param)
             const tg = window.Telegram?.WebApp;
+            
+            // Логируем все доступные параметры для отладки
+            console.log('[INIT] URL params:', window.location.search);
+            console.log('[INIT] Telegram initDataUnsafe:', tg?.initDataUnsafe);
+            console.log('[INIT] Telegram start_param:', tg?.initDataUnsafe?.start_param);
+            
+            // Сначала проверяем start_param из Telegram (приоритет)
+            // Это работает когда Mini App открывается через кнопку с ?start=shop_ID
             if (tg && tg.initDataUnsafe?.start_param) {
                 const startParam = tg.initDataUnsafe.start_param;
-                console.log('[INIT] Telegram start_param:', startParam);
+                console.log('[INIT] Processing Telegram start_param:', startParam);
                 
                 // Обрабатываем формат: product_123 или shop_456
                 if (startParam.startsWith('product_')) {
@@ -1244,6 +1228,7 @@ async function init() {
                         setTimeout(() => {
                             window.openProductPage(productId);
                         }, 300);
+                        return; // Прекращаем дальнейшую обработку
                     }
                 } else if (startParam.startsWith('shop_')) {
                     const shopId = parseInt(startParam.replace('shop_', ''));
@@ -1252,7 +1237,34 @@ async function init() {
                         setTimeout(() => {
                             window.openShopPage(shopId);
                         }, 300);
+                        return; // Прекращаем дальнейшую обработку
                     }
+                }
+            }
+            
+            // Затем проверяем параметры из URL (fallback)
+            const productIdParam = urlParams.get('product');
+            if (productIdParam) {
+                const productId = parseInt(productIdParam);
+                if (productId && window.openProductPage) {
+                    console.log('[INIT] Opening product from URL param:', productId);
+                    setTimeout(() => {
+                        window.openProductPage(productId);
+                    }, 300);
+                    return; // Прекращаем дальнейшую обработку
+                }
+            }
+            
+            // Проверяем параметр shop из URL (для прямых ссылок)
+            const shopIdParam = urlParams.get('shop');
+            if (shopIdParam) {
+                const shopId = parseInt(shopIdParam);
+                if (shopId && window.openShopPage) {
+                    console.log('[INIT] Opening shop from URL param:', shopId);
+                    setTimeout(() => {
+                        window.openShopPage(shopId);
+                    }, 300);
+                    return; // Прекращаем дальнейшую обработку
                 }
             }
         } catch (error) {
