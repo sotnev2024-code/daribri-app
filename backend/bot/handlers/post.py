@@ -340,9 +340,10 @@ async def process_text(message: Message, state: FSMContext, bot: Bot):
             print(f"[POST] Error getting bot info: {e}")
             bot_username = "Daribri_bot"  # Fallback
         
-        # Создаём ссылку на Mini App через бота
-        # Формат: https://t.me/bot_username/app открывает Mini App
-        mini_app_url = f"https://t.me/{bot_username}/app"
+        # Создаём ссылку на Mini App с параметром shop
+        # Формат: https://t.me/bot_username/app?shop=ID
+        # Frontend обрабатывает параметр ?shop=ID из URL (app.js строка 1222)
+        mini_app_url = f"https://t.me/{bot_username}/app?shop={shop_id}"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
             InlineKeyboardButton(text="🛍 Открыть магазин", url=mini_app_url)
